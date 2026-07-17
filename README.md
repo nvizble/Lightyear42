@@ -33,8 +33,10 @@ lightyear version
 ### Via Go
 
 ```bash
-go install github.com/nvizble/Lightyear42@latest
+go install github.com/nvizble/Lightyear42/cmd/lightyear@latest
 ```
+
+Isso instala o binário `lightyear` em `$(go env GOPATH)/bin` (no Windows: `%USERPROFILE%\go\bin`). Esse diretório precisa estar no `PATH`.
 
 ### Desenvolvimento
 

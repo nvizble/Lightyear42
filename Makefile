@@ -14,7 +14,7 @@ help: ## Mostra este help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-12s %s\n", $$1, $$2}'
 
 build: ## Compila o binário ./lightyear
-	go build -ldflags "$(LDFLAGS)" -o $(BINARY) .
+	go build -ldflags "$(LDFLAGS)" -o $(BINARY) ./cmd/lightyear
 
 install: build ## Instala lightyear em $(PREFIX) (padrão: ~/go/bin)
 	mkdir -p "$(PREFIX)"

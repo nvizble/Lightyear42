@@ -9,7 +9,7 @@ before:
 
 builds:
   - id: lightyear
-    main: .
+    main: ./cmd/lightyear
     binary: lightyear
     env:
       - CGO_ENABLED=0

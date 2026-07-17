@@ -26,7 +26,8 @@ Seu objetivo é ajudar a desenvolver **lightyear**, uma CLI moderna, open source
 Clean Architecture. Estrutura:
 
 ```
-cmd/           # Cobra — só parseia args/flags e chama Services
+cmd/              # Cobra — só parseia args/flags e chama Services
+cmd/lightyear/    # Entrypoint (package main) — nome do binário no go install
 internal/
   api/         # Cliente HTTP
   auth/        # OAuth2 + keyring
@@ -37,7 +38,6 @@ internal/
   repository/  # Acesso à API
   tui/         # Bubble Tea
 pkg/           # Só APIs públicas exportáveis
-main.go
 ```
 
 **Regra de ouro:** nunca coloque lógica de negócio nos comandos Cobra.
