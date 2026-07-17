@@ -20,7 +20,7 @@ func TestRootHelp(t *testing.T) {
 	}
 
 	out := buf.String()
-	for _, want := range []string{"42", "version", "config"} {
+	for _, want := range []string{"lightyear", "version", "config"} {
 		if !strings.Contains(out, want) {
 			t.Fatalf("help output missing %q:\n%s", want, out)
 		}

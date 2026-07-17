@@ -48,7 +48,7 @@ Com --friends, mostra apenas os logins da sua lista de amigos.`,
 					return err
 				}
 				if len(friends) == 0 {
-					fmt.Fprintln(cmd.OutOrStdout(), "Sua lista de amigos está vazia. Adicione com `42 friends add <login>`.")
+					fmt.Fprintln(cmd.OutOrStdout(), "Sua lista de amigos está vazia. Adicione com `lightyear friends add <login>`.")
 					return nil
 				}
 				locations = services.FilterLocationsByLogin(locations, friends)

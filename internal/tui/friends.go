@@ -12,7 +12,7 @@ import (
 // RenderFriends renders the friends list.
 func RenderFriends(friends []string) string {
 	if len(friends) == 0 {
-		return styleLabel.Render("Sua lista de amigos está vazia. Adicione com `42 friends add <login>`.")
+		return styleLabel.Render("Sua lista de amigos está vazia. Adicione com `lightyear friends add <login>`.")
 	}
 
 	var b strings.Builder

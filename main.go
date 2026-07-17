@@ -1,4 +1,4 @@
-// Package main is the entrypoint for the 42 CLI.
+// Package main is the entrypoint for the lightyear CLI.
 package main
 
 import (

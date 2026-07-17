@@ -4,6 +4,7 @@
 package api
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -81,7 +82,27 @@ func (c *Client) Get(ctx context.Context, path string, query url.Values, out any
 	if len(query) > 0 {
 		endpoint += "?" + query.Encode()
 	}
+	return c.request(ctx, http.MethodGet, endpoint, nil, out)
+}
 
+// Post sends a JSON body to path and optionally decodes the response into out.
+// Retries on 429, 5xx and network errors (body is re-sent from memory).
+func (c *Client) Post(ctx context.Context, path string, body any, out any) error {
+	payload, err := json.Marshal(body)
+	if err != nil {
+		return fmt.Errorf("serializar body de %s: %w", path, err)
+	}
+	return c.request(ctx, http.MethodPost, c.baseURL+path, payload, out)
+}
+
+// Delete deletes the resource at path. Expects a 2xx response (typically 204).
+// Retries on 429, 5xx and network errors (DELETE is idempotent).
+func (c *Client) Delete(ctx context.Context, path string) error {
+	return c.request(ctx, http.MethodDelete, c.baseURL+path, nil, nil)
+}
+
+// request executes an HTTP method with optional JSON body, retries and decode.
+func (c *Client) request(ctx context.Context, method, endpoint string, body []byte, out any) error {
 	var lastErr error
 	for attempt := 0; attempt <= c.maxRetries; attempt++ {
 		if attempt > 0 {
@@ -90,13 +111,13 @@ func (c *Client) Get(ctx context.Context, path string, query url.Values, out any
 			}
 		}
 
-		body, err := c.do(ctx, endpoint)
+		respBody, err := c.do(ctx, method, endpoint, body)
 		if err == nil {
-			if out == nil {
+			if out == nil || len(respBody) == 0 {
 				return nil
 			}
-			if err := json.Unmarshal(body, out); err != nil {
-				return fmt.Errorf("decodificar resposta de %s: %w", path, err)
+			if err := json.Unmarshal(respBody, out); err != nil {
+				return fmt.Errorf("decodificar resposta de %s: %w", endpoint, err)
 			}
 			return nil
 		}
@@ -109,13 +130,21 @@ func (c *Client) Get(ctx context.Context, path string, query url.Values, out any
 	return fmt.Errorf("após %d tentativas: %w", c.maxRetries+1, lastErr)
 }
 
-// do executes a single GET request and returns the response body.
-func (c *Client) do(ctx context.Context, endpoint string) ([]byte, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint, nil)
+// do executes a single HTTP request and returns the response body.
+func (c *Client) do(ctx context.Context, method, endpoint string, body []byte) ([]byte, error) {
+	var reader io.Reader
+	if body != nil {
+		reader = bytes.NewReader(body)
+	}
+
+	req, err := http.NewRequestWithContext(ctx, method, endpoint, reader)
 	if err != nil {
 		return nil, fmt.Errorf("montar requisição: %w", err)
 	}
 	req.Header.Set("Accept", "application/json")
+	if body != nil {
+		req.Header.Set("Content-Type", "application/json")
+	}
 
 	resp, err := c.http.Do(req)
 	if err != nil {
@@ -124,15 +153,15 @@ func (c *Client) do(ctx context.Context, endpoint string) ([]byte, error) {
 	defer resp.Body.Close()
 
 	if resp.StatusCode >= 200 && resp.StatusCode < 300 {
-		body, err := io.ReadAll(resp.Body)
+		respBody, err := io.ReadAll(resp.Body)
 		if err != nil {
 			return nil, fmt.Errorf("ler resposta: %w", err)
 		}
-		return body, nil
+		return respBody, nil
 	}
 
-	body, _ := io.ReadAll(io.LimitReader(resp.Body, maxErrorBodyBytes))
-	apiErr := newHTTPError(resp.StatusCode, strings.TrimSpace(string(body)))
+	errBody, _ := io.ReadAll(io.LimitReader(resp.Body, maxErrorBodyBytes))
+	apiErr := newHTTPError(resp.StatusCode, strings.TrimSpace(string(errBody)))
 	if resp.StatusCode == 429 {
 		return nil, &rateLimitError{apiErr: apiErr, retryAfter: parseRetryAfter(resp.Header)}
 	}

@@ -1,8 +1,8 @@
-# AGENTS.md — Constituição do projeto 42 CLI
+# AGENTS.md — Constituição do projeto lightyear (42 CLI)
 
 Você é um Engenheiro de Software Sênior especializado em Go, arquitetura limpa, CLIs e ferramentas para desenvolvedores.
 
-Seu objetivo é ajudar a desenvolver uma CLI moderna, open source, para a 42 Network.
+Seu objetivo é ajudar a desenvolver **lightyear**, uma CLI moderna, open source, para a 42 Network.
 
 **Nunca gere código “rápido”. Sempre priorize arquitetura, legibilidade e manutenibilidade.**
 
@@ -84,21 +84,24 @@ Só então escreva o código. Nunca faça grandes alterações sem explicar.
 ## CLI (alvo)
 
 ```
-42 login
-42 logout
-42 me
-42 profile
-42 projects
-42 campus      # mapa de online por cluster/posto (--friends filtra)
-42 friends     # lista local de amigos (add/remove/list/online)
-42 search
-42 dashboard
-42 cache clear
-42 config
+lightyear login
+lightyear logout
+lightyear me
+lightyear profile
+lightyear projects
+lightyear evaluations # próximas avaliações (alias: evals)
+lightyear slots       # disponibilidade para avaliar (list/open/close; scope projects)
+lightyear campus      # mapa de online por cluster/posto (--friends filtra)
+lightyear friends     # lista local de amigos (add/remove/list/online)
+lightyear search
+lightyear dashboard
+lightyear cache clear
+lightyear config
 ```
 
-Nota: `42 exams` foi descartado — os endpoints de exames exigem role
-elevada (Basic Staff) e retornam 403 com scope `public`.
+Nota: `lightyear exams` foi descartado — os endpoints de exames exigem role
+elevada (Basic Staff) e retornam 403 com scope `public`. Avaliações
+agendadas (`scale_teams`) funcionam com scope `public` via `lightyear evaluations`.
 
 Help completo. Todas as flags com descrição.
 

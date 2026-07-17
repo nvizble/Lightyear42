@@ -39,7 +39,7 @@ definidas no config.yaml ou via FORTYTWO_CLIENT_ID / FORTYTWO_CLIENT_SECRET.`,
 			out := cmd.OutOrStdout()
 			flow := auth.NewFlow(rootCfg, auth.FlowOptions{
 				OnAuthURL: func(url string) {
-					fmt.Fprintf(out, "Abrindo o navegador para autorizar a 42 CLI...\n\n")
+					fmt.Fprintf(out, "Abrindo o navegador para autorizar o lightyear...\n\n")
 					fmt.Fprintf(out, "Se o navegador não abrir, acesse:\n  %s\n\n", url)
 					fmt.Fprintln(out, "Aguardando autorização...")
 				},

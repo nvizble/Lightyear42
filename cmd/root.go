@@ -1,4 +1,4 @@
-// Package cmd implements the Cobra command tree for the 42 CLI.
+// Package cmd implements the Cobra command tree for lightyear.
 // Commands parse flags/args and delegate business logic to internal services.
 package cmd
 
@@ -17,11 +17,11 @@ var rootCfg config.Config
 // NewRootCmd builds the root command and registers subcommands.
 func NewRootCmd() *cobra.Command {
 	root := &cobra.Command{
-		Use:   "42",
+		Use:   Name,
 		Short: "CLI moderna para a 42 Network",
-		Long: `42 é uma CLI open source para interagir com a API oficial da 42 Network.
+		Long: `lightyear é uma CLI open source para interagir com a API oficial da 42 Network.
 
-Gerencie autenticação, perfil, projetos, exames e mais — direto do terminal.`,
+Gerencie autenticação, perfil, projetos, campus e mais — direto do terminal.`,
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		PersistentPreRunE: func(cmd *cobra.Command, _ []string) error {
@@ -46,6 +46,8 @@ Gerencie autenticação, perfil, projetos, exames e mais — direto do terminal.
 	root.AddCommand(newProfileCmd())
 	root.AddCommand(newSearchCmd())
 	root.AddCommand(newProjectsCmd())
+	root.AddCommand(newEvaluationsCmd())
+	root.AddCommand(newSlotsCmd())
 	root.AddCommand(newCampusCmd())
 	root.AddCommand(newDashboardCmd())
 	root.AddCommand(newFriendsCmd())

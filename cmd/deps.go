@@ -16,6 +16,7 @@ import (
 type appDeps struct {
 	Users  *services.UserService
 	Campus *services.CampusService
+	Slots  *services.SlotsService
 }
 
 // newDeps is the composition root for data commands: it wires
@@ -43,9 +44,12 @@ func newDeps(ctx context.Context) (*appDeps, func(), error) {
 		}
 	}
 
+	usersRepo := repository.NewUsersRepository(client, kv)
+	users := services.NewUserService(usersRepo)
 	deps := &appDeps{
-		Users:  services.NewUserService(repository.NewUsersRepository(client, kv)),
+		Users:  users,
 		Campus: services.NewCampusService(repository.NewCampusRepository(client, kv)),
+		Slots:  services.NewSlotsService(repository.NewSlotsRepository(client), users),
 	}
 	return deps, cleanup, nil
 }

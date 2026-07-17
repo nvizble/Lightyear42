@@ -1,6 +1,6 @@
 # Binaries
-/42
-/42.exe
+/lightyear
+/lightyear.exe
 *.exe
 *.test
 *.out

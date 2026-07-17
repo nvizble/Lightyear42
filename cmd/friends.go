@@ -21,7 +21,7 @@ func newFriendsCmd() *cobra.Command {
 		Long: `Mantém uma lista de logins favoritos no config.yaml da CLI.
 
 A API pública da 42 não tem conceito de amizades; esta lista é local
-e alimenta filtros como "42 campus --friends" e "42 friends online".`,
+e alimenta filtros como "lightyear campus --friends" e "lightyear friends online".`,
 	}
 
 	cmd.AddCommand(newFriendsAddCmd())
@@ -102,7 +102,7 @@ func newFriendsOnlineCmd() *cobra.Command {
 				return err
 			}
 			if len(friends) == 0 {
-				fmt.Fprintln(cmd.OutOrStdout(), "Sua lista de amigos está vazia. Adicione com `42 friends add <login>`.")
+				fmt.Fprintln(cmd.OutOrStdout(), "Sua lista de amigos está vazia. Adicione com `lightyear friends add <login>`.")
 				return nil
 			}
 

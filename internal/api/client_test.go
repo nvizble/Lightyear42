@@ -3,8 +3,10 @@ package api
 import (
 	"context"
 	"errors"
+	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -155,6 +157,55 @@ func TestClient_Get_ContextCancellation(t *testing.T) {
 	err := client.Get(ctx, "/x", nil, nil)
 	if !errors.Is(err, context.DeadlineExceeded) {
 		t.Fatalf("err = %v, want context.DeadlineExceeded", err)
+	}
+}
+
+func TestClient_Post_SendsJSON(t *testing.T) {
+	t.Parallel()
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			t.Errorf("method = %q, want POST", r.Method)
+		}
+		if got := r.Header.Get("Content-Type"); got != "application/json" {
+			t.Errorf("Content-Type = %q", got)
+		}
+		body, _ := io.ReadAll(r.Body)
+		if !strings.Contains(string(body), `"user_id":42`) {
+			t.Errorf("body = %s, want user_id 42", body)
+		}
+		w.WriteHeader(http.StatusCreated)
+		_, _ = w.Write([]byte(`[{"id":1}]`))
+	}))
+	defer server.Close()
+
+	var out []struct {
+		ID int `json:"id"`
+	}
+	err := newTestClient(server.URL).Post(context.Background(), "/slots", map[string]any{
+		"slot": map[string]any{"user_id": 42},
+	}, &out)
+	if err != nil {
+		t.Fatalf("Post: %v", err)
+	}
+	if len(out) != 1 || out[0].ID != 1 {
+		t.Errorf("out = %+v", out)
+	}
+}
+
+func TestClient_Delete_NoContent(t *testing.T) {
+	t.Parallel()
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodDelete || r.URL.Path != "/slots/99" {
+			t.Errorf("%s %s, want DELETE /slots/99", r.Method, r.URL.Path)
+		}
+		w.WriteHeader(http.StatusNoContent)
+	}))
+	defer server.Close()
+
+	if err := newTestClient(server.URL).Delete(context.Background(), "/slots/99"); err != nil {
+		t.Fatalf("Delete: %v", err)
 	}
 }
 

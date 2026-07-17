@@ -49,6 +49,13 @@ func sampleSnapshot() *services.DashboardSnapshot {
 				Team:      models.EvaluationTeam{Name: "jdiniz's get_next_line"},
 			},
 		},
+		Slots: []models.Slot{
+			{
+				ID:      1,
+				BeginAt: timePtr(time.Date(2026, 7, 17, 14, 0, 0, 0, time.Local)),
+				EndAt:   timePtr(time.Date(2026, 7, 17, 15, 0, 0, 0, time.Local)),
+			},
+		},
 		TakenAt: time.Date(2026, 7, 17, 12, 30, 0, 0, time.Local),
 	}
 }
@@ -96,6 +103,7 @@ func TestDashboard_SnapshotUpdatesView(t *testing.T) {
 		"Próximas avaliações",
 		"18/07 14:00", "você avalia", "malima-m's libft",
 		"19/07 10:00", "someone", "avalia você", "jdiniz's get_next_line",
+		"Meus slots", "sex 17/07",
 		"1 de 1 amigos online", "malima-m",
 		"12:30:00",
 		"r atualizar",
@@ -145,39 +153,6 @@ func TestDashboard_TickTriggersFetch(t *testing.T) {
 	if cmd == nil {
 		t.Fatal("tick deveria agendar refresh + próximo tick")
 	}
-}
-
-func TestRenderEvaluations(t *testing.T) {
-	t.Parallel()
-
-	t.Run("vazio", func(t *testing.T) {
-		t.Parallel()
-		out := renderEvaluations(nil, "jdiniz")
-		if !strings.Contains(out, "Nenhuma avaliação agendada") {
-			t.Errorf("out = %q, want estado vazio", out)
-		}
-	})
-
-	t.Run("corrector invisível", func(t *testing.T) {
-		t.Parallel()
-		out := renderEvaluations([]models.ScaleTeam{
-			{Team: models.EvaluationTeam{Name: "secret team"}},
-		}, "jdiniz")
-		for _, want := range []string{"alguém", "avalia você", "secret team", "--/-- --:--"} {
-			if !strings.Contains(out, want) {
-				t.Errorf("out sem %q:\n%s", want, out)
-			}
-		}
-	})
-
-	t.Run("limita e resume o excedente", func(t *testing.T) {
-		t.Parallel()
-		many := make([]models.ScaleTeam, maxEvaluationsShown+3)
-		out := renderEvaluations(many, "jdiniz")
-		if !strings.Contains(out, "… e mais 3") {
-			t.Errorf("out deveria resumir as 3 avaliações excedentes:\n%s", out)
-		}
-	})
 }
 
 func TestClusterGridCapacity(t *testing.T) {

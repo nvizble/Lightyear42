@@ -16,8 +16,8 @@ func newSearchCmd() *cobra.Command {
 		Long: `Lista usuários cujo login começa com o termo informado.
 
 Exemplo:
-  42 search jdi        # logins que começam com "jdi"
-  42 search jdi -n 30  # até 30 resultados`,
+  lightyear search jdi        # logins que começam com "jdi"
+  lightyear search jdi -n 30  # até 30 resultados`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			deps, cleanup, err := newDeps(cmd.Context())

@@ -21,8 +21,8 @@ func newDashboardCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "dashboard",
 		Short: "Dashboard em tempo real do campus (Bubble Tea)",
-		Long: `Abre uma TUI com seu perfil, a ocupação dos clusters, suas próximas
-avaliações e os amigos online, atualizando automaticamente no intervalo definido.
+		Long: `Abre uma TUI com seu perfil, a ocupação dos clusters, próximas avaliações,
+calendário de slots e amigos online, atualizando automaticamente.
 
 Teclas: r atualiza na hora, q/esc sai.`,
 		Args: cobra.NoArgs,
@@ -37,7 +37,7 @@ Teclas: r atualiza na hora, q/esc sai.`,
 			}
 			defer cleanup()
 
-			dashboard := services.NewDashboardService(deps.Users, deps.Campus, newFriendsService())
+			dashboard := services.NewDashboardService(deps.Users, deps.Campus, newFriendsService(), deps.Slots)
 			model := tui.NewDashboard(dashboard, tui.DashboardOptions{
 				CampusID: campusID,
 				Interval: interval,

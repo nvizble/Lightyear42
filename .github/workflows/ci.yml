@@ -39,7 +39,7 @@ jobs:
         run: go test ./... -count=1
 
       - name: Build
-        run: go build -o 42 .
+        run: go build -o lightyear .
 
   lint:
     name: Lint

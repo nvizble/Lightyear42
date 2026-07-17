@@ -8,9 +8,9 @@ import (
 )
 
 // DefaultScopes are the OAuth scopes requested during login.
-// "public" grants read access to public intranet data, enough for
-// the planned read-only commands (me, profile, search, projects...).
-var DefaultScopes = []string{"public"}
+// "public" covers read access to intranet data; "projects" is required
+// to open/close evaluation slots (POST/DELETE /v2/slots).
+var DefaultScopes = []string{"public", "projects"}
 
 // OAuthConfig builds the oauth2.Config for the 42 API from the CLI config.
 //

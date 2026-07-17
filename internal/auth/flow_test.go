@@ -94,8 +94,8 @@ func TestFlow_Login(t *testing.T) {
 	if !strings.Contains(sawAuthURL, "/oauth/authorize") {
 		t.Errorf("auth URL = %q, want authorize endpoint", sawAuthURL)
 	}
-	if !strings.Contains(sawAuthURL, "scope=public") {
-		t.Errorf("auth URL = %q, want scope=public", sawAuthURL)
+	if !strings.Contains(sawAuthURL, "public") || !strings.Contains(sawAuthURL, "projects") {
+		t.Errorf("auth URL = %q, want scopes public e projects", sawAuthURL)
 	}
 }
 

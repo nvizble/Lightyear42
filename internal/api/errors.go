@@ -8,9 +8,11 @@ import (
 // Sentinel errors for common API failures. Match them with errors.Is.
 var (
 	// ErrUnauthorized means the token is invalid or expired beyond refresh.
-	ErrUnauthorized = errors.New("não autorizado: execute `42 login` novamente")
+	ErrUnauthorized = errors.New("não autorizado: execute `lightyear login` novamente")
 	// ErrForbidden means the token lacks the required scope or role.
-	ErrForbidden = errors.New("acesso negado: o token não tem permissão para este recurso")
+	// For slots (open/close), enable the "projects" scope on your OAuth app
+	// and run `lightyear logout && lightyear login`.
+	ErrForbidden = errors.New("acesso negado: o token não tem permissão para este recurso (para slots, ative o scope projects e rode `lightyear logout && lightyear login`)")
 	// ErrNotFound means the requested resource does not exist.
 	ErrNotFound = errors.New("recurso não encontrado")
 	// ErrRateLimited means the API rate limit was exceeded even after retries.

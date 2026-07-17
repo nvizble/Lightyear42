@@ -17,7 +17,7 @@ const (
 )
 
 // ErrNoToken indicates that no token is stored (user is not logged in).
-var ErrNoToken = errors.New("nenhum token salvo: execute `42 login`")
+var ErrNoToken = errors.New("nenhum token salvo: execute `lightyear login`")
 
 // TokenStore persists OAuth2 tokens securely.
 type TokenStore interface {

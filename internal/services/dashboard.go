@@ -25,6 +25,11 @@ type friendsLister interface {
 	List() ([]string, error)
 }
 
+// slotsLister lists the user's future evaluation slots. Implemented by *SlotsService.
+type slotsLister interface {
+	List(ctx context.Context) ([]models.Slot, error)
+}
+
 // DashboardSnapshot is one refresh of everything the dashboard shows.
 type DashboardSnapshot struct {
 	Me            *models.User
@@ -34,21 +39,27 @@ type DashboardSnapshot struct {
 	Friends       []string
 	FriendsOnline []models.Location
 	Evaluations   []models.ScaleTeam
-	TakenAt       time.Time
+	Slots         []models.Slot
+	// SlotsErr is set when slots could not be loaded (e.g. missing projects
+	// scope). The rest of the dashboard still renders.
+	SlotsErr string
+	TakenAt  time.Time
 }
 
-// DashboardService aggregates profile, campus presence, friends and
-// scheduled evaluations into a single snapshot for the live dashboard.
+// DashboardService aggregates profile, campus presence, friends, evaluations
+// and slots into a single snapshot for the live dashboard.
 type DashboardService struct {
 	users   selfReader
 	campus  onlineLister
 	friends friendsLister
+	slots   slotsLister
 	now     func() time.Time
 }
 
 // NewDashboardService wires the services the dashboard reads from.
-func NewDashboardService(users selfReader, campus onlineLister, friends friendsLister) *DashboardService {
-	return &DashboardService{users: users, campus: campus, friends: friends, now: time.Now}
+// slots may be nil; in that case the slots panel stays empty.
+func NewDashboardService(users selfReader, campus onlineLister, friends friendsLister, slots slotsLister) *DashboardService {
+	return &DashboardService{users: users, campus: campus, friends: friends, slots: slots, now: time.Now}
 }
 
 // Snapshot fetches a fresh view of the dashboard data. campusID == 0 means
@@ -85,7 +96,7 @@ func (s *DashboardService) Snapshot(ctx context.Context, campusID int) (*Dashboa
 		return nil, err
 	}
 
-	return &DashboardSnapshot{
+	snap := &DashboardSnapshot{
 		Me:            me,
 		CampusID:      campusID,
 		CampusName:    campusName,
@@ -94,5 +105,17 @@ func (s *DashboardService) Snapshot(ctx context.Context, campusID int) (*Dashboa
 		FriendsOnline: FilterLocationsByLogin(locations, friends),
 		Evaluations:   evaluations,
 		TakenAt:       s.now(),
-	}, nil
+	}
+
+	// Slots need the projects scope; failure must not take down the dashboard.
+	if s.slots != nil {
+		slots, err := s.slots.List(ctx)
+		if err != nil {
+			snap.SlotsErr = err.Error()
+		} else {
+			snap.Slots = slots
+		}
+	}
+
+	return snap, nil
 }

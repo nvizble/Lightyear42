@@ -39,6 +39,13 @@ type stubFriendsLister struct {
 
 func (s stubFriendsLister) List() ([]string, error) { return s.friends, s.err }
 
+type stubSlotsLister struct {
+	slots []models.Slot
+	err   error
+}
+
+func (s stubSlotsLister) List(context.Context) ([]models.Slot, error) { return s.slots, s.err }
+
 func dashboardUser() *models.User {
 	return &models.User{
 		Login:       "jdiniz",
@@ -62,6 +69,7 @@ func TestDashboardSnapshot_PrimaryCampusAndFriends(t *testing.T) {
 		},
 		online,
 		stubFriendsLister{friends: []string{"malima-m"}},
+		stubSlotsLister{slots: []models.Slot{{ID: 99}}},
 	)
 
 	snap, err := svc.Snapshot(context.Background(), 0)
@@ -84,8 +92,33 @@ func TestDashboardSnapshot_PrimaryCampusAndFriends(t *testing.T) {
 	if len(snap.Evaluations) != 1 || snap.Evaluations[0].ID != 7 {
 		t.Errorf("Evaluations = %+v, want a avaliação 7", snap.Evaluations)
 	}
+	if len(snap.Slots) != 1 || snap.Slots[0].ID != 99 {
+		t.Errorf("Slots = %+v, want id 99", snap.Slots)
+	}
 	if snap.TakenAt.IsZero() {
 		t.Error("TakenAt não deveria ser zero")
+	}
+}
+
+func TestDashboardSnapshot_SlotsSoftFail(t *testing.T) {
+	t.Parallel()
+
+	svc := NewDashboardService(
+		stubMeReader{user: dashboardUser()},
+		&stubOnlineLister{},
+		stubFriendsLister{},
+		stubSlotsLister{err: errors.New("scope projects")},
+	)
+
+	snap, err := svc.Snapshot(context.Background(), 0)
+	if err != nil {
+		t.Fatalf("Snapshot não deveria falhar por slots: %v", err)
+	}
+	if snap.SlotsErr == "" {
+		t.Fatal("SlotsErr deveria estar preenchido")
+	}
+	if len(snap.Slots) != 0 {
+		t.Errorf("Slots = %+v, want vazio", snap.Slots)
 	}
 }
 
@@ -93,7 +126,7 @@ func TestDashboardSnapshot_ExplicitCampusID(t *testing.T) {
 	t.Parallel()
 
 	online := &stubOnlineLister{}
-	svc := NewDashboardService(stubMeReader{user: dashboardUser()}, online, stubFriendsLister{})
+	svc := NewDashboardService(stubMeReader{user: dashboardUser()}, online, stubFriendsLister{}, nil)
 
 	snap, err := svc.Snapshot(context.Background(), 42)
 	if err != nil {
@@ -110,7 +143,7 @@ func TestDashboardSnapshot_ExplicitCampusID(t *testing.T) {
 func TestDashboardSnapshot_NoCampus(t *testing.T) {
 	t.Parallel()
 
-	svc := NewDashboardService(stubMeReader{user: &models.User{Login: "x"}}, &stubOnlineLister{}, stubFriendsLister{})
+	svc := NewDashboardService(stubMeReader{user: &models.User{Login: "x"}}, &stubOnlineLister{}, stubFriendsLister{}, nil)
 	if _, err := svc.Snapshot(context.Background(), 0); err == nil {
 		t.Fatal("Snapshot deveria falhar sem campus primário")
 	}
@@ -125,10 +158,10 @@ func TestDashboardSnapshot_PropagatesErrors(t *testing.T) {
 		name string
 		svc  *DashboardService
 	}{
-		{"me", NewDashboardService(stubMeReader{err: boom}, &stubOnlineLister{}, stubFriendsLister{})},
-		{"online", NewDashboardService(stubMeReader{user: dashboardUser()}, &stubOnlineLister{err: boom}, stubFriendsLister{})},
-		{"friends", NewDashboardService(stubMeReader{user: dashboardUser()}, &stubOnlineLister{}, stubFriendsLister{err: boom})},
-		{"evaluations", NewDashboardService(stubMeReader{user: dashboardUser(), evalErr: boom}, &stubOnlineLister{}, stubFriendsLister{})},
+		{"me", NewDashboardService(stubMeReader{err: boom}, &stubOnlineLister{}, stubFriendsLister{}, nil)},
+		{"online", NewDashboardService(stubMeReader{user: dashboardUser()}, &stubOnlineLister{err: boom}, stubFriendsLister{}, nil)},
+		{"friends", NewDashboardService(stubMeReader{user: dashboardUser()}, &stubOnlineLister{}, stubFriendsLister{err: boom}, nil)},
+		{"evaluations", NewDashboardService(stubMeReader{user: dashboardUser(), evalErr: boom}, &stubOnlineLister{}, stubFriendsLister{}, nil)},
 	}
 
 	for _, tt := range tests {

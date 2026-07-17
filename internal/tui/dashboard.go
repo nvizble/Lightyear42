@@ -117,7 +117,8 @@ func (m DashboardModel) View() string {
 	sections := []string{
 		m.header(),
 		renderOccupancy(m.snap.Locations, m.opts.Layout),
-		renderEvaluations(m.snap.Evaluations, m.snap.Me.Login),
+		RenderEvaluations(m.snap.Evaluations, m.snap.Me.Login, maxEvaluationsShown),
+		RenderSlotsCalendar(m.snap.Slots, m.snap.SlotsErr, m.snap.TakenAt),
 		m.friendsSection(),
 	}
 	if m.err != nil {
@@ -173,65 +174,13 @@ func (m DashboardModel) header() string {
 // friendsSection renders friends online, or a short hint when the list is empty.
 func (m DashboardModel) friendsSection() string {
 	if len(m.snap.Friends) == 0 {
-		return styleLabel.Render("Sem amigos na lista. Adicione com `42 friends add <login>`.")
+		return styleLabel.Render("Sem amigos na lista. Adicione com `lightyear friends add <login>`.")
 	}
 	return RenderFriendsOnline(m.snap.FriendsOnline, len(m.snap.Friends))
 }
 
-// maxEvaluationsShown caps the evaluations panel; the rest is summarized.
+// maxEvaluationsShown caps the evaluations panel in the live dashboard.
 const maxEvaluationsShown = 5
-
-// renderEvaluations draws the upcoming evaluations panel. meLogin decides
-// the phrasing: evaluating someone vs being evaluated.
-func renderEvaluations(evaluations []models.ScaleTeam, meLogin string) string {
-	var b strings.Builder
-	b.WriteString(styleTitle.Render("Próximas avaliações"))
-
-	if len(evaluations) == 0 {
-		b.WriteString("\n")
-		b.WriteString(styleLabel.Render("Nenhuma avaliação agendada."))
-		return styleCard.Render(b.String())
-	}
-
-	shown := evaluations
-	if len(shown) > maxEvaluationsShown {
-		shown = shown[:maxEvaluationsShown]
-	}
-	for _, st := range shown {
-		b.WriteString("\n")
-		b.WriteString(styleLevel.Render(evaluationWhen(st.BeginAt)))
-		b.WriteString("  ")
-		b.WriteString(evaluationLine(st, meLogin))
-	}
-	if hidden := len(evaluations) - len(shown); hidden > 0 {
-		b.WriteString("\n")
-		b.WriteString(styleLabel.Render(fmt.Sprintf("… e mais %d", hidden)))
-	}
-	return styleCard.Render(b.String())
-}
-
-// evaluationWhen formats the slot start in local time.
-func evaluationWhen(beginAt *time.Time) string {
-	if beginAt == nil {
-		return "--/-- --:--"
-	}
-	return beginAt.Local().Format("02/01 15:04")
-}
-
-// evaluationLine phrases one evaluation from the user's point of view.
-func evaluationLine(st models.ScaleTeam, meLogin string) string {
-	if st.IsCorrector(meLogin) {
-		return styleValue.Render("você avalia ") + styleGood.Render(st.Team.Name)
-	}
-
-	corrector := st.Corrector.Login
-	if corrector == "" {
-		corrector = "alguém"
-	}
-	return styleGood.Render(corrector) +
-		styleValue.Render(" avalia você") +
-		styleLabel.Render(" ("+st.Team.Name+")")
-}
 
 // footer lists the key bindings.
 func (m DashboardModel) footer() string {

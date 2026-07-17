@@ -1,6 +1,7 @@
-.PHONY: build test lint fmt vet tidy clean help
+.PHONY: build install test lint fmt vet tidy clean help
 
-BINARY ?= 42
+BINARY ?= lightyear
+PREFIX ?= $(HOME)/go/bin
 VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
 COMMIT  ?= $(shell git rev-parse --short HEAD 2>/dev/null || echo none)
 DATE    ?= $(shell date -u +%Y-%m-%dT%H:%M:%SZ)
@@ -12,8 +13,15 @@ LDFLAGS := -s -w \
 help: ## Mostra este help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-12s %s\n", $$1, $$2}'
 
-build: ## Compila o binário ./42
+build: ## Compila o binário ./lightyear
 	go build -ldflags "$(LDFLAGS)" -o $(BINARY) .
+
+install: build ## Instala lightyear em $(PREFIX) (padrão: ~/go/bin)
+	mkdir -p "$(PREFIX)"
+	install -m 755 "$(BINARY)" "$(PREFIX)/$(BINARY)"
+	@echo "Instalado: $(PREFIX)/$(BINARY)"
+	@command -v $(BINARY) >/dev/null && echo "Disponível no PATH: $$(command -v $(BINARY))" || \
+		echo "Aviso: $(PREFIX) não está no PATH — adicione-o ao shell ou rode: export PATH=\"$(PREFIX):$$PATH\""
 
 test: ## Roda os testes
 	go test ./...

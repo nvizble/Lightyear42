@@ -1,43 +1,54 @@
-# 42 CLI
+# lightyear
 
 CLI moderna, open source, para a [42 Network](https://www.42network.org/), inspirada em ferramentas como `gh`, `docker` e `kubectl`.
 
+> Binário/comando: **`lightyear`** (antes `42`).
+
 > Status: **Milestone 5 concluído** — comandos de dados e dashboard Bubble Tea em tempo real funcionais. Próximo marco: release (testes, docs, GoReleaser).
 >
-> Nota: `42 exams` foi cortado — todos os endpoints de exames da API retornam 403 para tokens com scope `public`.
+> Nota: `lightyear exams` foi cortado — todos os endpoints de exames da API retornam 403 para tokens com scope `public`.
 
 ## Requisitos
 
 - Go 1.25+
 - Uma aplicação OAuth registrada na Intra: [profile.intra.42.fr/oauth/applications](https://profile.intra.42.fr/oauth/applications/new) com Redirect URI `http://127.0.0.1:53682/callback`
+- Para `lightyear slots open/close`, ative o scope **projects** na app e rode `lightyear logout && lightyear login`
 
 ## Instalação (desenvolvimento)
 
 ```bash
 git clone https://github.com/joaodiniz/42cli.git
 cd 42cli
-make build
-./42 --help
+make install   # coloca lightyear em ~/go/bin (já no PATH no macOS/Go típico)
+lightyear --help
 ```
+
+Para só compilar no diretório do projeto: `make build` → `./lightyear`.
 
 ## Uso atual
 
 ```bash
-./42 login            # autentica via OAuth2 (abre o navegador)
-./42 logout           # remove o token do keyring
-./42 me               # seu perfil: nível, wallet, pontos, campus
-./42 profile <login>  # perfil de qualquer usuário da 42
-./42 search <termo>   # busca usuários por prefixo de login (-n limita)
-./42 projects [login] # projetos com status e nota (--all inclui piscine)
-./42 campus           # mapa de quem está online no campus (--id p/ outro)
-./42 campus --friends # mapa filtrado pela sua lista de amigos
-./42 friends add <l>  # gerencia a lista local de amigos (add/remove/list)
-./42 friends online   # quais amigos estão online e em qual posto
-./42 dashboard        # TUI em tempo real: perfil, ocupação, avaliações, amigos
-./42 cache clear      # limpa o cache local de respostas da API
-./42 version          # versão do binário
-./42 config path      # caminho do config.yaml
-./42 config show      # configuração efetiva (secret mascarado)
+./lightyear login            # autentica via OAuth2 (abre o navegador)
+./lightyear logout           # remove o token do keyring
+./lightyear me               # seu perfil: nível, wallet, pontos, campus
+./lightyear profile <login>  # perfil de qualquer usuário da 42
+./lightyear search <termo>   # busca usuários por prefixo de login (-n limita)
+./lightyear projects [login] # projetos com status e nota (--all inclui piscine)
+./lightyear evaluations      # próximas avaliações agendadas (alias: evals)
+./lightyear slots            # lista slots futuros de disponibilidade
+./lightyear slots open --duration 1h   # abre a partir do momento mais cedo (~30min)
+./lightyear slots open --from "..." --to "..."  # ou --from + --duration
+./lightyear slots close <id> # fecha um slot livre
+./lightyear slots close --all # fecha todos os slots livres
+./lightyear campus           # mapa de quem está online no campus (--id p/ outro)
+./lightyear campus --friends # mapa filtrado pela sua lista de amigos
+./lightyear friends add <l>  # gerencia a lista local de amigos (add/remove/list)
+./lightyear friends online   # quais amigos estão online e em qual posto
+./lightyear dashboard        # TUI: perfil, ocupação, avaliações, calendário de slots, amigos
+./lightyear cache clear      # limpa o cache local de respostas da API
+./lightyear version          # versão do binário
+./lightyear config path      # caminho do config.yaml
+./lightyear config show      # configuração efetiva (secret mascarado)
 ```
 
 O token OAuth (access + refresh) é guardado no keyring do sistema — Keychain (macOS), Secret Service (Linux) ou Credential Manager (Windows) — e renovado automaticamente.
@@ -67,8 +78,8 @@ client_secret: "seu-client-secret"
 api_base_url: "https://api.intra.42.fr/v2"
 redirect_uri: "http://127.0.0.1:53682/callback"
 
-# Opcional: planta física dos clusters, usada no mapa do `42 campus` e nas
-# barras de ocupação do `42 dashboard`. A API não expõe o layout do campus;
+# Opcional: planta física dos clusters, usada no mapa do `lightyear campus` e nas
+# barras de ocupação do `lightyear dashboard`. A API não expõe o layout do campus;
 # sem isso, a grade é inferida das sessões ativas. Exemplo (42 São Paulo):
 campus_layout:
   "1": { rows: 10, posts: 4 }
@@ -88,7 +99,7 @@ Veja [AGENTS.md](AGENTS.md) para a constituição técnica e o roadmap por miles
 make test    # testes
 make lint    # golangci-lint
 make fmt     # gofmt
-make build   # binário ./42
+make build   # binário ./lightyear
 ```
 
 ## Roadmap
