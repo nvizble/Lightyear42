@@ -1,0 +1,31 @@
+# Binaries
+/42
+/42.exe
+*.exe
+*.test
+*.out
+bin/
+dist/
+
+# Go
+vendor/
+coverage.out
+coverage.html
+
+# IDE / OS
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+*~
+
+# Env / secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Local config / cache (never commit)
+config.local.yaml
