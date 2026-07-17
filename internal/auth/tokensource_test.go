@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/joaodiniz/42cli/internal/config"
+	"github.com/nvizble/Lightyear42/internal/config"
 	"golang.org/x/oauth2"
 )
 

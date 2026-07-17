@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/joaodiniz/42cli/internal/models"
-	"github.com/joaodiniz/42cli/internal/repository"
+	"github.com/nvizble/Lightyear42/internal/models"
+	"github.com/nvizble/Lightyear42/internal/repository"
 )
 
 // Search result bounds enforced by the service.

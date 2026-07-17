@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/joaodiniz/42cli/internal/models"
-	"github.com/joaodiniz/42cli/internal/repository"
+	"github.com/nvizble/Lightyear42/internal/models"
+	"github.com/nvizble/Lightyear42/internal/repository"
 )
 
 // Slot timing constraints from the Intra (campus may tighten the minimum).

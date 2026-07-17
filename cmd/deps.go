@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/joaodiniz/42cli/internal/api"
-	"github.com/joaodiniz/42cli/internal/auth"
-	"github.com/joaodiniz/42cli/internal/cache"
-	"github.com/joaodiniz/42cli/internal/repository"
-	"github.com/joaodiniz/42cli/internal/services"
+	"github.com/nvizble/Lightyear42/internal/api"
+	"github.com/nvizble/Lightyear42/internal/auth"
+	"github.com/nvizble/Lightyear42/internal/cache"
+	"github.com/nvizble/Lightyear42/internal/repository"
+	"github.com/nvizble/Lightyear42/internal/services"
 )
 
 // appDeps bundles the services available to data commands.

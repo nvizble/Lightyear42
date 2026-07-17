@@ -120,7 +120,7 @@ UX: progresso, tabelas, cores, loading — sem poluição visual.
 | 3 | Cliente API | Erros, retries, cache SQLite (**concluído**) |
 | 4 | Comandos | `me`, `profile`, `search`, `projects`, `campus` (**concluído**; `exams` inviável com scope public) |
 | 5 | Dashboard | Bubble Tea em tempo real (**concluído**) |
-| 6 | Release | Testes, docs, GoReleaser, GitHub |
+| 6 | Release | Testes, docs, GoReleaser, GitHub (**concluído**) |
 
 Futuro: notificações, offline, sync, plugins, export CSV/JSON.
 

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/joaodiniz/42cli/internal/models"
+	"github.com/nvizble/Lightyear42/internal/models"
 )
 
 // selfReader reads the authenticated user's own data (profile and scheduled

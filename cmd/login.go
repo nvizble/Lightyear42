@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/joaodiniz/42cli/internal/auth"
-	"github.com/joaodiniz/42cli/internal/config"
-	"github.com/joaodiniz/42cli/internal/services"
+	"github.com/nvizble/Lightyear42/internal/auth"
+	"github.com/nvizble/Lightyear42/internal/config"
+	"github.com/nvizble/Lightyear42/internal/services"
 	"github.com/spf13/cobra"
 )
 

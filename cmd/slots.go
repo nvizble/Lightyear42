@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/joaodiniz/42cli/internal/services"
-	"github.com/joaodiniz/42cli/internal/tui"
+	"github.com/nvizble/Lightyear42/internal/services"
+	"github.com/nvizble/Lightyear42/internal/tui"
 	"github.com/spf13/cobra"
 )
 

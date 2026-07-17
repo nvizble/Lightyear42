@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/joaodiniz/42cli/internal/models"
+	"github.com/nvizble/Lightyear42/internal/models"
 )
 
 // APIClient is the HTTP surface used by repositories that mutate state.

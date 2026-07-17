@@ -3,7 +3,7 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/joaodiniz/42cli/internal/tui"
+	"github.com/nvizble/Lightyear42/internal/tui"
 	"github.com/spf13/cobra"
 )
 

@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/joaodiniz/42cli/internal/cache"
-	"github.com/joaodiniz/42cli/internal/config"
-	"github.com/joaodiniz/42cli/internal/services"
+	"github.com/nvizble/Lightyear42/internal/cache"
+	"github.com/nvizble/Lightyear42/internal/config"
+	"github.com/nvizble/Lightyear42/internal/services"
 	"github.com/spf13/cobra"
 )
 

@@ -5,7 +5,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/joaodiniz/42cli/internal/auth"
+	"github.com/nvizble/Lightyear42/internal/auth"
 	"golang.org/x/oauth2"
 )
 

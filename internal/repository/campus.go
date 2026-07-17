@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/joaodiniz/42cli/internal/models"
+	"github.com/nvizble/Lightyear42/internal/models"
 )
 
 // Presence data changes by the minute.

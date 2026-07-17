@@ -4,8 +4,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/joaodiniz/42cli/internal/auth"
-	"github.com/joaodiniz/42cli/internal/services"
+	"github.com/nvizble/Lightyear42/internal/auth"
+	"github.com/nvizble/Lightyear42/internal/services"
 	"github.com/spf13/cobra"
 )
 

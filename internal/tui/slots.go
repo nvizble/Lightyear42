@@ -6,7 +6,7 @@ import (
 
 	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/lipgloss/table"
-	"github.com/joaodiniz/42cli/internal/models"
+	"github.com/nvizble/Lightyear42/internal/models"
 )
 
 // RenderSlots lists evaluation availability slots.

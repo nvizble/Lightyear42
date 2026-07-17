@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/joaodiniz/42cli/internal/models"
+	"github.com/nvizble/Lightyear42/internal/models"
 )
 
 // fakeCampusAPI serves paginated locations.

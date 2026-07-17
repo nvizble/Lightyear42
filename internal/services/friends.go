@@ -5,7 +5,7 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/joaodiniz/42cli/internal/models"
+	"github.com/nvizble/Lightyear42/internal/models"
 )
 
 // FriendsStore persists the local friends list.

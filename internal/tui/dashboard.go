@@ -9,8 +9,8 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/joaodiniz/42cli/internal/models"
-	"github.com/joaodiniz/42cli/internal/services"
+	"github.com/nvizble/Lightyear42/internal/models"
+	"github.com/nvizble/Lightyear42/internal/services"
 )
 
 // snapshotTimeout bounds each dashboard refresh round-trip.

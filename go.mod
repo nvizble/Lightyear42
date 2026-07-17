@@ -1,4 +1,4 @@
-module github.com/joaodiniz/42cli
+module github.com/nvizble/Lightyear42
 
 go 1.25.0
 

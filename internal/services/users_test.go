@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/joaodiniz/42cli/internal/models"
+	"github.com/nvizble/Lightyear42/internal/models"
 )
 
 // fakeUsers implements repository.Users for tests.

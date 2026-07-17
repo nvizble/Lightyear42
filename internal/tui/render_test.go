@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/joaodiniz/42cli/internal/models"
+	"github.com/nvizble/Lightyear42/internal/models"
 )
 
 func testUser() *models.User {

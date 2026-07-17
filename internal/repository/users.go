@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/joaodiniz/42cli/internal/models"
+	"github.com/nvizble/Lightyear42/internal/models"
 )
 
 // Cache TTLs per resource. "Me" changes often (wallet, location),

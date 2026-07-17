@@ -8,8 +8,8 @@ import (
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/joaodiniz/42cli/internal/models"
-	"github.com/joaodiniz/42cli/internal/services"
+	"github.com/nvizble/Lightyear42/internal/models"
+	"github.com/nvizble/Lightyear42/internal/services"
 )
 
 type stubProvider struct {

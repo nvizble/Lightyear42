@@ -4,7 +4,7 @@ package main
 import (
 	"os"
 
-	"github.com/joaodiniz/42cli/cmd"
+	"github.com/nvizble/Lightyear42/cmd"
 )
 
 func main() {

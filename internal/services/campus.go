@@ -4,8 +4,8 @@ import (
 	"context"
 	"sort"
 
-	"github.com/joaodiniz/42cli/internal/models"
-	"github.com/joaodiniz/42cli/internal/repository"
+	"github.com/nvizble/Lightyear42/internal/models"
+	"github.com/nvizble/Lightyear42/internal/repository"
 )
 
 // CampusService implements campus-scoped features: online map and exams.

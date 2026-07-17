@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/joaodiniz/42cli/internal/models"
+	"github.com/nvizble/Lightyear42/internal/models"
 )
 
 // slotsFakeAPI records Get/Post/Delete for slots tests.
