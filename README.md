@@ -16,9 +16,24 @@ CLI moderna, open source, para a [42 Network](https://www.42network.org/), inspi
 
 ## Instalação
 
-### Binário (recomendado)
+> **Campus 42:** o Go do campus costuma ser **1.23**, enquanto o lightyear exige **1.25+**.
+> Prefira o binário do Release ou o `.deb` — não depende do Go instalado.
 
-Baixe o release em [GitHub Releases](https://github.com/nvizble/Lightyear42/releases) (macOS / Linux / Windows) ou:
+### Ubuntu / Debian (`.deb`)
+
+```bash
+# amd64 (x86_64) — ajuste a versão/arch se necessário
+VER=1.0.2
+curl -sLO "https://github.com/nvizble/Lightyear42/releases/download/v${VER}/lightyear_${VER}_linux_amd64.deb"
+sudo apt install "./lightyear_${VER}_linux_amd64.deb"
+lightyear version
+```
+
+(Para ARM64: `linux_arm64.deb`. Sem `sudo`, use o tarball em `~/.local/bin` — veja abaixo.)
+
+### Binário (macOS / Linux / Windows)
+
+Baixe o release em [GitHub Releases](https://github.com/nvizble/Lightyear42/releases) ou:
 
 ```bash
 # exemplo macOS Apple Silicon
@@ -30,7 +45,7 @@ lightyear version
 
 (Ajuste `Darwin_arm64` conforme o SO: `Darwin_x86_64`, `Linux_x86_64`, `Linux_arm64`, `Windows_x86_64`.)
 
-### Via Go
+### Via Go (requer Go 1.25+)
 
 ```bash
 go install github.com/nvizble/Lightyear42/cmd/lightyear@latest

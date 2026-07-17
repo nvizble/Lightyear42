@@ -45,6 +45,31 @@ archives:
       - LICENSE
       - README.md
 
+nfpms:
+  - id: deb
+    package_name: lightyear
+    homepage: https://github.com/nvizble/Lightyear42
+    maintainer: João Diniz <nvizrainbow@gmail.com>
+    description: |-
+      CLI open source para interagir com a API oficial da 42 Network.
+    license: MIT
+    formats:
+      - deb
+    bindir: /usr/bin
+    section: utils
+    priority: optional
+    ids:
+      - lightyear
+    contents:
+      - src: LICENSE
+        dst: /usr/share/doc/lightyear/copyright
+        file_info:
+          mode: 0644
+      - src: README.md
+        dst: /usr/share/doc/lightyear/README.md
+        file_info:
+          mode: 0644
+
 checksum:
   name_template: checksums.txt
 
