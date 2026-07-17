@@ -8,9 +8,11 @@ import (
 	"github.com/joaodiniz/42cli/internal/models"
 )
 
-// meReader reads the authenticated user's profile. Implemented by *UserService.
-type meReader interface {
+// selfReader reads the authenticated user's own data (profile and scheduled
+// evaluations). Implemented by *UserService.
+type selfReader interface {
 	Me(ctx context.Context) (*models.User, error)
+	UpcomingEvaluations(ctx context.Context) ([]models.ScaleTeam, error)
 }
 
 // onlineLister lists active sessions at a campus. Implemented by *CampusService.
@@ -31,20 +33,21 @@ type DashboardSnapshot struct {
 	Locations     []models.Location
 	Friends       []string
 	FriendsOnline []models.Location
+	Evaluations   []models.ScaleTeam
 	TakenAt       time.Time
 }
 
-// DashboardService aggregates profile, campus presence and friends into
-// a single snapshot for the live dashboard.
+// DashboardService aggregates profile, campus presence, friends and
+// scheduled evaluations into a single snapshot for the live dashboard.
 type DashboardService struct {
-	users   meReader
+	users   selfReader
 	campus  onlineLister
 	friends friendsLister
 	now     func() time.Time
 }
 
 // NewDashboardService wires the services the dashboard reads from.
-func NewDashboardService(users meReader, campus onlineLister, friends friendsLister) *DashboardService {
+func NewDashboardService(users selfReader, campus onlineLister, friends friendsLister) *DashboardService {
 	return &DashboardService{users: users, campus: campus, friends: friends, now: time.Now}
 }
 
@@ -77,6 +80,11 @@ func (s *DashboardService) Snapshot(ctx context.Context, campusID int) (*Dashboa
 		return nil, err
 	}
 
+	evaluations, err := s.users.UpcomingEvaluations(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	return &DashboardSnapshot{
 		Me:            me,
 		CampusID:      campusID,
@@ -84,6 +92,7 @@ func (s *DashboardService) Snapshot(ctx context.Context, campusID int) (*Dashboa
 		Locations:     locations,
 		Friends:       friends,
 		FriendsOnline: FilterLocationsByLogin(locations, friends),
+		Evaluations:   evaluations,
 		TakenAt:       s.now(),
 	}, nil
 }

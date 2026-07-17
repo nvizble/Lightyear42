@@ -15,10 +15,15 @@ import (
 // Cache TTLs per resource. "Me" changes often (wallet, location),
 // other profiles are safe to keep longer.
 const (
-	meTTL     = 2 * time.Minute
-	userTTL   = 10 * time.Minute
-	searchTTL = 2 * time.Minute
+	meTTL          = 2 * time.Minute
+	userTTL        = 10 * time.Minute
+	searchTTL      = 2 * time.Minute
+	evaluationsTTL = time.Minute
 )
+
+// evaluationsPageSize bounds the upcoming evaluations listing; nobody has
+// dozens of future bookings.
+const evaluationsPageSize = 20
 
 // APIGetter is the minimal API client surface the repositories need.
 // Implemented by *api.Client.
@@ -34,6 +39,9 @@ type Users interface {
 	ByLogin(ctx context.Context, login string) (*models.User, error)
 	// SearchByLoginPrefix lists users whose login starts with prefix.
 	SearchByLoginPrefix(ctx context.Context, prefix string, limit int) ([]models.UserSummary, error)
+	// UpcomingEvaluations lists the authenticated user's future scale teams,
+	// as evaluator or evaluated, soonest first.
+	UpcomingEvaluations(ctx context.Context) ([]models.ScaleTeam, error)
 }
 
 // UsersRepository implements Users over the API client with read-through caching.
@@ -107,5 +115,24 @@ func (r *UsersRepository) SearchByLoginPrefix(ctx context.Context, prefix string
 			}
 		}
 		return matches, nil
+	})
+}
+
+// UpcomingEvaluations lists the token owner's future scale teams.
+// filter[future] is the API-side filter for begin_at in the future.
+func (r *UsersRepository) UpcomingEvaluations(ctx context.Context) ([]models.ScaleTeam, error) {
+	key := cacheKey("users", "me", "scale_teams", "future")
+	return fetchCached[[]models.ScaleTeam](ctx, r.cache, key, evaluationsTTL, func(ctx context.Context) ([]models.ScaleTeam, error) {
+		query := url.Values{
+			"filter[future]": {"true"},
+			"sort":           {"begin_at"},
+			"page[size]":     {strconv.Itoa(evaluationsPageSize)},
+		}
+
+		var teams []models.ScaleTeam
+		if err := r.api.Get(ctx, "/me/scale_teams", query, &teams); err != nil {
+			return nil, err
+		}
+		return teams, nil
 	})
 }

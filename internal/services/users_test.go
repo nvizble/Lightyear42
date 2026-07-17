@@ -11,11 +11,12 @@ import (
 
 // fakeUsers implements repository.Users for tests.
 type fakeUsers struct {
-	me         *models.User
-	byLogin    map[string]*models.User
-	summaries  []models.UserSummary
-	lastPrefix string
-	lastLimit  int
+	me          *models.User
+	byLogin     map[string]*models.User
+	summaries   []models.UserSummary
+	evaluations []models.ScaleTeam
+	lastPrefix  string
+	lastLimit   int
 }
 
 func (f *fakeUsers) Me(context.Context) (*models.User, error) {
@@ -34,6 +35,10 @@ func (f *fakeUsers) SearchByLoginPrefix(_ context.Context, prefix string, limit 
 	f.lastPrefix = prefix
 	f.lastLimit = limit
 	return f.summaries, nil
+}
+
+func (f *fakeUsers) UpcomingEvaluations(context.Context) ([]models.ScaleTeam, error) {
+	return f.evaluations, nil
 }
 
 func TestUserService_Profile(t *testing.T) {

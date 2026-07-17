@@ -33,7 +33,7 @@ make build
 ./42 campus --friends # mapa filtrado pela sua lista de amigos
 ./42 friends add <l>  # gerencia a lista local de amigos (add/remove/list)
 ./42 friends online   # quais amigos estão online e em qual posto
-./42 dashboard        # TUI em tempo real: perfil, ocupação, amigos (--interval)
+./42 dashboard        # TUI em tempo real: perfil, ocupação, avaliações, amigos
 ./42 cache clear      # limpa o cache local de respostas da API
 ./42 version          # versão do binário
 ./42 config path      # caminho do config.yaml

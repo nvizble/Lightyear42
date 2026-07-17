@@ -95,6 +95,12 @@ func markedTime(pu models.ProjectUser) time.Time {
 	return *pu.MarkedAt
 }
 
+// UpcomingEvaluations returns the authenticated user's scheduled evaluations
+// (as evaluator or evaluated), soonest first.
+func (s *UserService) UpcomingEvaluations(ctx context.Context) ([]models.ScaleTeam, error) {
+	return s.users.UpcomingEvaluations(ctx)
+}
+
 // Search lists users whose login starts with term, up to limit results.
 // A non-positive limit falls back to the default; the maximum is capped
 // to respect the API page size.

@@ -21,8 +21,8 @@ func newDashboardCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "dashboard",
 		Short: "Dashboard em tempo real do campus (Bubble Tea)",
-		Long: `Abre uma TUI com seu perfil, a ocupação dos clusters e os amigos online,
-atualizando automaticamente no intervalo definido.
+		Long: `Abre uma TUI com seu perfil, a ocupação dos clusters, suas próximas
+avaliações e os amigos online, atualizando automaticamente no intervalo definido.
 
 Teclas: r atualiza na hora, q/esc sai.`,
 		Args: cobra.NoArgs,

@@ -9,11 +9,17 @@ import (
 )
 
 type stubMeReader struct {
-	user *models.User
-	err  error
+	user        *models.User
+	err         error
+	evaluations []models.ScaleTeam
+	evalErr     error
 }
 
 func (s stubMeReader) Me(context.Context) (*models.User, error) { return s.user, s.err }
+
+func (s stubMeReader) UpcomingEvaluations(context.Context) ([]models.ScaleTeam, error) {
+	return s.evaluations, s.evalErr
+}
 
 type stubOnlineLister struct {
 	locations []models.Location
@@ -50,7 +56,10 @@ func TestDashboardSnapshot_PrimaryCampusAndFriends(t *testing.T) {
 	}
 	online := &stubOnlineLister{locations: locations}
 	svc := NewDashboardService(
-		stubMeReader{user: dashboardUser()},
+		stubMeReader{
+			user:        dashboardUser(),
+			evaluations: []models.ScaleTeam{{ID: 7, Team: models.EvaluationTeam{Name: "libft group"}}},
+		},
 		online,
 		stubFriendsLister{friends: []string{"malima-m"}},
 	)
@@ -71,6 +80,9 @@ func TestDashboardSnapshot_PrimaryCampusAndFriends(t *testing.T) {
 	}
 	if len(snap.FriendsOnline) != 1 || snap.FriendsOnline[0].User.Login != "malima-m" {
 		t.Errorf("FriendsOnline = %+v, want só malima-m", snap.FriendsOnline)
+	}
+	if len(snap.Evaluations) != 1 || snap.Evaluations[0].ID != 7 {
+		t.Errorf("Evaluations = %+v, want a avaliação 7", snap.Evaluations)
 	}
 	if snap.TakenAt.IsZero() {
 		t.Error("TakenAt não deveria ser zero")
@@ -116,6 +128,7 @@ func TestDashboardSnapshot_PropagatesErrors(t *testing.T) {
 		{"me", NewDashboardService(stubMeReader{err: boom}, &stubOnlineLister{}, stubFriendsLister{})},
 		{"online", NewDashboardService(stubMeReader{user: dashboardUser()}, &stubOnlineLister{err: boom}, stubFriendsLister{})},
 		{"friends", NewDashboardService(stubMeReader{user: dashboardUser()}, &stubOnlineLister{}, stubFriendsLister{err: boom})},
+		{"evaluations", NewDashboardService(stubMeReader{user: dashboardUser(), evalErr: boom}, &stubOnlineLister{}, stubFriendsLister{})},
 	}
 
 	for _, tt := range tests {
