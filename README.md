@@ -2,7 +2,7 @@
 
 CLI moderna, open source, para a [42 Network](https://www.42network.org/), inspirada em ferramentas como `gh`, `docker` e `kubectl`.
 
-> Status: **Milestone 4 concluído** — `me`, `profile`, `search`, `projects` e `campus` funcionais. Próximo marco: dashboard Bubble Tea.
+> Status: **Milestone 5 concluído** — comandos de dados e dashboard Bubble Tea em tempo real funcionais. Próximo marco: release (testes, docs, GoReleaser).
 >
 > Nota: `42 exams` foi cortado — todos os endpoints de exames da API retornam 403 para tokens com scope `public`.
 
@@ -33,6 +33,7 @@ make build
 ./42 campus --friends # mapa filtrado pela sua lista de amigos
 ./42 friends add <l>  # gerencia a lista local de amigos (add/remove/list)
 ./42 friends online   # quais amigos estão online e em qual posto
+./42 dashboard        # TUI em tempo real: perfil, ocupação, amigos (--interval)
 ./42 cache clear      # limpa o cache local de respostas da API
 ./42 version          # versão do binário
 ./42 config path      # caminho do config.yaml
@@ -66,13 +67,13 @@ client_secret: "seu-client-secret"
 api_base_url: "https://api.intra.42.fr/v2"
 redirect_uri: "http://127.0.0.1:53682/callback"
 
-# Opcional: planta física dos clusters para o `42 campus`.
-# A API não expõe o layout do campus; sem isso, a grade é inferida
-# a partir das sessões ativas. Exemplo (42 São Paulo):
+# Opcional: planta física dos clusters, usada no mapa do `42 campus` e nas
+# barras de ocupação do `42 dashboard`. A API não expõe o layout do campus;
+# sem isso, a grade é inferida das sessões ativas. Exemplo (42 São Paulo):
 campus_layout:
   "1": { rows: 10, posts: 4 }
   "2": { rows: 12, posts: 6 }
-  "3": { rows: 13, posts: 6 }
+  "3": { rows: 13, posts: 6, seats: 64 } # seats: capacidade real de grades irregulares
 ```
 
 ## Arquitetura
@@ -95,9 +96,9 @@ make build   # binário ./42
 1. **Bootstrap** (concluído) — Cobra, config, CI
 2. **OAuth2** (concluído) — `login` / `logout`, keyring
 3. **Cliente API** (concluído) — retries, erros tipados, cache
-4. **Comandos** (atual) — `me`, `profile`, `search`, …
-5. **Dashboard** — Bubble Tea
-6. **Release** — docs, GoReleaser, multi-OS
+4. **Comandos** (concluído) — `me`, `profile`, `search`, …
+5. **Dashboard** (concluído) — Bubble Tea em tempo real
+6. **Release** (atual) — docs, GoReleaser, multi-OS
 
 ## Licença
 

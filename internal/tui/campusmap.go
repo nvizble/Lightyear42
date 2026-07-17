@@ -35,9 +35,19 @@ func parseHost(host string) (seat, bool) {
 }
 
 // ClusterGrid is the drawn size of one cluster, usually from user config.
+// Seats overrides the real capacity for irregular clusters (0 = rows × posts).
 type ClusterGrid struct {
 	Rows  int
 	Posts int
+	Seats int
+}
+
+// Capacity returns the number of real seats in the cluster.
+func (g ClusterGrid) Capacity() int {
+	if g.Seats > 0 {
+		return g.Seats
+	}
+	return g.Rows * g.Posts
 }
 
 // RenderCampusMap renders active sessions grouped by cluster as seat maps.

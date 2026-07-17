@@ -29,10 +29,12 @@ type Config struct {
 	CampusLayout map[string]ClusterLayout `mapstructure:"campus_layout"`
 }
 
-// ClusterLayout is the grid size of one cluster.
+// ClusterLayout is the grid size of one cluster. Seats is the real seat
+// count for irregular clusters with gaps; when 0, rows × posts is assumed.
 type ClusterLayout struct {
 	Rows  int `mapstructure:"rows"`
 	Posts int `mapstructure:"posts"`
+	Seats int `mapstructure:"seats"`
 }
 
 // Paths returns well-known filesystem locations for the CLI.

@@ -116,7 +116,7 @@ UX: progresso, tabelas, cores, loading — sem poluição visual.
 | 2 | OAuth2 | Login/logout, keyring, refresh (**concluído**) |
 | 3 | Cliente API | Erros, retries, cache SQLite (**concluído**) |
 | 4 | Comandos | `me`, `profile`, `search`, `projects`, `campus` (**concluído**; `exams` inviável com scope public) |
-| 5 | Dashboard | Bubble Tea em tempo real |
+| 5 | Dashboard | Bubble Tea em tempo real (**concluído**) |
 | 6 | Release | Testes, docs, GoReleaser, GitHub |
 
 Futuro: notificações, offline, sync, plugins, export CSV/JSON.
