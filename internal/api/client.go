@@ -76,7 +76,7 @@ func NewClient(baseURL string, source oauth2.TokenSource, opts ...Option) *Clien
 
 // Get performs a GET request on path (e.g. "/me"), decoding the JSON
 // response into out. Retryable failures (429, 5xx, network errors) are
-// re-attempted with exponential backoff, honouring the Retry-After header.
+// re-attempted with exponential backoff, honoring the Retry-After header.
 func (c *Client) Get(ctx context.Context, path string, query url.Values, out any) error {
 	endpoint := c.baseURL + path
 	if len(query) > 0 {
@@ -168,7 +168,7 @@ func (c *Client) do(ctx context.Context, method, endpoint string, body []byte) (
 	return nil, apiErr
 }
 
-// wait sleeps before a retry, honouring Retry-After when present and the context.
+// wait sleeps before a retry, honoring Retry-After when present and the context.
 func (c *Client) wait(ctx context.Context, attempt int, lastErr error) error {
 	delay := c.backoff(attempt)
 

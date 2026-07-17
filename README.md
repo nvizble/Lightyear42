@@ -50,6 +50,7 @@ Para só compilar no diretório do projeto: `make build` → `./lightyear`.
 ## Uso
 
 ```bash
+lightyear setup            # guia OAuth na Intra + grava UID/Secret
 lightyear login            # autentica via OAuth2 (abre o navegador)
 lightyear logout           # remove o token do keyring
 lightyear me               # seu perfil: nível, wallet, pontos, campus
@@ -72,6 +73,8 @@ lightyear version          # versão do binário
 lightyear config path      # caminho do config.yaml
 lightyear config show      # configuração efetiva (secret mascarado)
 ```
+
+Primeiro uso: `lightyear setup` → criar app na Intra → colar UID/Secret → `lightyear login`.
 
 O token OAuth (access + refresh) é guardado no keyring do sistema — Keychain (macOS), Secret Service (Linux) ou Credential Manager (Windows) — e renovado automaticamente.
 

@@ -45,7 +45,7 @@ type Flow struct {
 // NewFlow creates a login flow from the CLI configuration.
 func NewFlow(cfg config.Config, opts FlowOptions) *Flow {
 	if opts.OpenBrowser == nil {
-		opts.OpenBrowser = openBrowser
+		opts.OpenBrowser = OpenBrowser
 	}
 	return &Flow{oauth: OAuthConfig(cfg), opts: opts}
 }

@@ -55,7 +55,7 @@ func Default() Config {
 
 // ResolvePaths returns XDG-compliant paths for config, cache and data.
 // On macOS, falls back to ~/Library when XDG_* is unset, matching common CLI practice
-// while still honouring XDG_* when the user sets them.
+// while still honoring XDG_* when the user sets them.
 func ResolvePaths() (Paths, error) {
 	home, err := os.UserHomeDir()
 	if err != nil {

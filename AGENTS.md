@@ -84,6 +84,7 @@ Só então escreva o código. Nunca faça grandes alterações sem explicar.
 ## CLI (alvo)
 
 ```
+lightyear setup
 lightyear login
 lightyear logout
 lightyear me
@@ -102,6 +103,7 @@ lightyear config
 Nota: `lightyear exams` foi descartado — os endpoints de exames exigem role
 elevada (Basic Staff) e retornam 403 com scope `public`. Avaliações
 agendadas (`scale_teams`) funcionam com scope `public` via `lightyear evaluations`.
+O primeiro uso recomendado é `lightyear setup` + `lightyear login`.
 
 Help completo. Todas as flags com descrição.
 

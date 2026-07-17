@@ -39,6 +39,7 @@ Gerencie autenticação, perfil, projetos, campus e mais — direto do terminal.
 	}
 
 	root.AddCommand(newVersionCmd())
+	root.AddCommand(newSetupCmd())
 	root.AddCommand(newConfigCmd())
 	root.AddCommand(newLoginCmd())
 	root.AddCommand(newLogoutCmd())

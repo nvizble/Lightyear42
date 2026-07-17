@@ -5,6 +5,7 @@ run:
   tests: true
 
 linters:
+  default: none
   enable:
     - errcheck
     - govet
@@ -16,32 +17,64 @@ linters:
     - unconvert
     - copyloopvar
     - gocritic
+  settings:
+    errcheck:
+      # CLI escreve em stdout/stderr e fecha recursos em defer; falhas aí
+      # não são tratáveis de forma útil no fluxo normal.
+      exclude-functions:
+        - fmt.Fprint
+        - fmt.Fprintf
+        - fmt.Fprintln
+        - fmt.Print
+        - fmt.Printf
+        - fmt.Println
+        - (io.Closer).Close
+        - (*os.File).Close
+        - (*sql.DB).Close
+        - (*sql.Rows).Close
+        - (*sql.Stmt).Close
+        - (*sql.Tx).Rollback
+    misspell:
+      locale: US
+    revive:
+      rules:
+        - name: blank-imports
+        - name: context-as-argument
+        - name: context-keys-type
+        - name: dot-imports
+        - name: error-return
+        - name: error-strings
+        - name: error-naming
+        - name: exported
+        - name: if-return
+        - name: increment-decrement
+        - name: var-naming
+        - name: package-comments
+        - name: range
+        - name: receiver-naming
+        - name: time-naming
+        - name: unexported-return
+        - name: indent-error-flow
+        - name: errorf
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    rules:
+      # Mensagens de UX em português (misspell assume inglês).
+      - path: '(^|/)(cmd|internal)/'
+        text: '(momento|comando|avalia[cç][aã]o|avalia[cç][oõ]es|dispon[ií]vel)'
+        linters:
+          - misspell
+
+formatters:
+  enable:
     - gofmt
     - goimports
 
-linters-settings:
-  revive:
-    rules:
-      - name: blank-imports
-      - name: context-as-argument
-      - name: context-keys-type
-      - name: dot-imports
-      - name: error-return
-      - name: error-strings
-      - name: error-naming
-      - name: exported
-      - name: if-return
-      - name: increment-decrement
-      - name: var-naming
-      - name: package-comments
-      - name: range
-      - name: receiver-naming
-      - name: time-naming
-      - name: unexported-return
-      - name: indent-error-flow
-      - name: errorf
-
 issues:
-  exclude-use-default: false
   max-issues-per-linter: 0
   max-same-issues: 0

@@ -21,18 +21,15 @@ func newLoginCmd() *cobra.Command {
 da Intra e aguarda o callback local. O token é salvo no keyring do sistema
 (Keychain, Secret Service ou Windows Credential Manager) — nunca em arquivo.
 
-Pré-requisito: uma aplicação OAuth registrada em
-https://profile.intra.42.fr/oauth/applications/new com a Redirect URI
-configurada (padrão: http://127.0.0.1:53682/callback), e as credenciais
-definidas no config.yaml ou via FORTYTWO_CLIENT_ID / FORTYTWO_CLIENT_SECRET.`,
+Pré-requisito: rode "lightyear setup" (ou defina client_id/client_secret
+no config.yaml / FORTYTWO_CLIENT_ID e FORTYTWO_CLIENT_SECRET).`,
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			if rootCfg.ClientID == "" || rootCfg.ClientSecret == "" {
 				return fmt.Errorf(
 					"client_id/client_secret não configurados.\n\n"+
-						"Registre uma aplicação em https://profile.intra.42.fr/oauth/applications/new\n"+
-						"e configure as credenciais em %s\n"+
-						"ou via variáveis de ambiente FORTYTWO_CLIENT_ID e FORTYTWO_CLIENT_SECRET",
+						"Rode: lightyear setup\n"+
+						"(ou configure %s / FORTYTWO_CLIENT_ID e FORTYTWO_CLIENT_SECRET)",
 					configFileHint())
 			}
 
