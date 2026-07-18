@@ -2,11 +2,14 @@ package cmd
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -14,6 +17,7 @@ import (
 	"github.com/nvizble/Lightyear42/internal/auth"
 	"github.com/nvizble/Lightyear42/internal/config"
 	"github.com/nvizble/Lightyear42/internal/services"
+	"github.com/nvizble/Lightyear42/internal/subjects"
 )
 
 func newSubjectCmd() *cobra.Command {
@@ -112,9 +116,42 @@ Exemplos:
 	cmd.Flags().BoolVar(&httpDebug, "http-debug", false, "imprime método, URL e status de cada pedido HTTP (stderr)")
 	cmd.Flags().IntVar(&pdfID, "pdf-id", 0, "id numérico do PDF no CDN; grava no índice local")
 
+	cmd.ValidArgsFunction = completeSubjectProjects
+
 	cmd.AddCommand(newSubjectImportCmd())
 	cmd.AddCommand(newSubjectSetIDCmd())
 	return cmd
+}
+
+// completeSubjectProjects suggests catalog slugs/aliases and local index keys.
+func completeSubjectProjects(_ *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+	if len(args) >= 1 {
+		return nil, cobra.ShellCompDirectiveNoFileComp
+	}
+	set := make(map[string]struct{})
+	for _, name := range subjects.CompletionNames() {
+		set[name] = struct{}{}
+	}
+	if dir, err := subjectsDir(); err == nil {
+		if data, err := os.ReadFile(filepath.Join(dir, "index.json")); err == nil {
+			var idx map[string]int
+			if json.Unmarshal(data, &idx) == nil {
+				for _, name := range subjects.CompletionNamesFrom(subjects.Index(idx)) {
+					set[name] = struct{}{}
+				}
+			}
+		}
+	}
+
+	prefix := strings.ToLower(toComplete)
+	out := make([]string, 0, len(set))
+	for name := range set {
+		if prefix == "" || strings.HasPrefix(strings.ToLower(name), prefix) {
+			out = append(out, name)
+		}
+	}
+	sort.Strings(out)
+	return out, cobra.ShellCompDirectiveNoFileComp
 }
 
 func subjectsDir() (string, error) {
@@ -179,6 +216,12 @@ Exemplos:
   lightyear subject set-id push_swap 193464
   lightyear subject set-id 42next-minishell 123456`,
 		Args: cobra.ExactArgs(2),
+		ValidArgsFunction: func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+			if len(args) == 0 {
+				return completeSubjectProjects(cmd, args, toComplete)
+			}
+			return nil, cobra.ShellCompDirectiveNoFileComp
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			query := args[0]
 			id, err := strconv.Atoi(args[1])
