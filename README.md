@@ -108,6 +108,25 @@ Primeiro uso: `lightyear setup` → criar app na Intra → colar UID/Secret → 
 
 O token OAuth (access + refresh) é guardado no keyring do sistema — Keychain (macOS), Secret Service (Linux) ou Credential Manager (Windows) — e renovado automaticamente.
 
+### Autocomplete (zsh)
+
+```bash
+mkdir -p ~/.zfunc
+lightyear completion zsh > ~/.zfunc/_lightyear
+```
+
+No `~/.zshrc` (antes de outras configs que dependam de completion):
+
+```bash
+fpath=("$HOME/.zfunc" $fpath)
+autoload -Uz compinit
+compinit
+```
+
+Recarrega o shell (`exec zsh` ou abre um terminal novo) e testa: `lightyear <TAB>`.
+
+Sessão atual (sem reiniciar): `source <(lightyear completion zsh)`.
+
 ## Configuração
 
 Arquivo padrão (XDG):

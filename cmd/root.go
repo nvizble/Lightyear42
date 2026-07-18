@@ -25,9 +25,11 @@ Gerencie autenticação, perfil, projetos, campus e mais — direto do terminal.
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		PersistentPreRunE: func(cmd *cobra.Command, _ []string) error {
-			// Skip config load for commands that do not need OAuth/config.
+			// Skip config load for commands that do not need OAuth/config,
+			// including shell completion (__complete), which must stay fast/side-effect free.
 			switch cmd.Name() {
-			case "version", "help", "update":
+			case "version", "help", "update", "completion",
+				cobra.ShellCompRequestCmd, cobra.ShellCompNoDescRequestCmd:
 				return nil
 			}
 			cfg, err := config.Load()
