@@ -203,13 +203,14 @@ Exemplos:
 			if err != nil {
 				return err
 			}
-			if res.Previous == 0 {
+			switch {
+			case res.Previous == 0:
 				fmt.Fprintf(cmd.OutOrStdout(),
 					"Id gravado: %s → %d\n  %s\n", res.Slug, res.ID, res.Path)
-			} else if res.Previous == res.ID {
+			case res.Previous == res.ID:
 				fmt.Fprintf(cmd.OutOrStdout(),
 					"Id inalterado: %s → %d\n  %s\n", res.Slug, res.ID, res.Path)
-			} else {
+			default:
 				fmt.Fprintf(cmd.OutOrStdout(),
 					"Id atualizado: %s → %d (antes %d)\n  %s\n",
 					res.Slug, res.ID, res.Previous, res.Path)
