@@ -203,11 +203,11 @@ Exemplos:
 			if err != nil {
 				return err
 			}
-			switch {
-			case res.Previous == 0:
+			switch res.Previous {
+			case 0:
 				fmt.Fprintf(cmd.OutOrStdout(),
 					"Id gravado: %s → %d\n  %s\n", res.Slug, res.ID, res.Path)
-			case res.Previous == res.ID:
+			case res.ID:
 				fmt.Fprintf(cmd.OutOrStdout(),
 					"Id inalterado: %s → %d\n  %s\n", res.Slug, res.ID, res.Path)
 			default:
