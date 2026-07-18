@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/nvizble/Lightyear42/internal/api"
 	"github.com/nvizble/Lightyear42/internal/auth"
@@ -14,9 +15,15 @@ import (
 
 // appDeps bundles the services available to data commands.
 type appDeps struct {
-	Users  *services.UserService
-	Campus *services.CampusService
-	Slots  *services.SlotsService
+	Users    *services.UserService
+	Campus   *services.CampusService
+	Slots    *services.SlotsService
+	Subjects *services.SubjectService
+}
+
+// depsOptions customizes the composition root (debug HTTP, etc.).
+type depsOptions struct {
+	HTTPDebug bool
 }
 
 // newDeps is the composition root for data commands: it wires
@@ -24,13 +31,22 @@ type appDeps struct {
 //
 // The returned cleanup closes the cache store and must be called when the
 // command finishes. Requires an active session (auth.ErrNoToken otherwise).
-func newDeps(ctx context.Context) (*appDeps, func(), error) {
+func newDeps(ctx context.Context, opts ...depsOptions) (*appDeps, func(), error) {
+	var opt depsOptions
+	if len(opts) > 0 {
+		opt = opts[0]
+	}
+
 	source, err := auth.NewTokenSource(ctx, rootCfg, auth.NewKeyringStore())
 	if err != nil {
 		return nil, nil, err
 	}
 
-	client := api.NewClient(rootCfg.APIBaseURL, source)
+	var apiOpts []api.Option
+	if opt.HTTPDebug || httpDebugEnvEnabled() {
+		apiOpts = append(apiOpts, api.WithDebugLog(os.Stderr))
+	}
+	client := api.NewClient(rootCfg.APIBaseURL, source, apiOpts...)
 
 	// A broken local cache must not block API access: fall back to no caching.
 	var kv repository.KVCache = repository.NoopCache{}
@@ -46,10 +62,12 @@ func newDeps(ctx context.Context) (*appDeps, func(), error) {
 
 	usersRepo := repository.NewUsersRepository(client, kv)
 	users := services.NewUserService(usersRepo)
+	projectsRepo := repository.NewProjectsRepository(client, kv)
 	deps := &appDeps{
-		Users:  users,
-		Campus: services.NewCampusService(repository.NewCampusRepository(client, kv)),
-		Slots:  services.NewSlotsService(repository.NewSlotsRepository(client), users),
+		Users:    users,
+		Campus:   services.NewCampusService(repository.NewCampusRepository(client, kv)),
+		Slots:    services.NewSlotsService(repository.NewSlotsRepository(client), users),
+		Subjects: services.NewSubjectService(projectsRepo, users, client),
 	}
 	return deps, cleanup, nil
 }
@@ -65,4 +83,9 @@ func primaryCampusID(ctx context.Context, deps *appDeps) (int, string, error) {
 		return 0, "", fmt.Errorf("seu perfil não tem campus associado")
 	}
 	return campus.ID, campus.Name, nil
+}
+
+func httpDebugEnvEnabled() bool {
+	v := strings.TrimSpace(strings.ToLower(os.Getenv("FORTYTWO_HTTP_DEBUG")))
+	return v == "1" || v == "true" || v == "yes"
 }

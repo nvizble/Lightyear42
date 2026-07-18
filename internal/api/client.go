@@ -33,6 +33,7 @@ type Client struct {
 	http        *http.Client
 	maxRetries  int
 	baseBackoff time.Duration
+	debug       io.Writer
 }
 
 // Option customizes the Client.
@@ -101,6 +102,67 @@ func (c *Client) Delete(ctx context.Context, path string) error {
 	return c.request(ctx, http.MethodDelete, c.baseURL+path, nil, nil)
 }
 
+// Download fetches url (absolute or path relative to the API base) into w.
+// Used for CDN subject PDFs and other binary assets. Retries buffer in memory
+// so a failed attempt never leaves a partial write in w.
+func (c *Client) Download(ctx context.Context, rawURL string, w io.Writer) error {
+	endpoint := rawURL
+	if !strings.HasPrefix(rawURL, "http://") && !strings.HasPrefix(rawURL, "https://") {
+		endpoint = c.baseURL + rawURL
+	}
+
+	var lastErr error
+	for attempt := 0; attempt <= c.maxRetries; attempt++ {
+		if attempt > 0 {
+			if err := c.wait(ctx, attempt, lastErr); err != nil {
+				return err
+			}
+		}
+		var buf bytes.Buffer
+		err := c.downloadOnce(ctx, endpoint, &buf)
+		if err == nil {
+			if _, err := io.Copy(w, &buf); err != nil {
+				return fmt.Errorf("gravar download: %w", err)
+			}
+			return nil
+		}
+		if !isRetryable(err) {
+			return err
+		}
+		lastErr = err
+	}
+	return fmt.Errorf("após %d tentativas: %w", c.maxRetries+1, lastErr)
+}
+
+func (c *Client) downloadOnce(ctx context.Context, endpoint string, w io.Writer) error {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint, nil)
+	if err != nil {
+		return fmt.Errorf("montar download: %w", err)
+	}
+	req.Header.Set("Accept", "*/*")
+
+	resp, err := c.http.Do(req)
+	if err != nil {
+		return &transportError{err: err}
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode >= 200 && resp.StatusCode < 300 {
+		if _, err := io.Copy(w, resp.Body); err != nil {
+			return fmt.Errorf("gravar download: %w", err)
+		}
+		return nil
+	}
+
+	errBody, _ := io.ReadAll(io.LimitReader(resp.Body, maxErrorBodyBytes))
+	body := enrichErrorBody(resp.StatusCode, strings.TrimSpace(string(errBody)), resp.Header)
+	apiErr := newHTTPError(resp.StatusCode, body)
+	if resp.StatusCode == 429 {
+		return &rateLimitError{apiErr: apiErr, retryAfter: parseRetryAfter(resp.Header)}
+	}
+	return apiErr
+}
+
 // request executes an HTTP method with optional JSON body, retries and decode.
 func (c *Client) request(ctx context.Context, method, endpoint string, body []byte, out any) error {
 	var lastErr error
@@ -161,7 +223,8 @@ func (c *Client) do(ctx context.Context, method, endpoint string, body []byte) (
 	}
 
 	errBody, _ := io.ReadAll(io.LimitReader(resp.Body, maxErrorBodyBytes))
-	apiErr := newHTTPError(resp.StatusCode, strings.TrimSpace(string(errBody)))
+	enriched := enrichErrorBody(resp.StatusCode, strings.TrimSpace(string(errBody)), resp.Header)
+	apiErr := newHTTPError(resp.StatusCode, enriched)
 	if resp.StatusCode == 429 {
 		return nil, &rateLimitError{apiErr: apiErr, retryAfter: parseRetryAfter(resp.Header)}
 	}

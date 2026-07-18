@@ -29,3 +29,6 @@ coverage.html
 
 # Local config / cache (never commit)
 config.local.yaml
+
+# Aux tooling (scraper Python vive fora do produto; não commitar)
+/tools/

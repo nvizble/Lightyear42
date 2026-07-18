@@ -64,6 +64,17 @@ lightyear --help
 
 Para só compilar no diretório do projeto: `make build` → `./lightyear`.
 
+### Atualizar
+
+```bash
+lightyear update --check   # só verifica
+lightyear update           # baixa e substitui o binário atual
+lightyear update -y        # sem confirmação
+```
+
+Requer permissão de escrita no caminho do executável (ex.: `~/.local/bin`).
+Instalações via `.deb` em `/usr/bin` pedem `sudo` ou reinstale o `.deb` novo.
+
 ## Uso
 
 ```bash
@@ -74,6 +85,9 @@ lightyear me               # seu perfil: nível, wallet, pontos, campus
 lightyear profile <login>  # perfil de qualquer usuário da 42
 lightyear search <termo>   # busca usuários por prefixo de login (-n limita)
 lightyear projects [login] # projetos com status e nota (--all inclui piscine)
+lightyear subject <proj>   # baixa e abre o PDF do subject (CDN + catálogo embutido)
+lightyear subject set-id <proj> <id>  # atualiza o pdf-id no índice local
+lightyear subject import <f.json>     # merge de um JSON externo no índice local
 lightyear evaluations      # próximas avaliações agendadas (alias: evals)
 lightyear slots            # lista slots futuros de disponibilidade
 lightyear slots open --duration 1h   # abre a partir do momento mais cedo (~30min)
@@ -86,6 +100,7 @@ lightyear friends add <l>  # gerencia a lista local de amigos (add/remove/list)
 lightyear friends online   # quais amigos estão online e em qual posto
 lightyear dashboard        # TUI: perfil, ocupação, avaliações, calendário de slots, amigos
 lightyear cache clear      # limpa o cache local de respostas da API
+lightyear update           # atualiza o binário pelo GitHub Releases (--check / -y)
 lightyear version          # versão do binário
 lightyear config path      # caminho do config.yaml
 lightyear config show      # configuração efetiva (secret mascarado)
@@ -94,6 +109,28 @@ lightyear config show      # configuração efetiva (secret mascarado)
 Primeiro uso: `lightyear setup` → criar app na Intra → colar UID/Secret → `lightyear login`.
 
 O token OAuth (access + refresh) é guardado no keyring do sistema — Keychain (macOS), Secret Service (Linux) ou Credential Manager (Windows) — e renovado automaticamente.
+
+### Subjects (PDF)
+
+Requer `lightyear login`. Sem sessão autenticada o comando recusa o acesso.
+
+A API pública não expõe attachments de subject (HTTP 403 para alunos). O PDF
+é servido na CDN (`cdn.intra.42.fr/pdf/pdf/<id>/…`). O CLI resolve o id assim:
+
+1. `--pdf-id` / `subject set-id` (grava no índice local)
+2. índice local (`$XDG_DATA_HOME/42cli/subjects/index.json`) — na 1ª utilização
+   é preenchido automaticamente com o catálogo embutido (~240 projetos)
+3. catálogo embutido (`internal/subjects/catalog.json`)
+4. página HTML do projeto na Intra (quando acessível)
+
+```bash
+lightyear subject push_swap
+lightyear subject set-id push_swap 193464   # corrigir/atualizar um id
+```
+
+Para regenerar o catálogo partilhado: use um scraper Playwright local
+(não versionado neste repo), depois abra um PR atualizando
+`internal/subjects/catalog.json` ou rode `lightyear subject import ./catalog.json`.
 
 ## Configuração
 
@@ -163,6 +200,9 @@ os binários em [Releases](https://github.com/nvizble/Lightyear42/releases).
 4. **Comandos** (concluído) — `me`, `profile`, `search`, …
 5. **Dashboard** (concluído) — Bubble Tea em tempo real
 6. **Release** (concluído) — docs, GoReleaser, GitHub Releases
+7. **Self-update** — `lightyear update` via GitHub Releases
+
+Chat/DM no terminal: parked (API sem DMs públicos; fórum ≠ chat).
 
 ## Licença
 

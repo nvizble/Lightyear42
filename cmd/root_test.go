@@ -20,7 +20,7 @@ func TestRootHelp(t *testing.T) {
 	}
 
 	out := buf.String()
-	for _, want := range []string{"lightyear", "version", "config"} {
+	for _, want := range []string{"lightyear", "version", "update", "subject", "config"} {
 		if !strings.Contains(out, want) {
 			t.Fatalf("help output missing %q:\n%s", want, out)
 		}
@@ -53,6 +53,40 @@ func TestVersionCmd(t *testing.T) {
 	}
 	if !strings.Contains(out, "abc123") {
 		t.Fatalf("version output missing commit:\n%s", out)
+	}
+}
+
+func TestSubjectImportHelp(t *testing.T) {
+	t.Parallel()
+
+	root := NewRootCmd()
+	buf := new(bytes.Buffer)
+	root.SetOut(buf)
+	root.SetErr(buf)
+	root.SetArgs([]string{"subject", "import", "--help"})
+
+	if err := root.Execute(); err != nil {
+		t.Fatalf("Execute subject import --help: %v", err)
+	}
+	if !strings.Contains(buf.String(), "import") {
+		t.Fatalf("help missing import:\n%s", buf.String())
+	}
+}
+
+func TestSubjectSetIDHelp(t *testing.T) {
+	t.Parallel()
+
+	root := NewRootCmd()
+	buf := new(bytes.Buffer)
+	root.SetOut(buf)
+	root.SetErr(buf)
+	root.SetArgs([]string{"subject", "set-id", "--help"})
+
+	if err := root.Execute(); err != nil {
+		t.Fatalf("Execute subject set-id --help: %v", err)
+	}
+	if !strings.Contains(buf.String(), "set-id") {
+		t.Fatalf("help missing set-id:\n%s", buf.String())
 	}
 }
 
