@@ -28,6 +28,7 @@ curl -sLO "https://github.com/nvizble/Lightyear42/releases/download/v${VER}/ligh
 sudo apt install "./lightyear_${VER}_linux_amd64.deb"
 lightyear version
 ```
+(Para ARM64: `linux_arm64.deb`. Sem `sudo`, use o tarball em `~/.local/bin` — veja abaixo.)
 
 Sem sudo
 ```bash
@@ -39,8 +40,6 @@ curl -sL "https://github.com/nvizble/Lightyear42/releases/latest/download/lighty
 # garanta que ~/.local/bin está no PATH
 lightyear version
 ```
-
-(Para ARM64: `linux_arm64.deb`. Sem `sudo`, use o tarball em `~/.local/bin` — veja abaixo.)
 
 ### Binário (macOS / Linux / Windows)
 
