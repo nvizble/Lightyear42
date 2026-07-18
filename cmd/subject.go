@@ -31,6 +31,8 @@ func newSubjectCmd() *cobra.Command {
 		Long: `Resolve o projeto (prioriza a sua inscrição em /me), obtém o PDF do subject
 no CDN público da Intra e abre no visualizador padrão.
 
+Requer sessão autenticada (lightyear login). Sem login, o comando recusa o acesso.
+
 A API pública NÃO expõe attachments/sessions do PDF (HTTP 403). Por isso o
 comando resolve o id do CDN nesta ordem:
 
@@ -128,12 +130,22 @@ func newSubjectImportCmd() *cobra.Command {
 		Use:   "import <ficheiro.json>",
 		Short: "Importa um catálogo slug→pdf-id para o índice local",
 		Long: `Faz merge de um JSON {"slug": id, ...} no índice local de subjects.
-Não precisa de login. Formato: JSON {"slug": id, ...}.
+Requer lightyear login. Formato: JSON {"slug": id, ...}.
 
 Nota: na primeira utilização de lightyear subject o catálogo embutido já é
 copiado para o índice local — import só é preciso para atualizar com um JSON novo.`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			// Gate: subjects require an authenticated session.
+			deps, cleanup, err := newDeps(cmd.Context())
+			if err != nil {
+				return err
+			}
+			defer cleanup()
+			if _, err := deps.Users.Me(cmd.Context()); err != nil {
+				return fmt.Errorf("%w: %v", services.ErrSubjectAuthRequired, err)
+			}
+
 			dir, err := subjectsDir()
 			if err != nil {
 				return err
@@ -157,6 +169,7 @@ func newSubjectSetIDCmd() *cobra.Command {
 		Use:   "set-id <projeto> <pdf-id>",
 		Short: "Atualiza o id CDN do subject no índice local",
 		Long: `Grava ou atualiza o mapeamento slug→pdf-id no índice local, sem baixar o PDF.
+Requer lightyear login.
 
 Equivale a descobrir o id na URL do CDN
   https://cdn.intra.42.fr/pdf/pdf/<id>/en.subject.pdf
@@ -180,17 +193,13 @@ Exemplos:
 			ctx, cancel := context.WithTimeout(cmd.Context(), 30*time.Second)
 			defer cancel()
 
-			var svc *services.SubjectService
 			deps, cleanup, err := newDeps(ctx, depsOptions{HTTPDebug: httpDebug})
-			if err == nil {
-				svc = deps.Subjects
-				defer cleanup()
-			} else {
-				// Offline: still works with slug / catálogo embutido.
-				svc = services.NewSubjectService(nil, nil, nil)
+			if err != nil {
+				return err
 			}
+			defer cleanup()
 
-			res, err := svc.SetPDFID(ctx, dir, query, id)
+			res, err := deps.Subjects.SetPDFID(ctx, dir, query, id)
 			if err != nil {
 				return err
 			}

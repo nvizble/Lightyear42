@@ -112,6 +112,8 @@ O token OAuth (access + refresh) é guardado no keyring do sistema — Keychain 
 
 ### Subjects (PDF)
 
+Requer `lightyear login`. Sem sessão autenticada o comando recusa o acesso.
+
 A API pública não expõe attachments de subject (HTTP 403 para alunos). O PDF
 é servido na CDN (`cdn.intra.42.fr/pdf/pdf/<id>/…`). O CLI resolve o id assim:
 

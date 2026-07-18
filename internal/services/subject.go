@@ -22,6 +22,9 @@ import (
 // (API attachments are 403 for students; HTML scrape failed; no --pdf-id).
 var ErrSubjectPDFUnknown = errors.New("subject PDF id desconhecido")
 
+// ErrSubjectAuthRequired is returned when subjects are used without a session.
+var ErrSubjectAuthRequired = errors.New("login necessário: execute `lightyear login` para aceder a subjects")
+
 // SubjectDownloader fetches a remote URL into a writer (API/CDN).
 type SubjectDownloader interface {
 	Download(ctx context.Context, url string, w io.Writer) error
@@ -94,7 +97,11 @@ func NewSubjectService(projects repository.Projects, me MeProjects, dl SubjectDo
 var cdnSubjectRe = regexp.MustCompile(`https://cdn\.intra\.42\.fr/pdf/pdf/(\d+)/([a-z]+)\.subject\.pdf`)
 
 // EnsureSubject returns a local PDF path, downloading when missing.
+// Requires an authenticated session (calls /me).
 func (s *SubjectService) EnsureSubject(ctx context.Context, opts SubjectOptions) (*SubjectResult, error) {
+	if err := s.requireAuth(ctx); err != nil {
+		return nil, err
+	}
 	if strings.TrimSpace(opts.Query) == "" {
 		return nil, fmt.Errorf("informe o nome ou slug do projeto")
 	}
@@ -218,9 +225,13 @@ func ImportPDFIndex(dir, path string) (*ImportResult, error) {
 }
 
 // SetPDFID stores or updates the CDN pdf-id for a project in the local index.
-// Resolves the project via /me when possible; otherwise matches the embedded catalog
-// or accepts the query as a raw slug. Does not download the PDF.
+// Requires an authenticated session. Resolves the project via /me when possible;
+// otherwise matches the embedded catalog or accepts the query as a raw slug.
+// Does not download the PDF.
 func (s *SubjectService) SetPDFID(ctx context.Context, dir, query string, id int) (*SetIDResult, error) {
+	if err := s.requireAuth(ctx); err != nil {
+		return nil, err
+	}
 	if id <= 0 {
 		return nil, fmt.Errorf("pdf-id deve ser um inteiro positivo")
 	}
@@ -233,10 +244,8 @@ func (s *SubjectService) SetPDFID(ctx context.Context, dir, query string, id int
 	_ = seedLocalIndex(dir)
 
 	slug := ""
-	if s != nil {
-		if p, err := s.resolveProject(ctx, query); err == nil && p != nil && p.Slug != "" {
-			slug = p.Slug
-		}
+	if p, err := s.resolveProject(ctx, query); err == nil && p != nil && p.Slug != "" {
+		slug = p.Slug
 	}
 	if slug == "" {
 		slug = subjects.MatchSlug(query)
@@ -260,6 +269,16 @@ func (s *SubjectService) SetPDFID(ctx context.Context, dir, query string, id int
 		Previous: prev,
 		Path:     indexPath(dir),
 	}, nil
+}
+
+func (s *SubjectService) requireAuth(ctx context.Context) error {
+	if s == nil || s.me == nil {
+		return ErrSubjectAuthRequired
+	}
+	if _, err := s.me.Me(ctx); err != nil {
+		return fmt.Errorf("%w: %v", ErrSubjectAuthRequired, err)
+	}
+	return nil
 }
 
 // seedLocalIndex copies missing entries from the embedded catalog into the local index.

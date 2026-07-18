@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -33,10 +34,11 @@ func (s stubProjects) Sessions(context.Context, int) ([]models.ProjectSession, e
 
 type stubMe struct {
 	user *models.User
+	err  error
 }
 
 func (s stubMe) Me(context.Context) (*models.User, error) {
-	return s.user, nil
+	return s.user, s.err
 }
 
 type stubDL struct {
@@ -176,6 +178,26 @@ func TestSubjectService_DiscoverFromHTML(t *testing.T) {
 	}
 	if dl.url != "https://cdn.intra.42.fr/pdf/pdf/424242/en.subject.pdf" {
 		t.Fatalf("url = %s", dl.url)
+	}
+}
+
+func TestSubjectService_RequireAuth(t *testing.T) {
+	svc := NewSubjectService(nil, nil, nil)
+	_, err := svc.EnsureSubject(context.Background(), SubjectOptions{
+		Query: "push_swap",
+		Dir:   t.TempDir(),
+	})
+	if !errors.Is(err, ErrSubjectAuthRequired) {
+		t.Fatalf("err = %v, want ErrSubjectAuthRequired", err)
+	}
+
+	svc2 := NewSubjectService(nil, stubMe{err: errors.New("no token")}, nil)
+	_, err = svc2.EnsureSubject(context.Background(), SubjectOptions{
+		Query: "push_swap",
+		Dir:   t.TempDir(),
+	})
+	if !errors.Is(err, ErrSubjectAuthRequired) {
+		t.Fatalf("err = %v", err)
 	}
 }
 
