@@ -118,6 +118,10 @@ lightyear config show      # configuração efetiva (secret mascarado)
 
 Primeiro uso: `lightyear setup` → criar app na Intra → colar UID/Secret → `lightyear login`.
 
+O `setup` também instala o autocomplete do shell (`$SHELL`: zsh/bash/fish).
+Para reinstalar: `lightyear completion install` (depois `exec zsh` / novo terminal).
+Em `lightyear subject <TAB>` aparecem os projetos do catálogo (ex.: `push_swap`).
+
 O token OAuth (access + refresh) é guardado no keyring do sistema — Keychain (macOS), Secret Service (Linux) ou Credential Manager (Windows) — e renovado automaticamente.
 
 ### Subjects (PDF)

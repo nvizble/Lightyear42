@@ -21,6 +21,8 @@ func newSetupCmd() *cobra.Command {
 		clientSecret string
 		noBrowser    bool
 		force        bool
+		noCompletion bool
+		completionSh string
 	)
 
 	cmd := &cobra.Command{
@@ -31,6 +33,8 @@ func newSetupCmd() *cobra.Command {
 Mostra o passo a passo para criar a aplicação OAuth, abre o navegador
 na página de criação (opcional) e grava UID/Secret no config.yaml.
 
+No fim, configura automaticamente o autocomplete do shell ($SHELL).
+
 Também aceita flags para uso não-interativo:
   lightyear setup --client-id UID --client-secret SECRET`,
 		Args: cobra.NoArgs,
@@ -40,6 +44,8 @@ Também aceita flags para uso não-interativo:
 				ClientSecret: clientSecret,
 				NoBrowser:    noBrowser,
 				Force:        force,
+				NoCompletion: noCompletion,
+				Shell:        completionSh,
 			})
 		},
 	}
@@ -48,6 +54,8 @@ Também aceita flags para uso não-interativo:
 	cmd.Flags().StringVar(&clientSecret, "client-secret", "", "Secret da aplicação OAuth (pula o prompt)")
 	cmd.Flags().BoolVar(&noBrowser, "no-browser", false, "não abre o navegador automaticamente")
 	cmd.Flags().BoolVar(&force, "force", false, "sobrescreve credenciais existentes sem perguntar")
+	cmd.Flags().BoolVar(&noCompletion, "no-completion", false, "não instala autocomplete do shell")
+	cmd.Flags().StringVar(&completionSh, "shell", "", "shell para autocomplete (zsh, bash, fish); default: $SHELL")
 
 	return cmd
 }
@@ -57,6 +65,8 @@ type setupOptions struct {
 	ClientSecret string
 	NoBrowser    bool
 	Force        bool
+	NoCompletion bool
+	Shell        string
 }
 
 func runSetup(cmd *cobra.Command, opts setupOptions) error {
@@ -138,6 +148,18 @@ func runSetup(cmd *cobra.Command, opts setupOptions) error {
 
 	fmt.Fprintln(out)
 	fmt.Fprintf(out, "Credenciais salvas em %s (permissões 0600).\n", paths.ConfigFile)
+
+	if !opts.NoCompletion {
+		fmt.Fprintln(out)
+		res, err := installShellCompletion(cmd.Root(), opts.Shell)
+		if err != nil {
+			fmt.Fprintf(out, "aviso: não foi possível configurar autocomplete: %v\n", err)
+			fmt.Fprintln(out, "Pode tentar depois: lightyear completion install")
+		} else {
+			printCompletionInstall(out, res)
+		}
+	}
+
 	fmt.Fprintln(out, "Próximo passo: lightyear login")
 	return nil
 }

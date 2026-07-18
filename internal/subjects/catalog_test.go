@@ -64,3 +64,23 @@ func TestMatchSlug(t *testing.T) {
 		t.Fatalf("got %q", got)
 	}
 }
+
+func TestCompletionNames(t *testing.T) {
+	t.Parallel()
+	names := CompletionNames()
+	if len(names) < 100 {
+		t.Fatalf("poucos nomes: %d", len(names))
+	}
+	var hasSlug, hasShort bool
+	for _, n := range names {
+		if n == "42next-push_swap" {
+			hasSlug = true
+		}
+		if n == "push_swap" {
+			hasShort = true
+		}
+	}
+	if !hasSlug || !hasShort {
+		t.Fatalf("slug=%v short=%v", hasSlug, hasShort)
+	}
+}

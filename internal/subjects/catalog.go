@@ -5,6 +5,7 @@ import (
 	_ "embed"
 	"encoding/json"
 	"fmt"
+	"sort"
 	"strings"
 )
 
@@ -102,6 +103,46 @@ func MergeAbsent(dst, src Index) (added int) {
 		added++
 	}
 	return added
+}
+
+// CompletionNames returns catalog slugs (and short aliases) for shell completion.
+// Short aliases are the segment after the last '-' (e.g. push_swap ← 42next-push_swap).
+func CompletionNames() []string {
+	return CompletionNamesFrom(embedded)
+}
+
+// CompletionNamesFrom builds completion candidates from an index.
+func CompletionNamesFrom(idx Index) []string {
+	set := make(map[string]struct{}, len(idx)*2)
+	for slug := range idx {
+		slug = strings.TrimSpace(slug)
+		if slug == "" {
+			continue
+		}
+		set[slug] = struct{}{}
+		if short := shortAlias(slug); short != "" && short != slug {
+			set[short] = struct{}{}
+		}
+	}
+	out := make([]string, 0, len(set))
+	for name := range set {
+		out = append(out, name)
+	}
+	sort.Strings(out)
+	return out
+}
+
+func shortAlias(slug string) string {
+	i := strings.LastIndex(slug, "-")
+	if i < 0 || i+1 >= len(slug) {
+		return ""
+	}
+	short := slug[i+1:]
+	// Avoid useless aliases like "04" from cpp-module-04 when too short / numeric-only.
+	if len(short) < 3 {
+		return ""
+	}
+	return short
 }
 
 // MatchSlug finds a catalog slug by exact or substring match on query.
