@@ -1,0 +1,2 @@
+# Opcional — só com: python3 scrape_subjects.py --slugs-file slugs.txt
+# Por defeito descobre slugs em https://projects.intra.42.fr/projects/list
