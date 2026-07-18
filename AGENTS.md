@@ -35,7 +35,8 @@ internal/
   config/      # Viper / paths
   models/      # Domínio
   services/    # Regras de negócio
-  repository/  # Acesso à API
+  repository/  # Acesso à API / GitHub Releases
+  update/      # Download/extração/replace do binário
   tui/         # Bubble Tea
 pkg/           # Só APIs públicas exportáveis
 ```
@@ -90,12 +91,14 @@ lightyear logout
 lightyear me
 lightyear profile
 lightyear projects
+lightyear subject     # baixa/abre o PDF do subject (cache local)
 lightyear evaluations # próximas avaliações (alias: evals)
 lightyear slots       # disponibilidade para avaliar (list/open/close; scope projects)
 lightyear campus      # mapa de online por cluster/posto (--friends filtra)
 lightyear friends     # lista local de amigos (add/remove/list/online)
 lightyear search
 lightyear dashboard
+lightyear update      # self-update via GitHub Releases (--check / --force / --yes)
 lightyear cache clear
 lightyear config
 ```
@@ -103,6 +106,8 @@ lightyear config
 Nota: `lightyear exams` foi descartado — os endpoints de exames exigem role
 elevada (Basic Staff) e retornam 403 com scope `public`. Avaliações
 agendadas (`scale_teams`) funcionam com scope `public` via `lightyear evaluations`.
+Chat/DM no terminal também ficou de fora: a API não expõe DMs com scope
+`public`; fórum exigiria scope `forum` e não é chat 1:1.
 O primeiro uso recomendado é `lightyear setup` + `lightyear login`.
 
 Help completo. Todas as flags com descrição.
@@ -123,6 +128,9 @@ UX: progresso, tabelas, cores, loading — sem poluição visual.
 | 4 | Comandos | `me`, `profile`, `search`, `projects`, `campus` (**concluído**; `exams` inviável com scope public) |
 | 5 | Dashboard | Bubble Tea em tempo real (**concluído**) |
 | 6 | Release | Testes, docs, GoReleaser, GitHub (**concluído**) |
+| 7 | Self-update | `lightyear update` via GitHub Releases (**concluído**) |
+
+Chat (DM/fórum/relay): **parked** — sem DM na API pública; fórum ≠ chat; relay próprio fora de escopo.
 
 Futuro: notificações, offline, sync, plugins, export CSV/JSON.
 

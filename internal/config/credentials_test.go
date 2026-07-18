@@ -9,6 +9,8 @@ import (
 func TestSaveCredentials_CreatesFile(t *testing.T) {
 	dir := t.TempDir()
 	t.Setenv("XDG_CONFIG_HOME", dir)
+	t.Setenv("FORTYTWO_CLIENT_ID", "")
+	t.Setenv("FORTYTWO_CLIENT_SECRET", "")
 
 	paths, err := SaveCredentials("uid-abc", "secret-xyz")
 	if err != nil {
@@ -38,6 +40,8 @@ func TestSaveCredentials_CreatesFile(t *testing.T) {
 func TestSaveCredentials_PreservesFriends(t *testing.T) {
 	dir := t.TempDir()
 	t.Setenv("XDG_CONFIG_HOME", dir)
+	t.Setenv("FORTYTWO_CLIENT_ID", "")
+	t.Setenv("FORTYTWO_CLIENT_SECRET", "")
 
 	configDir := filepath.Join(dir, AppName)
 	if err := os.MkdirAll(configDir, 0o700); err != nil {

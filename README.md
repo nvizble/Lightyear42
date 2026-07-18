@@ -64,6 +64,17 @@ lightyear --help
 
 Para só compilar no diretório do projeto: `make build` → `./lightyear`.
 
+### Atualizar
+
+```bash
+lightyear update --check   # só verifica
+lightyear update           # baixa e substitui o binário atual
+lightyear update -y        # sem confirmação
+```
+
+Requer permissão de escrita no caminho do executável (ex.: `~/.local/bin`).
+Instalações via `.deb` em `/usr/bin` pedem `sudo` ou reinstale o `.deb` novo.
+
 ## Uso
 
 ```bash
@@ -74,6 +85,7 @@ lightyear me               # seu perfil: nível, wallet, pontos, campus
 lightyear profile <login>  # perfil de qualquer usuário da 42
 lightyear search <termo>   # busca usuários por prefixo de login (-n limita)
 lightyear projects [login] # projetos com status e nota (--all inclui piscine)
+lightyear subject <proj>   # baixa e abre o PDF do subject (cache em data dir)
 lightyear evaluations      # próximas avaliações agendadas (alias: evals)
 lightyear slots            # lista slots futuros de disponibilidade
 lightyear slots open --duration 1h   # abre a partir do momento mais cedo (~30min)
@@ -86,6 +98,7 @@ lightyear friends add <l>  # gerencia a lista local de amigos (add/remove/list)
 lightyear friends online   # quais amigos estão online e em qual posto
 lightyear dashboard        # TUI: perfil, ocupação, avaliações, calendário de slots, amigos
 lightyear cache clear      # limpa o cache local de respostas da API
+lightyear update           # atualiza o binário pelo GitHub Releases (--check / -y)
 lightyear version          # versão do binário
 lightyear config path      # caminho do config.yaml
 lightyear config show      # configuração efetiva (secret mascarado)
@@ -163,6 +176,9 @@ os binários em [Releases](https://github.com/nvizble/Lightyear42/releases).
 4. **Comandos** (concluído) — `me`, `profile`, `search`, …
 5. **Dashboard** (concluído) — Bubble Tea em tempo real
 6. **Release** (concluído) — docs, GoReleaser, GitHub Releases
+7. **Self-update** — `lightyear update` via GitHub Releases
+
+Chat/DM no terminal: parked (API sem DMs públicos; fórum ≠ chat).
 
 ## Licença
 

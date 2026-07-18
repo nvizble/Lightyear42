@@ -14,9 +14,10 @@ import (
 
 // appDeps bundles the services available to data commands.
 type appDeps struct {
-	Users  *services.UserService
-	Campus *services.CampusService
-	Slots  *services.SlotsService
+	Users    *services.UserService
+	Campus   *services.CampusService
+	Slots    *services.SlotsService
+	Subjects *services.SubjectService
 }
 
 // newDeps is the composition root for data commands: it wires
@@ -46,10 +47,12 @@ func newDeps(ctx context.Context) (*appDeps, func(), error) {
 
 	usersRepo := repository.NewUsersRepository(client, kv)
 	users := services.NewUserService(usersRepo)
+	projectsRepo := repository.NewProjectsRepository(client, kv)
 	deps := &appDeps{
-		Users:  users,
-		Campus: services.NewCampusService(repository.NewCampusRepository(client, kv)),
-		Slots:  services.NewSlotsService(repository.NewSlotsRepository(client), users),
+		Users:    users,
+		Campus:   services.NewCampusService(repository.NewCampusRepository(client, kv)),
+		Slots:    services.NewSlotsService(repository.NewSlotsRepository(client), users),
+		Subjects: services.NewSubjectService(projectsRepo, client),
 	}
 	return deps, cleanup, nil
 }

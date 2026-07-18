@@ -25,8 +25,9 @@ Gerencie autenticação, perfil, projetos, campus e mais — direto do terminal.
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		PersistentPreRunE: func(cmd *cobra.Command, _ []string) error {
-			// Skip config load for version (fast path, no side effects needed).
-			if cmd.Name() == "version" || cmd.Name() == "help" {
+			// Skip config load for commands that do not need OAuth/config.
+			switch cmd.Name() {
+			case "version", "help", "update":
 				return nil
 			}
 			cfg, err := config.Load()
@@ -39,6 +40,7 @@ Gerencie autenticação, perfil, projetos, campus e mais — direto do terminal.
 	}
 
 	root.AddCommand(newVersionCmd())
+	root.AddCommand(newUpdateCmd())
 	root.AddCommand(newSetupCmd())
 	root.AddCommand(newConfigCmd())
 	root.AddCommand(newLoginCmd())
@@ -47,6 +49,7 @@ Gerencie autenticação, perfil, projetos, campus e mais — direto do terminal.
 	root.AddCommand(newProfileCmd())
 	root.AddCommand(newSearchCmd())
 	root.AddCommand(newProjectsCmd())
+	root.AddCommand(newSubjectCmd())
 	root.AddCommand(newEvaluationsCmd())
 	root.AddCommand(newSlotsCmd())
 	root.AddCommand(newCampusCmd())
