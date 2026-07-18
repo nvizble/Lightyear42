@@ -29,6 +29,17 @@ sudo apt install "./lightyear_${VER}_linux_amd64.deb"
 lightyear version
 ```
 
+Sem sudo
+```bash
+# amd64 (x86_64) — ajuste a versão/arch se necessário
+VER=1.1.0
+mkdir -p ~/.local/bin
+curl -sL "https://github.com/nvizble/Lightyear42/releases/latest/download/lightyear_${VER}_Linux_x86_64.tar.gz" \
+  | tar -xz -C ~/.local/bin lightyear
+# garanta que ~/.local/bin está no PATH
+lightyear version
+```
+
 (Para ARM64: `linux_arm64.deb`. Sem `sudo`, use o tarball em `~/.local/bin` — veja abaixo.)
 
 ### Binário (macOS / Linux / Windows)
