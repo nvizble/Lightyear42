@@ -43,9 +43,7 @@ func TestInstall_Zsh(t *testing.T) {
 	if strings.Count(string(rc2), beginMarker) != 1 {
 		t.Fatalf("marcadores duplicados:\n%s", rc2)
 	}
-	if res2.RCUpdated {
-		// script rewrite may keep rc same — ok either way if single marker
-	}
+	_ = res2.RCUpdated // rc may or may not be updated; single marker check above is sufficient
 }
 
 func TestInstall_Bash(t *testing.T) {
