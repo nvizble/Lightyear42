@@ -15,6 +15,7 @@ import (
 
 	"github.com/nvizble/Lightyear42/internal/models"
 	"github.com/nvizble/Lightyear42/internal/repository"
+	"github.com/nvizble/Lightyear42/internal/subjects"
 )
 
 // ErrSubjectPDFUnknown means the CDN PDF id could not be resolved
@@ -33,10 +34,10 @@ type MeProjects interface {
 
 // SubjectOptions controls subject resolution and download.
 type SubjectOptions struct {
-	Query  string
-	Lang   string
-	Force  bool
-	Dir    string
+	Query string
+	Lang  string
+	Force bool
+	Dir   string
 	// PDFID forces the CDN document id (e.g. 189890 for push_swap).
 	// When set, it is stored in the local slug→id index for later runs.
 	PDFID int
@@ -51,12 +52,28 @@ type SubjectResult struct {
 	URL      string
 }
 
+// ImportResult summarizes a local index merge.
+type ImportResult struct {
+	Path    string
+	Added   int
+	Updated int
+	Total   int
+}
+
+// SetIDResult is the outcome of updating one slug→pdf-id mapping.
+type SetIDResult struct {
+	Slug     string
+	ID       int
+	Previous int
+	Path     string
+}
+
 // SubjectService resolves, caches and opens project subject PDFs.
 //
 // Note: GET /v2/projects/:id/attachments returns 403 for student tokens
 // (X-Application-Roles: None). Subject PDFs are served from the public CDN
 // (cdn.intra.42.fr/pdf/pdf/{id}/{lang}.subject.pdf); the numeric id is
-// discovered via the Intra project page or --pdf-id.
+// resolved via --pdf-id, local index, embedded catalog, or Intra HTML.
 type SubjectService struct {
 	projects repository.Projects
 	me       MeProjects
@@ -87,6 +104,8 @@ func (s *SubjectService) EnsureSubject(ctx context.Context, opts SubjectOptions)
 	if err := os.MkdirAll(opts.Dir, 0o700); err != nil {
 		return nil, fmt.Errorf("criar diretório de subjects: %w", err)
 	}
+	// Ship the embedded catalog into the local index (fill missing keys only).
+	_ = seedLocalIndex(opts.Dir)
 
 	project, err := s.resolveProject(ctx, opts.Query)
 	if err != nil {
@@ -98,9 +117,13 @@ func (s *SubjectService) EnsureSubject(ctx context.Context, opts SubjectOptions)
 		lang = "en"
 	}
 
+	local := loadPDFIndex(opts.Dir)
 	pdfID := opts.PDFID
 	if pdfID == 0 {
-		pdfID = loadPDFIndex(opts.Dir)[project.Slug]
+		pdfID = local[project.Slug]
+	}
+	if pdfID == 0 {
+		pdfID = subjects.Lookup(project.Slug)
 	}
 	if pdfID == 0 {
 		pdfID, lang = s.discoverPDFID(ctx, project.Slug, lang)
@@ -110,15 +133,16 @@ func (s *SubjectService) EnsureSubject(ctx context.Context, opts SubjectOptions)
 		return &SubjectResult{Project: *project}, fmt.Errorf(
 			"%w: a API 42 não expõe o PDF (attachments → 403 para alunos).\n"+
 				"Abra o projeto na Intra, copie o id da URL do PDF\n"+
-				"  (ex.: cdn.intra.42.fr/pdf/pdf/189890/en.subject.pdf → 189890)\n"+
+				"  (ex.: cdn.intra.42.fr/pdf/pdf/193464/en.subject.pdf → 193464)\n"+
 				"e rode:\n"+
-				"  lightyear subject %s --pdf-id 189890\n"+
+				"  lightyear subject set-id %s 193464\n"+
+				"ou: lightyear subject %s --pdf-id 193464\n"+
 				"Página do projeto: %s",
-			ErrSubjectPDFUnknown, opts.Query, intra,
+			ErrSubjectPDFUnknown, opts.Query, opts.Query, intra,
 		)
 	}
 
-	if opts.PDFID != 0 || loadPDFIndex(opts.Dir)[project.Slug] != pdfID {
+	if opts.PDFID != 0 || local[project.Slug] != pdfID {
 		_ = savePDFIndex(opts.Dir, project.Slug, pdfID)
 	}
 
@@ -158,16 +182,122 @@ func (s *SubjectService) EnsureSubject(ctx context.Context, opts SubjectOptions)
 	}, nil
 }
 
+// ImportPDFIndex merges a JSON catalog (slug→pdf-id) into the local index.
+// Does not require API authentication.
+func ImportPDFIndex(dir, path string) (*ImportResult, error) {
+	if dir == "" {
+		return nil, fmt.Errorf("diretório de subjects não configurado")
+	}
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, fmt.Errorf("ler catálogo: %w", err)
+	}
+	src, err := subjects.Parse(data)
+	if err != nil {
+		return nil, err
+	}
+	if len(src) == 0 {
+		return nil, fmt.Errorf("catálogo vazio ou sem entradas válidas")
+	}
+	if err := os.MkdirAll(dir, 0o700); err != nil {
+		return nil, fmt.Errorf("criar diretório de subjects: %w", err)
+	}
+	_ = seedLocalIndex(dir)
+
+	dst := loadPDFIndex(dir)
+	added, updated := subjects.Merge(dst, src)
+	if err := writePDFIndex(dir, dst); err != nil {
+		return nil, err
+	}
+	return &ImportResult{
+		Path:    indexPath(dir),
+		Added:   added,
+		Updated: updated,
+		Total:   len(dst),
+	}, nil
+}
+
+// SetPDFID stores or updates the CDN pdf-id for a project in the local index.
+// Resolves the project via /me when possible; otherwise matches the embedded catalog
+// or accepts the query as a raw slug. Does not download the PDF.
+func (s *SubjectService) SetPDFID(ctx context.Context, dir, query string, id int) (*SetIDResult, error) {
+	if id <= 0 {
+		return nil, fmt.Errorf("pdf-id deve ser um inteiro positivo")
+	}
+	if dir == "" {
+		return nil, fmt.Errorf("diretório de subjects não configurado")
+	}
+	if err := os.MkdirAll(dir, 0o700); err != nil {
+		return nil, fmt.Errorf("criar diretório de subjects: %w", err)
+	}
+	_ = seedLocalIndex(dir)
+
+	slug := ""
+	if s != nil {
+		if p, err := s.resolveProject(ctx, query); err == nil && p != nil && p.Slug != "" {
+			slug = p.Slug
+		}
+	}
+	if slug == "" {
+		slug = subjects.MatchSlug(query)
+	}
+	if slug == "" {
+		slug = strings.TrimSpace(query)
+	}
+	if slug == "" {
+		return nil, fmt.Errorf("informe o nome ou slug do projeto")
+	}
+
+	local := loadPDFIndex(dir)
+	prev := local[slug]
+	local[slug] = id
+	if err := writePDFIndex(dir, local); err != nil {
+		return nil, err
+	}
+	return &SetIDResult{
+		Slug:     slug,
+		ID:       id,
+		Previous: prev,
+		Path:     indexPath(dir),
+	}, nil
+}
+
+// seedLocalIndex copies missing entries from the embedded catalog into the local index.
+func seedLocalIndex(dir string) error {
+	if dir == "" {
+		return fmt.Errorf("diretório de subjects não configurado")
+	}
+	if err := os.MkdirAll(dir, 0o700); err != nil {
+		return err
+	}
+	dst := loadPDFIndex(dir)
+	if len(dst) == 0 {
+		emb := subjects.Embedded()
+		if len(emb) == 0 {
+			return nil
+		}
+		return writePDFIndex(dir, emb)
+	}
+	added := subjects.MergeAbsent(dst, subjects.Embedded())
+	if added == 0 {
+		return nil
+	}
+	return writePDFIndex(dir, dst)
+}
+
 func (s *SubjectService) resolveProject(ctx context.Context, query string) (*models.Project, error) {
 	query = strings.TrimSpace(query)
-	if s.me != nil {
+	if s != nil && s.me != nil {
 		if me, err := s.me.Me(ctx); err == nil && me != nil {
 			if p := matchEnrolled(me.ProjectsUsers, query); p != nil {
 				return p, nil
 			}
 		}
 	}
-	return s.projects.BySlugOrName(ctx, query)
+	if s != nil && s.projects != nil {
+		return s.projects.BySlugOrName(ctx, query)
+	}
+	return nil, fmt.Errorf("projeto %q não resolvido (sem API); use o slug completo", query)
 }
 
 func matchEnrolled(list []models.ProjectUser, query string) *models.Project {
@@ -219,7 +349,6 @@ func (s *SubjectService) discoverPDFID(ctx context.Context, slug, preferLang str
 	if len(matches) == 0 {
 		return 0, preferLang
 	}
-	// Prefer requested language.
 	for _, m := range matches {
 		if preferLang != "" && m[2] == preferLang {
 			var id int
@@ -232,7 +361,7 @@ func (s *SubjectService) discoverPDFID(ctx context.Context, slug, preferLang str
 	return id, matches[0][2]
 }
 
-type pdfIndex map[string]int
+type pdfIndex = subjects.Index
 
 func indexPath(dir string) string {
 	return filepath.Join(dir, "index.json")
@@ -243,8 +372,8 @@ func loadPDFIndex(dir string) pdfIndex {
 	if err != nil {
 		return pdfIndex{}
 	}
-	var idx pdfIndex
-	if json.Unmarshal(data, &idx) != nil {
+	idx, err := subjects.Parse(data)
+	if err != nil {
 		return pdfIndex{}
 	}
 	return idx
@@ -256,6 +385,10 @@ func savePDFIndex(dir string, slug string, id int) error {
 		idx = pdfIndex{}
 	}
 	idx[slug] = id
+	return writePDFIndex(dir, idx)
+}
+
+func writePDFIndex(dir string, idx pdfIndex) error {
 	data, err := json.MarshalIndent(idx, "", "  ")
 	if err != nil {
 		return err

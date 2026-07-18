@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -31,26 +32,29 @@ func newSubjectCmd() *cobra.Command {
 no CDN público da Intra e abre no visualizador padrão.
 
 A API pública NÃO expõe attachments/sessions do PDF (HTTP 403). Por isso o
-comando usa, nesta ordem:
+comando resolve o id do CDN nesta ordem:
 
-  1. --pdf-id <n> (ex.: 189890 em cdn.intra.42.fr/pdf/pdf/189890/…)
-  2. cache local em ~/.local/share/42cli/subjects/index.json
-  3. descoberta na página HTML do projeto na Intra (quando acessível)
+  1. --pdf-id <n> (força id e grava no índice local)
+  2. índice local (~/.local/share/42cli/subjects/index.json)
+     — na 1ª utilização é preenchido com o catálogo embutido (~240 projetos)
+  3. catálogo embutido no CLI (internal/subjects/catalog.json)
+  4. descoberta na página HTML do projeto na Intra (quando acessível)
 
-Na primeira vez, o mais fiável é passar o id uma vez; fica gravado no índice.
+Atualizar um id sem baixar o PDF:
+  lightyear subject set-id push_swap 193464
 
 Exemplos:
-  lightyear subject push_swap --pdf-id 189890
   lightyear subject push_swap
-  lightyear subject 42next-push_swap --lang fr --no-open`,
+  lightyear subject push_swap --pdf-id 193464
+  lightyear subject set-id 42next-push_swap 193464
+  lightyear subject import ./catalog.json`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			query := args[0]
-			paths, err := config.ResolvePaths()
+			dir, err := subjectsDir()
 			if err != nil {
 				return err
 			}
-			dir := filepath.Join(paths.DataDir, "subjects")
 
 			deps, cleanup, err := newDeps(cmd.Context(), depsOptions{HTTPDebug: httpDebug})
 			if err != nil {
@@ -75,8 +79,8 @@ Exemplos:
 					intra := "https://projects.intra.42.fr/projects/" + res.Project.Slug
 					fmt.Fprintf(os.Stderr, "\nNão foi possível obter o PDF pela API (attachments 403).\n")
 					fmt.Fprintf(os.Stderr, "1) Abra o projeto na Intra e copie o id do CDN:\n   %s\n", intra)
-					fmt.Fprintf(os.Stderr, "2) Rode: lightyear subject %s --pdf-id <id>\n", query)
-					fmt.Fprintf(os.Stderr, "   (ex.: push_swap → --pdf-id 189890)\n")
+					fmt.Fprintf(os.Stderr, "2) Rode: lightyear subject set-id %s <id>\n", query)
+					fmt.Fprintf(os.Stderr, "   (ex.: lightyear subject set-id push_swap 193464)\n")
 					_ = auth.OpenBrowser(intra)
 				}
 				return err
@@ -104,6 +108,106 @@ Exemplos:
 	cmd.Flags().BoolVar(&force, "force", false, "baixa de novo mesmo com PDF em cache")
 	cmd.Flags().BoolVar(&noOpen, "no-open", false, "só baixa/imprime o caminho, sem abrir o PDF")
 	cmd.Flags().BoolVar(&httpDebug, "http-debug", false, "imprime método, URL e status de cada pedido HTTP (stderr)")
-	cmd.Flags().IntVar(&pdfID, "pdf-id", 0, "id numérico do PDF no CDN (cdn.intra.42.fr/pdf/pdf/<id>/…)")
+	cmd.Flags().IntVar(&pdfID, "pdf-id", 0, "id numérico do PDF no CDN; grava no índice local")
+
+	cmd.AddCommand(newSubjectImportCmd())
+	cmd.AddCommand(newSubjectSetIDCmd())
+	return cmd
+}
+
+func subjectsDir() (string, error) {
+	paths, err := config.ResolvePaths()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(paths.DataDir, "subjects"), nil
+}
+
+func newSubjectImportCmd() *cobra.Command {
+	return &cobra.Command{
+		Use:   "import <ficheiro.json>",
+		Short: "Importa um catálogo slug→pdf-id para o índice local",
+		Long: `Faz merge de um JSON {"slug": id, ...} no índice local de subjects.
+Não precisa de login. Formato: JSON {"slug": id, ...}.
+
+Nota: na primeira utilização de lightyear subject o catálogo embutido já é
+copiado para o índice local — import só é preciso para atualizar com um JSON novo.`,
+		Args: cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			dir, err := subjectsDir()
+			if err != nil {
+				return err
+			}
+			res, err := services.ImportPDFIndex(dir, args[0])
+			if err != nil {
+				return err
+			}
+			fmt.Fprintf(cmd.OutOrStdout(),
+				"Índice atualizado em %s\n  novos: %d  atualizados: %d  total: %d\n",
+				res.Path, res.Added, res.Updated, res.Total)
+			return nil
+		},
+	}
+}
+
+func newSubjectSetIDCmd() *cobra.Command {
+	var httpDebug bool
+
+	cmd := &cobra.Command{
+		Use:   "set-id <projeto> <pdf-id>",
+		Short: "Atualiza o id CDN do subject no índice local",
+		Long: `Grava ou atualiza o mapeamento slug→pdf-id no índice local, sem baixar o PDF.
+
+Equivale a descobrir o id na URL do CDN
+  https://cdn.intra.42.fr/pdf/pdf/<id>/en.subject.pdf
+e guardá-lo para as próximas corridas de lightyear subject.
+
+Exemplos:
+  lightyear subject set-id push_swap 193464
+  lightyear subject set-id 42next-minishell 123456`,
+		Args: cobra.ExactArgs(2),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			query := args[0]
+			id, err := strconv.Atoi(args[1])
+			if err != nil || id <= 0 {
+				return fmt.Errorf("pdf-id inválido %q (use um inteiro positivo)", args[1])
+			}
+			dir, err := subjectsDir()
+			if err != nil {
+				return err
+			}
+
+			ctx, cancel := context.WithTimeout(cmd.Context(), 30*time.Second)
+			defer cancel()
+
+			var svc *services.SubjectService
+			deps, cleanup, err := newDeps(ctx, depsOptions{HTTPDebug: httpDebug})
+			if err == nil {
+				svc = deps.Subjects
+				defer cleanup()
+			} else {
+				// Offline: still works with slug / catálogo embutido.
+				svc = services.NewSubjectService(nil, nil, nil)
+			}
+
+			res, err := svc.SetPDFID(ctx, dir, query, id)
+			if err != nil {
+				return err
+			}
+			if res.Previous == 0 {
+				fmt.Fprintf(cmd.OutOrStdout(),
+					"Id gravado: %s → %d\n  %s\n", res.Slug, res.ID, res.Path)
+			} else if res.Previous == res.ID {
+				fmt.Fprintf(cmd.OutOrStdout(),
+					"Id inalterado: %s → %d\n  %s\n", res.Slug, res.ID, res.Path)
+			} else {
+				fmt.Fprintf(cmd.OutOrStdout(),
+					"Id atualizado: %s → %d (antes %d)\n  %s\n",
+					res.Slug, res.ID, res.Previous, res.Path)
+			}
+			return nil
+		},
+	}
+	cmd.Flags().BoolVar(&httpDebug, "http-debug", false, "imprime método, URL e status de cada pedido HTTP (stderr)")
 	return cmd
 }

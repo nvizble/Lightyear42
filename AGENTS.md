@@ -91,7 +91,7 @@ lightyear logout
 lightyear me
 lightyear profile
 lightyear projects
-lightyear subject     # baixa/abre o PDF do subject (cache local)
+lightyear subject     # baixa/abre o PDF do subject (catálogo embutido; set-id / import)
 lightyear evaluations # próximas avaliações (alias: evals)
 lightyear slots       # disponibilidade para avaliar (list/open/close; scope projects)
 lightyear campus      # mapa de online por cluster/posto (--friends filtra)

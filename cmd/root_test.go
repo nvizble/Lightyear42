@@ -56,6 +56,40 @@ func TestVersionCmd(t *testing.T) {
 	}
 }
 
+func TestSubjectImportHelp(t *testing.T) {
+	t.Parallel()
+
+	root := NewRootCmd()
+	buf := new(bytes.Buffer)
+	root.SetOut(buf)
+	root.SetErr(buf)
+	root.SetArgs([]string{"subject", "import", "--help"})
+
+	if err := root.Execute(); err != nil {
+		t.Fatalf("Execute subject import --help: %v", err)
+	}
+	if !strings.Contains(buf.String(), "import") {
+		t.Fatalf("help missing import:\n%s", buf.String())
+	}
+}
+
+func TestSubjectSetIDHelp(t *testing.T) {
+	t.Parallel()
+
+	root := NewRootCmd()
+	buf := new(bytes.Buffer)
+	root.SetOut(buf)
+	root.SetErr(buf)
+	root.SetArgs([]string{"subject", "set-id", "--help"})
+
+	if err := root.Execute(); err != nil {
+		t.Fatalf("Execute subject set-id --help: %v", err)
+	}
+	if !strings.Contains(buf.String(), "set-id") {
+		t.Fatalf("help missing set-id:\n%s", buf.String())
+	}
+}
+
 func TestConfigPathCmd(t *testing.T) {
 	t.Setenv("XDG_CONFIG_HOME", t.TempDir())
 
