@@ -3,9 +3,10 @@ package services
 import (
 	"context"
 	"io"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 
 	"github.com/nvizble/Lightyear42/internal/models"
@@ -13,9 +14,6 @@ import (
 
 type stubProjects struct {
 	project *models.Project
-	atts    []models.Attachment
-	sess    []models.ProjectSession
-	sessAtt map[int][]models.Attachment
 	err     error
 }
 
@@ -23,21 +21,31 @@ func (s stubProjects) BySlugOrName(context.Context, string) (*models.Project, er
 	return s.project, s.err
 }
 func (s stubProjects) Attachments(context.Context, int) ([]models.Attachment, error) {
-	return s.atts, nil
+	return nil, nil
 }
-func (s stubProjects) SessionAttachments(_ context.Context, id int) ([]models.Attachment, error) {
-	return s.sessAtt[id], nil
+func (s stubProjects) SessionAttachments(context.Context, int) ([]models.Attachment, error) {
+	return nil, nil
 }
 func (s stubProjects) Sessions(context.Context, int) ([]models.ProjectSession, error) {
-	return s.sess, nil
+	return nil, nil
+}
+
+type stubMe struct {
+	user *models.User
+}
+
+func (s stubMe) Me(context.Context) (*models.User, error) {
+	return s.user, nil
 }
 
 type stubDL struct {
 	body string
+	url  string
 	err  error
 }
 
-func (s stubDL) Download(_ context.Context, _ string, w io.Writer) error {
+func (s *stubDL) Download(_ context.Context, url string, w io.Writer) error {
+	s.url = url
 	if s.err != nil {
 		return s.err
 	}
@@ -45,82 +53,112 @@ func (s stubDL) Download(_ context.Context, _ string, w io.Writer) error {
 	return err
 }
 
-func TestSubjectService_EnsureSubject_DownloadAndCache(t *testing.T) {
+func TestSubjectService_WithPDFID(t *testing.T) {
 	dir := t.TempDir()
-	campus := 27
-	svc := NewSubjectService(stubProjects{
-		project: &models.Project{ID: 1, Name: "push_swap", Slug: "push_swap"},
-		sess: []models.ProjectSession{
-			{ID: 9, CampusID: &campus},
-		},
-		sessAtt: map[int][]models.Attachment{
-			9: {{
-				ID:       1,
-				Name:     "en.subject.pdf",
-				URL:      "https://cdn.example/en.subject.pdf",
-				Language: &models.Language{Identifier: "en"},
-			}},
-		},
-	}, stubDL{body: "%PDF-subject"})
+	dl := &stubDL{body: "%PDF-push_swap"}
+	svc := NewSubjectService(stubProjects{}, stubMe{
+		user: &models.User{ProjectsUsers: []models.ProjectUser{
+			{Project: models.Project{ID: 2687, Name: "push_swap", Slug: "42next-push_swap"}},
+		}},
+	}, dl)
 
 	res, err := svc.EnsureSubject(context.Background(), SubjectOptions{
-		Query:    "push_swap",
-		CampusID: campus,
-		Dir:      dir,
-		Lang:     "en",
+		Query: "push_swap",
+		Dir:   dir,
+		Lang:  "en",
+		PDFID: 189890,
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if res.Cached {
-		t.Fatal("primeira vez não deveria ser cache")
+	if res.Project.Slug != "42next-push_swap" {
+		t.Fatalf("slug = %s, want enrolled 42next-push_swap", res.Project.Slug)
 	}
-	data, err := os.ReadFile(res.Path)
-	if err != nil || string(data) != "%PDF-subject" {
-		t.Fatalf("file = %q err=%v", data, err)
+	wantURL := "https://cdn.intra.42.fr/pdf/pdf/189890/en.subject.pdf"
+	if dl.url != wantURL {
+		t.Fatalf("download url = %q, want %q", dl.url, wantURL)
+	}
+	data, _ := os.ReadFile(res.Path)
+	if string(data) != "%PDF-push_swap" {
+		t.Fatalf("file = %q", data)
 	}
 
-	res2, err := svc.EnsureSubject(context.Background(), SubjectOptions{
-		Query:    "push_swap",
-		CampusID: campus,
-		Dir:      dir,
+	// Second run uses index.json without --pdf-id
+	dl2 := &stubDL{body: "x"}
+	svc2 := NewSubjectService(stubProjects{}, stubMe{
+		user: &models.User{ProjectsUsers: []models.ProjectUser{
+			{Project: models.Project{ID: 2687, Name: "push_swap", Slug: "42next-push_swap"}},
+		}},
+	}, dl2)
+	res2, err := svc2.EnsureSubject(context.Background(), SubjectOptions{
+		Query: "push_swap",
+		Dir:   dir,
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
 	if !res2.Cached {
-		t.Fatal("segunda vez deveria usar cache")
-	}
-	if res2.Path != res.Path {
-		t.Fatalf("path mudou: %s vs %s", res.Path, res2.Path)
+		t.Fatal("deveria usar PDF em cache")
 	}
 }
 
-func TestPickSubject_PrefersLang(t *testing.T) {
-	t.Parallel()
+func TestSubjectService_DiscoverFromHTML(t *testing.T) {
+	dir := t.TempDir()
+	html := `<a href="https://cdn.intra.42.fr/pdf/pdf/189890/en.subject.pdf">subject</a>`
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte(html))
+	}))
+	t.Cleanup(srv.Close)
 
-	atts := []models.Attachment{
-		{Name: "fr.subject.pdf", URL: "https://x/fr", Language: &models.Language{Identifier: "fr"}},
-		{Name: "en.subject.pdf", URL: "https://x/en", Language: &models.Language{Identifier: "en"}},
-	}
-	got, err := pickSubject(atts, "fr")
+	dl := &stubDL{body: "%PDF"}
+	svc := NewSubjectService(stubProjects{
+		project: &models.Project{ID: 1, Name: "push_swap", Slug: "42next-push_swap"},
+	}, stubMe{user: &models.User{}}, dl)
+	svc.http = srv.Client()
+	// Point discover at test server by temporarily patching — use custom discover via HTML server
+	// Override: monkey by setting slug page — discoverPDFID uses fixed host.
+	// So test discoverPDFID indirectly via rewriting: call discover with transport that maps host.
+	svc.http.Transport = roundTripFunc(func(req *http.Request) (*http.Response, error) {
+		req.URL.Scheme = "http"
+		req.URL.Host = srv.Listener.Addr().String()
+		return http.DefaultTransport.RoundTrip(req)
+	})
+
+	res, err := svc.EnsureSubject(context.Background(), SubjectOptions{
+		Query: "42next-push_swap",
+		Dir:   dir,
+	})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got.LangCode() != "fr" {
-		t.Fatalf("lang = %s", got.LangCode())
+	if dl.url != "https://cdn.intra.42.fr/pdf/pdf/189890/en.subject.pdf" {
+		t.Fatalf("url = %s", dl.url)
+	}
+	if res.Cached {
+		t.Fatal("primeira descarga")
+	}
+}
+
+type roundTripFunc func(*http.Request) (*http.Response, error)
+
+func (f roundTripFunc) RoundTrip(r *http.Request) (*http.Response, error) { return f(r) }
+
+func TestMatchEnrolled(t *testing.T) {
+	t.Parallel()
+	list := []models.ProjectUser{
+		{Project: models.Project{Name: "Libft", Slug: "42cursus-libft"}},
+		{Project: models.Project{Name: "push_swap", Slug: "42next-push_swap"}},
+	}
+	p := matchEnrolled(list, "push_swap")
+	if p == nil || p.Slug != "42next-push_swap" {
+		t.Fatalf("got %+v", p)
 	}
 }
 
 func TestSanitizeFilename(t *testing.T) {
 	t.Parallel()
-	if got := sanitizeFilename("Push Swap!"); got != "push_swap_" && !strings.HasPrefix(got, "push") {
-		// push_swap_ with trailing underscore for !
-		if filepath.Base(got) == "" {
-			t.Fatal(got)
-		}
-	}
 	if got := sanitizeFilename("push_swap"); got != "push_swap" {
 		t.Fatalf("got %q", got)
 	}
+	_ = filepath.Separator
 }

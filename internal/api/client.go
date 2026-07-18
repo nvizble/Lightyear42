@@ -33,6 +33,7 @@ type Client struct {
 	http        *http.Client
 	maxRetries  int
 	baseBackoff time.Duration
+	debug       io.Writer
 }
 
 // Option customizes the Client.
@@ -154,7 +155,8 @@ func (c *Client) downloadOnce(ctx context.Context, endpoint string, w io.Writer)
 	}
 
 	errBody, _ := io.ReadAll(io.LimitReader(resp.Body, maxErrorBodyBytes))
-	apiErr := newHTTPError(resp.StatusCode, strings.TrimSpace(string(errBody)))
+	body := enrichErrorBody(resp.StatusCode, strings.TrimSpace(string(errBody)), resp.Header)
+	apiErr := newHTTPError(resp.StatusCode, body)
 	if resp.StatusCode == 429 {
 		return &rateLimitError{apiErr: apiErr, retryAfter: parseRetryAfter(resp.Header)}
 	}
@@ -221,7 +223,8 @@ func (c *Client) do(ctx context.Context, method, endpoint string, body []byte) (
 	}
 
 	errBody, _ := io.ReadAll(io.LimitReader(resp.Body, maxErrorBodyBytes))
-	apiErr := newHTTPError(resp.StatusCode, strings.TrimSpace(string(errBody)))
+	enriched := enrichErrorBody(resp.StatusCode, strings.TrimSpace(string(errBody)), resp.Header)
+	apiErr := newHTTPError(resp.StatusCode, enriched)
 	if resp.StatusCode == 429 {
 		return nil, &rateLimitError{apiErr: apiErr, retryAfter: parseRetryAfter(resp.Header)}
 	}

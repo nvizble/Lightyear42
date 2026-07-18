@@ -2,33 +2,44 @@ package services
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
+	"net/http"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
+	"time"
 
 	"github.com/nvizble/Lightyear42/internal/models"
 	"github.com/nvizble/Lightyear42/internal/repository"
 )
+
+// ErrSubjectPDFUnknown means the CDN PDF id could not be resolved
+// (API attachments are 403 for students; HTML scrape failed; no --pdf-id).
+var ErrSubjectPDFUnknown = errors.New("subject PDF id desconhecido")
 
 // SubjectDownloader fetches a remote URL into a writer (API/CDN).
 type SubjectDownloader interface {
 	Download(ctx context.Context, url string, w io.Writer) error
 }
 
+// MeProjects loads the authenticated user's project enrolments.
+type MeProjects interface {
+	Me(ctx context.Context) (*models.User, error)
+}
+
 // SubjectOptions controls subject resolution and download.
 type SubjectOptions struct {
-	// Query is the project slug or name (e.g. "push_swap").
-	Query string
-	// Lang prefers this language code (en, fr, pt, …). Empty = best effort.
-	Lang string
-	// CampusID prefers attachments from this campus' project session (0 = ignore).
-	CampusID int
-	// Force re-downloads even when a cached file exists.
-	Force bool
-	// Dir is the local cache directory for PDF files.
-	Dir string
+	Query  string
+	Lang   string
+	Force  bool
+	Dir    string
+	// PDFID forces the CDN document id (e.g. 189890 for push_swap).
+	// When set, it is stored in the local slug→id index for later runs.
+	PDFID int
 }
 
 // SubjectResult is the local path of the subject PDF.
@@ -41,15 +52,29 @@ type SubjectResult struct {
 }
 
 // SubjectService resolves, caches and opens project subject PDFs.
+//
+// Note: GET /v2/projects/:id/attachments returns 403 for student tokens
+// (X-Application-Roles: None). Subject PDFs are served from the public CDN
+// (cdn.intra.42.fr/pdf/pdf/{id}/{lang}.subject.pdf); the numeric id is
+// discovered via the Intra project page or --pdf-id.
 type SubjectService struct {
 	projects repository.Projects
+	me       MeProjects
 	dl       SubjectDownloader
+	http     *http.Client
 }
 
-// NewSubjectService wires project lookup and binary download.
-func NewSubjectService(projects repository.Projects, dl SubjectDownloader) *SubjectService {
-	return &SubjectService{projects: projects, dl: dl}
+// NewSubjectService wires project lookup, /me enrolments and binary download.
+func NewSubjectService(projects repository.Projects, me MeProjects, dl SubjectDownloader) *SubjectService {
+	return &SubjectService{
+		projects: projects,
+		me:       me,
+		dl:       dl,
+		http:     &http.Client{Timeout: 30 * time.Second},
+	}
 }
+
+var cdnSubjectRe = regexp.MustCompile(`https://cdn\.intra\.42\.fr/pdf/pdf/(\d+)/([a-z]+)\.subject\.pdf`)
 
 // EnsureSubject returns a local PDF path, downloading when missing.
 func (s *SubjectService) EnsureSubject(ctx context.Context, opts SubjectOptions) (*SubjectResult, error) {
@@ -63,43 +88,50 @@ func (s *SubjectService) EnsureSubject(ctx context.Context, opts SubjectOptions)
 		return nil, fmt.Errorf("criar diretório de subjects: %w", err)
 	}
 
-	project, err := s.projects.BySlugOrName(ctx, opts.Query)
+	project, err := s.resolveProject(ctx, opts.Query)
 	if err != nil {
 		return nil, err
 	}
 
-	atts, err := s.collectAttachments(ctx, project.ID, opts.CampusID)
-	if err != nil {
-		return nil, err
-	}
-
-	att, err := pickSubject(atts, opts.Lang)
-	if err != nil {
-		return nil, fmt.Errorf("projeto %s: %w", project.Slug, err)
-	}
-
-	lang := att.LangCode()
+	lang := strings.ToLower(strings.TrimSpace(opts.Lang))
 	if lang == "" {
-		lang = "und"
+		lang = "en"
 	}
+
+	pdfID := opts.PDFID
+	if pdfID == 0 {
+		pdfID = loadPDFIndex(opts.Dir)[project.Slug]
+	}
+	if pdfID == 0 {
+		pdfID, lang = s.discoverPDFID(ctx, project.Slug, lang)
+	}
+	if pdfID == 0 {
+		intra := "https://projects.intra.42.fr/projects/" + project.Slug
+		return &SubjectResult{Project: *project}, fmt.Errorf(
+			"%w: a API 42 não expõe o PDF (attachments → 403 para alunos).\n"+
+				"Abra o projeto na Intra, copie o id da URL do PDF\n"+
+				"  (ex.: cdn.intra.42.fr/pdf/pdf/189890/en.subject.pdf → 189890)\n"+
+				"e rode:\n"+
+				"  lightyear subject %s --pdf-id 189890\n"+
+				"Página do projeto: %s",
+			ErrSubjectPDFUnknown, opts.Query, intra,
+		)
+	}
+
+	if opts.PDFID != 0 || loadPDFIndex(opts.Dir)[project.Slug] != pdfID {
+		_ = savePDFIndex(opts.Dir, project.Slug, pdfID)
+	}
+
+	url := fmt.Sprintf(models.CDNSubjectURL, pdfID, lang)
 	filename := sanitizeFilename(project.Slug) + "_" + lang + ".pdf"
 	path := filepath.Join(opts.Dir, filename)
 
 	if !opts.Force {
 		if info, err := os.Stat(path); err == nil && info.Size() > 0 {
 			return &SubjectResult{
-				Project:  *project,
-				Path:     path,
-				Cached:   true,
-				Language: lang,
-				URL:      att.DownloadURL(),
+				Project: *project, Path: path, Cached: true, Language: lang, URL: url,
 			}, nil
 		}
-	}
-
-	url := att.DownloadURL()
-	if url == "" {
-		return nil, fmt.Errorf("attachment %q sem URL de download", att.Name)
 	}
 
 	tmp := path + ".partial"
@@ -110,7 +142,7 @@ func (s *SubjectService) EnsureSubject(ctx context.Context, opts SubjectOptions)
 	if err := s.dl.Download(ctx, url, f); err != nil {
 		_ = f.Close()
 		_ = os.Remove(tmp)
-		return nil, fmt.Errorf("baixar subject: %w", err)
+		return nil, fmt.Errorf("baixar subject da CDN: %w", err)
 	}
 	if err := f.Close(); err != nil {
 		_ = os.Remove(tmp)
@@ -122,101 +154,113 @@ func (s *SubjectService) EnsureSubject(ctx context.Context, opts SubjectOptions)
 	}
 
 	return &SubjectResult{
-		Project:  *project,
-		Path:     path,
-		Cached:   false,
-		Language: lang,
-		URL:      url,
+		Project: *project, Path: path, Cached: false, Language: lang, URL: url,
 	}, nil
 }
 
-func (s *SubjectService) collectAttachments(ctx context.Context, projectID, campusID int) ([]models.Attachment, error) {
-	var all []models.Attachment
-
-	if campusID > 0 {
-		sessions, err := s.projects.Sessions(ctx, projectID)
-		if err == nil {
-			for _, sess := range sessions {
-				if sess.CampusID != nil && *sess.CampusID == campusID {
-					atts, err := s.projects.SessionAttachments(ctx, sess.ID)
-					if err == nil {
-						all = append(all, atts...)
-					}
-				}
-			}
-			// Fallback: sessions without campus (global) when campus-specific empty.
-			if len(all) == 0 {
-				for _, sess := range sessions {
-					if sess.CampusID == nil {
-						atts, err := s.projects.SessionAttachments(ctx, sess.ID)
-						if err == nil {
-							all = append(all, atts...)
-						}
-					}
-				}
+func (s *SubjectService) resolveProject(ctx context.Context, query string) (*models.Project, error) {
+	query = strings.TrimSpace(query)
+	if s.me != nil {
+		if me, err := s.me.Me(ctx); err == nil && me != nil {
+			if p := matchEnrolled(me.ProjectsUsers, query); p != nil {
+				return p, nil
 			}
 		}
 	}
-
-	projectAtts, err := s.projects.Attachments(ctx, projectID)
-	if err != nil && len(all) == 0 {
-		return nil, err
-	}
-	all = append(all, projectAtts...)
-
-	if len(all) == 0 {
-		return nil, fmt.Errorf("nenhum attachment encontrado")
-	}
-	return all, nil
+	return s.projects.BySlugOrName(ctx, query)
 }
 
-func pickSubject(atts []models.Attachment, preferLang string) (*models.Attachment, error) {
-	preferLang = strings.ToLower(strings.TrimSpace(preferLang))
-
-	var pdfs []models.Attachment
-	for _, a := range atts {
-		if a.DownloadURL() == "" {
-			continue
-		}
-		if looksLikeSubject(a) {
-			pdfs = append(pdfs, a)
+func matchEnrolled(list []models.ProjectUser, query string) *models.Project {
+	lower := strings.ToLower(query)
+	for i := range list {
+		p := list[i].Project
+		if strings.EqualFold(p.Name, query) || strings.EqualFold(p.Slug, query) {
+			return &p
 		}
 	}
-	if len(pdfs) == 0 {
-		// Any downloadable PDF-like attachment.
-		for _, a := range atts {
-			if a.DownloadURL() == "" {
-				continue
-			}
-			if strings.EqualFold(a.Type, "Pdf") || strings.HasSuffix(strings.ToLower(a.Name), ".pdf") ||
-				strings.Contains(strings.ToLower(a.URL), ".pdf") {
-				pdfs = append(pdfs, a)
-			}
+	for i := range list {
+		p := list[i].Project
+		if strings.Contains(strings.ToLower(p.Slug), lower) ||
+			strings.Contains(strings.ToLower(p.Name), lower) {
+			return &p
 		}
 	}
-	if len(pdfs) == 0 {
-		return nil, fmt.Errorf("nenhum PDF de subject disponível")
-	}
-
-	if preferLang != "" {
-		for i := range pdfs {
-			if strings.EqualFold(pdfs[i].LangCode(), preferLang) {
-				return &pdfs[i], nil
-			}
-		}
-	}
-	// Prefer English, then first.
-	for i := range pdfs {
-		if strings.EqualFold(pdfs[i].LangCode(), "en") {
-			return &pdfs[i], nil
-		}
-	}
-	return &pdfs[0], nil
+	return nil
 }
 
-func looksLikeSubject(a models.Attachment) bool {
-	blob := strings.ToLower(a.Name + " " + a.Slug + " " + a.Kind + " " + a.Type + " " + a.DownloadURL())
-	return strings.Contains(blob, "subject")
+// discoverPDFID tries to extract a CDN subject id from the Intra project page HTML.
+func (s *SubjectService) discoverPDFID(ctx context.Context, slug, preferLang string) (int, string) {
+	client := s.http
+	if client == nil {
+		client = http.DefaultClient
+	}
+	page := "https://projects.intra.42.fr/projects/" + slug
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, page, nil)
+	if err != nil {
+		return 0, preferLang
+	}
+	req.Header.Set("Accept", "text/html")
+	req.Header.Set("User-Agent", "lightyear-cli")
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return 0, preferLang
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return 0, preferLang
+	}
+	body, err := io.ReadAll(io.LimitReader(resp.Body, 2<<20))
+	if err != nil {
+		return 0, preferLang
+	}
+
+	matches := cdnSubjectRe.FindAllStringSubmatch(string(body), -1)
+	if len(matches) == 0 {
+		return 0, preferLang
+	}
+	// Prefer requested language.
+	for _, m := range matches {
+		if preferLang != "" && m[2] == preferLang {
+			var id int
+			_, _ = fmt.Sscanf(m[1], "%d", &id)
+			return id, m[2]
+		}
+	}
+	var id int
+	_, _ = fmt.Sscanf(matches[0][1], "%d", &id)
+	return id, matches[0][2]
+}
+
+type pdfIndex map[string]int
+
+func indexPath(dir string) string {
+	return filepath.Join(dir, "index.json")
+}
+
+func loadPDFIndex(dir string) pdfIndex {
+	data, err := os.ReadFile(indexPath(dir))
+	if err != nil {
+		return pdfIndex{}
+	}
+	var idx pdfIndex
+	if json.Unmarshal(data, &idx) != nil {
+		return pdfIndex{}
+	}
+	return idx
+}
+
+func savePDFIndex(dir string, slug string, id int) error {
+	idx := loadPDFIndex(dir)
+	if idx == nil {
+		idx = pdfIndex{}
+	}
+	idx[slug] = id
+	data, err := json.MarshalIndent(idx, "", "  ")
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(indexPath(dir), data, 0o600)
 }
 
 func sanitizeFilename(s string) string {
