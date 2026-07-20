@@ -79,7 +79,12 @@ func campusLayout() map[int]tui.ClusterGrid {
 		if err != nil || cluster < 1 || grid.Rows < 1 || grid.Posts < 1 {
 			continue
 		}
-		layout[cluster] = tui.ClusterGrid{Rows: grid.Rows, Posts: grid.Posts, Seats: grid.Seats}
+		layout[cluster] = tui.ClusterGrid{
+			Rows:         grid.Rows,
+			Posts:        grid.Posts,
+			Seats:        grid.Seats,
+			ReversePosts: grid.ReversePosts,
+		}
 	}
 	return layout
 }

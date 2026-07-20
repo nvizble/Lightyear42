@@ -102,6 +102,46 @@ func TestRenderCampusMap_ConfiguredLayout(t *testing.T) {
 	}
 }
 
+func TestRenderCampusMap_ReversePosts(t *testing.T) {
+	t.Parallel()
+
+	layout := map[int]ClusterGrid{
+		3: {Rows: 1, Posts: 6, ReversePosts: true},
+	}
+	out := RenderCampusMap("São-Paulo", []models.Location{
+		{Host: "c3r1p1", User: models.UserSummary{Login: "leftmost"}},
+		{Host: "c3r1p6", User: models.UserSummary{Login: "rightmost"}},
+	}, layout)
+
+	idx := strings.Index(out, "Cluster 3")
+	if idx < 0 {
+		t.Fatalf("Cluster 3 ausente:\n%s", out)
+	}
+	c3 := out[idx:]
+
+	// Headers must be p6 … p1 within cluster 3 only.
+	headerIdx := strings.Index(c3, "p6")
+	p1Idx := strings.Index(c3, "p1")
+	if headerIdx < 0 || p1Idx < 0 || headerIdx > p1Idx {
+		t.Fatalf("esperava headers p6…p1 no cluster 3; got:\n%s", c3)
+	}
+
+	// On the data row, p6 (rightmost login) appears left of p1.
+	row := ""
+	for _, line := range strings.Split(c3, "\n") {
+		if strings.Contains(line, "leftmost") || strings.Contains(line, "rightmost") {
+			row = line
+			break
+		}
+	}
+	if row == "" {
+		t.Fatalf("linha de dados não encontrada:\n%s", c3)
+	}
+	if strings.Index(row, "rightmost") > strings.Index(row, "leftmost") {
+		t.Fatalf("com reverse_posts, p6 (rightmost) deve aparecer à esquerda de p1:\n%s", row)
+	}
+}
+
 func TestRenderCampusMap_Empty(t *testing.T) {
 	t.Parallel()
 

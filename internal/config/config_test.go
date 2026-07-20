@@ -88,7 +88,7 @@ func TestLoad_CampusLayoutFromFile(t *testing.T) {
 	if err := os.MkdirAll(configDir, 0o700); err != nil {
 		t.Fatalf("MkdirAll: %v", err)
 	}
-	yaml := "campus_layout:\n  \"1\":\n    rows: 10\n    posts: 4\n  \"3\":\n    rows: 13\n    posts: 6\n"
+	yaml := "campus_layout:\n  \"1\":\n    rows: 10\n    posts: 4\n  \"3\":\n    rows: 13\n    posts: 6\n    seats: 64\n    reverse_posts: true\n"
 	if err := os.WriteFile(filepath.Join(configDir, "config.yaml"), []byte(yaml), 0o600); err != nil {
 		t.Fatalf("WriteFile: %v", err)
 	}
@@ -101,8 +101,8 @@ func TestLoad_CampusLayoutFromFile(t *testing.T) {
 	if got := cfg.CampusLayout["1"]; got != (ClusterLayout{Rows: 10, Posts: 4}) {
 		t.Fatalf("CampusLayout[1] = %+v, want {Rows:10 Posts:4}", got)
 	}
-	if got := cfg.CampusLayout["3"]; got != (ClusterLayout{Rows: 13, Posts: 6}) {
-		t.Fatalf("CampusLayout[3] = %+v, want {Rows:13 Posts:6}", got)
+	if got := cfg.CampusLayout["3"]; got != (ClusterLayout{Rows: 13, Posts: 6, Seats: 64, ReversePosts: true}) {
+		t.Fatalf("CampusLayout[3] = %+v, want {Rows:13 Posts:6 Seats:64 ReversePosts:true}", got)
 	}
 }
 

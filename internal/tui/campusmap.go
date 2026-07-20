@@ -36,10 +36,12 @@ func parseHost(host string) (seat, bool) {
 
 // ClusterGrid is the drawn size of one cluster, usually from user config.
 // Seats overrides the real capacity for irregular clusters (0 = rows × posts).
+// ReversePosts draws post columns from max→1 (mirrored physical numbering).
 type ClusterGrid struct {
-	Rows  int
-	Posts int
-	Seats int
+	Rows         int
+	Posts        int
+	Seats        int
+	ReversePosts bool
 }
 
 // Capacity returns the number of real seats in the cluster.
@@ -95,9 +97,11 @@ func RenderCampusMap(campusName string, locations []models.Location, layout map[
 
 	for cluster := 1; cluster <= maxCluster; cluster++ {
 		rows, posts := maxRow, maxPost
+		reverse := false
 		if grid, ok := layout[cluster]; ok {
 			// Never hide an occupied seat that falls outside the configured grid.
 			rows, posts = grid.Rows, grid.Posts
+			reverse = grid.ReversePosts
 			for row, occupied := range occupants[cluster] {
 				rows = max(rows, row)
 				for post := range occupied {
@@ -105,7 +109,7 @@ func RenderCampusMap(campusName string, locations []models.Location, layout map[
 				}
 			}
 		}
-		sections = append(sections, renderCluster(cluster, occupants[cluster], rows, posts))
+		sections = append(sections, renderCluster(cluster, occupants[cluster], rows, posts, reverse))
 	}
 
 	if len(unmapped) > 0 {
@@ -117,15 +121,27 @@ func RenderCampusMap(campusName string, locations []models.Location, layout map[
 
 // renderCluster draws one cluster as a uniform rows × posts grid.
 // rows may be nil for a cluster with nobody online.
-func renderCluster(cluster int, rows map[int]map[int]string, maxRow, maxPost int) string {
+// When reversePosts is true, columns are drawn pN … p1 (physical mirror).
+func renderCluster(cluster int, rows map[int]map[int]string, maxRow, maxPost int, reversePosts bool) string {
 	online := 0
 	for _, posts := range rows {
 		online += len(posts)
 	}
 
+	postOrder := make([]int, 0, maxPost)
+	if reversePosts {
+		for post := maxPost; post >= 1; post-- {
+			postOrder = append(postOrder, post)
+		}
+	} else {
+		for post := 1; post <= maxPost; post++ {
+			postOrder = append(postOrder, post)
+		}
+	}
+
 	headers := make([]string, 0, maxPost+1)
 	headers = append(headers, "")
-	for post := 1; post <= maxPost; post++ {
+	for _, post := range postOrder {
 		headers = append(headers, fmt.Sprintf("p%d", post))
 	}
 
@@ -143,7 +159,7 @@ func renderCluster(cluster int, rows map[int]map[int]string, maxRow, maxPost int
 	for row := 1; row <= maxRow; row++ {
 		cells := make([]string, 0, maxPost+1)
 		cells = append(cells, fmt.Sprintf("r%d", row))
-		for post := 1; post <= maxPost; post++ {
+		for _, post := range postOrder {
 			if login, ok := rows[row][post]; ok {
 				cells = append(cells, styleGood.Render(login))
 			} else {

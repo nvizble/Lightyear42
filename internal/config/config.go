@@ -31,10 +31,13 @@ type Config struct {
 
 // ClusterLayout is the grid size of one cluster. Seats is the real seat
 // count for irregular clusters with gaps; when 0, rows × posts is assumed.
+// ReversePosts draws columns right-to-left (pN … p1) when the physical
+// numbering is mirrored relative to the usual left-to-right map.
 type ClusterLayout struct {
-	Rows  int `mapstructure:"rows"`
-	Posts int `mapstructure:"posts"`
-	Seats int `mapstructure:"seats"`
+	Rows         int  `mapstructure:"rows"`
+	Posts        int  `mapstructure:"posts"`
+	Seats        int  `mapstructure:"seats"`
+	ReversePosts bool `mapstructure:"reverse_posts"`
 }
 
 // Paths returns well-known filesystem locations for the CLI.
