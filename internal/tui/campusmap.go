@@ -36,12 +36,13 @@ func parseHost(host string) (seat, bool) {
 
 // ClusterGrid is the drawn size of one cluster, usually from user config.
 // Seats overrides the real capacity for irregular clusters (0 = rows × posts).
-// ReversePosts draws post columns from max→1 (mirrored physical numbering).
+// NaturalPosts draws columns p1…pN (left-to-right). By default posts are
+// mirrored (pN…p1) to match physical numbering on 42 campuses like São Paulo.
 type ClusterGrid struct {
 	Rows         int
 	Posts        int
 	Seats        int
-	ReversePosts bool
+	NaturalPosts bool
 }
 
 // Capacity returns the number of real seats in the cluster.
@@ -97,11 +98,11 @@ func RenderCampusMap(campusName string, locations []models.Location, layout map[
 
 	for cluster := 1; cluster <= maxCluster; cluster++ {
 		rows, posts := maxRow, maxPost
-		reverse := false
+		reverse := true // default: physical mirror (pN … p1)
 		if grid, ok := layout[cluster]; ok {
 			// Never hide an occupied seat that falls outside the configured grid.
 			rows, posts = grid.Rows, grid.Posts
-			reverse = grid.ReversePosts
+			reverse = !grid.NaturalPosts
 			for row, occupied := range occupants[cluster] {
 				rows = max(rows, row)
 				for post := range occupied {

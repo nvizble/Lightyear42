@@ -177,9 +177,9 @@ redirect_uri: "http://127.0.0.1:53682/callback"
 campus_layout:
   "1": { rows: 10, posts: 4 }
   "2": { rows: 12, posts: 6 }
-  # reverse_posts: espelha as colunas (p6…p1) quando a numeração física
-  # está invertida em relação ao mapa padrão esquerda→direita.
-  "3": { rows: 13, posts: 6, seats: 64, reverse_posts: true }
+  "3": { rows: 13, posts: 6, seats: 64 }
+  # O mapa desenha posts espelhados (pN…p1) por padrão.
+  # Use natural_posts: true só se o teu campus for esquerda→direita (p1…pN).
 ```
 
 ## Arquitetura

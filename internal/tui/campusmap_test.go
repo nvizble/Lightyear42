@@ -102,43 +102,80 @@ func TestRenderCampusMap_ConfiguredLayout(t *testing.T) {
 	}
 }
 
-func TestRenderCampusMap_ReversePosts(t *testing.T) {
+func TestRenderCampusMap_MirroredPostsByDefault(t *testing.T) {
 	t.Parallel()
 
-	layout := map[int]ClusterGrid{
-		3: {Rows: 1, Posts: 6, ReversePosts: true},
-	}
 	out := RenderCampusMap("São-Paulo", []models.Location{
-		{Host: "c3r1p1", User: models.UserSummary{Login: "leftmost"}},
-		{Host: "c3r1p6", User: models.UserSummary{Login: "rightmost"}},
-	}, layout)
+		{Host: "c1r1p1", User: models.UserSummary{Login: "leftmost"}},
+		{Host: "c1r1p4", User: models.UserSummary{Login: "rightmost"}},
+	}, nil)
 
-	idx := strings.Index(out, "Cluster 3")
+	idx := strings.Index(out, "Cluster 1")
 	if idx < 0 {
-		t.Fatalf("Cluster 3 ausente:\n%s", out)
+		t.Fatalf("Cluster 1 ausente:\n%s", out)
 	}
-	c3 := out[idx:]
+	c1 := out[idx:]
+	end := strings.Index(c1[1:], "Cluster ")
+	if end > 0 {
+		c1 = c1[:end+1]
+	}
 
-	// Headers must be p6 … p1 within cluster 3 only.
-	headerIdx := strings.Index(c3, "p6")
-	p1Idx := strings.Index(c3, "p1")
+	headerIdx := strings.Index(c1, "p4")
+	p1Idx := strings.Index(c1, "p1")
 	if headerIdx < 0 || p1Idx < 0 || headerIdx > p1Idx {
-		t.Fatalf("esperava headers p6…p1 no cluster 3; got:\n%s", c3)
+		t.Fatalf("esperava headers p4…p1 por padrão; got:\n%s", c1)
 	}
 
-	// On the data row, p6 (rightmost login) appears left of p1.
 	row := ""
-	for _, line := range strings.Split(c3, "\n") {
+	for _, line := range strings.Split(c1, "\n") {
 		if strings.Contains(line, "leftmost") || strings.Contains(line, "rightmost") {
 			row = line
 			break
 		}
 	}
 	if row == "" {
-		t.Fatalf("linha de dados não encontrada:\n%s", c3)
+		t.Fatalf("linha de dados não encontrada:\n%s", c1)
 	}
 	if strings.Index(row, "rightmost") > strings.Index(row, "leftmost") {
-		t.Fatalf("com reverse_posts, p6 (rightmost) deve aparecer à esquerda de p1:\n%s", row)
+		t.Fatalf("por padrão, p4 (rightmost) deve aparecer à esquerda de p1:\n%s", row)
+	}
+}
+
+func TestRenderCampusMap_NaturalPosts(t *testing.T) {
+	t.Parallel()
+
+	layout := map[int]ClusterGrid{
+		1: {Rows: 1, Posts: 4, NaturalPosts: true},
+	}
+	out := RenderCampusMap("Outro", []models.Location{
+		{Host: "c1r1p1", User: models.UserSummary{Login: "leftmost"}},
+		{Host: "c1r1p4", User: models.UserSummary{Login: "rightmost"}},
+	}, layout)
+
+	idx := strings.Index(out, "Cluster 1")
+	if idx < 0 {
+		t.Fatalf("Cluster 1 ausente:\n%s", out)
+	}
+	c1 := out[idx:]
+
+	headerIdx := strings.Index(c1, "p1")
+	p4Idx := strings.Index(c1, "p4")
+	if headerIdx < 0 || p4Idx < 0 || headerIdx > p4Idx {
+		t.Fatalf("com natural_posts, esperava headers p1…p4; got:\n%s", c1)
+	}
+
+	row := ""
+	for _, line := range strings.Split(c1, "\n") {
+		if strings.Contains(line, "leftmost") || strings.Contains(line, "rightmost") {
+			row = line
+			break
+		}
+	}
+	if row == "" {
+		t.Fatalf("linha de dados não encontrada:\n%s", c1)
+	}
+	if strings.Index(row, "leftmost") > strings.Index(row, "rightmost") {
+		t.Fatalf("com natural_posts, p1 (leftmost) deve aparecer à esquerda de p4:\n%s", row)
 	}
 }
 

@@ -83,7 +83,7 @@ func campusLayout() map[int]tui.ClusterGrid {
 			Rows:         grid.Rows,
 			Posts:        grid.Posts,
 			Seats:        grid.Seats,
-			ReversePosts: grid.ReversePosts,
+			NaturalPosts: grid.NaturalPosts,
 		}
 	}
 	return layout

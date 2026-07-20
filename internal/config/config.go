@@ -31,13 +31,16 @@ type Config struct {
 
 // ClusterLayout is the grid size of one cluster. Seats is the real seat
 // count for irregular clusters with gaps; when 0, rows × posts is assumed.
-// ReversePosts draws columns right-to-left (pN … p1) when the physical
-// numbering is mirrored relative to the usual left-to-right map.
+// NaturalPosts draws columns left-to-right (p1 … pN). The default map is
+// mirrored (pN … p1) to match physical numbering on campuses like São Paulo.
+// ReversePosts is kept for backward compatibility with v1.1.2 configs; when
+// true it is ignored (mirror is already the default).
 type ClusterLayout struct {
 	Rows         int  `mapstructure:"rows"`
 	Posts        int  `mapstructure:"posts"`
 	Seats        int  `mapstructure:"seats"`
-	ReversePosts bool `mapstructure:"reverse_posts"`
+	NaturalPosts bool `mapstructure:"natural_posts"`
+	ReversePosts bool `mapstructure:"reverse_posts"` // deprecated; default is mirrored
 }
 
 // Paths returns well-known filesystem locations for the CLI.
