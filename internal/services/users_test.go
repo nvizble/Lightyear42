@@ -11,12 +11,14 @@ import (
 
 // fakeUsers implements repository.Users for tests.
 type fakeUsers struct {
-	me          *models.User
-	byLogin     map[string]*models.User
-	summaries   []models.UserSummary
-	evaluations []models.ScaleTeam
-	lastPrefix  string
-	lastLimit   int
+	me             *models.User
+	byLogin        map[string]*models.User
+	summaries      []models.UserSummary
+	evaluations    []models.ScaleTeam
+	asCorrector    []models.ScaleTeam
+	asCorrectorErr error
+	lastPrefix     string
+	lastLimit      int
 }
 
 func (f *fakeUsers) Me(context.Context) (*models.User, error) {
@@ -39,6 +41,13 @@ func (f *fakeUsers) SearchByLoginPrefix(_ context.Context, prefix string, limit 
 
 func (f *fakeUsers) UpcomingEvaluations(context.Context) ([]models.ScaleTeam, error) {
 	return f.evaluations, nil
+}
+
+func (f *fakeUsers) UnfilledAsCorrector(context.Context) ([]models.ScaleTeam, error) {
+	if f.asCorrectorErr != nil {
+		return nil, f.asCorrectorErr
+	}
+	return f.asCorrector, nil
 }
 
 func TestUserService_Profile(t *testing.T) {
@@ -181,4 +190,53 @@ func TestUserService_Search(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestUserService_OpenableEvaluation(t *testing.T) {
+	t.Parallel()
+
+	now := time.Date(2026, 7, 18, 15, 0, 0, 0, time.UTC)
+	past := now.Add(-30 * time.Minute)
+	future := now.Add(30 * time.Minute)
+
+	t.Run("prioriza a que já começou", func(t *testing.T) {
+		t.Parallel()
+		svc := NewUserService(&fakeUsers{asCorrector: []models.ScaleTeam{
+			{ID: 1, BeginAt: &future, Team: models.EvaluationTeam{Name: "soon"}},
+			{ID: 2, BeginAt: &past, Team: models.EvaluationTeam{Name: "now"}},
+		}})
+		got, err := svc.OpenableEvaluation(context.Background(), now)
+		if err != nil {
+			t.Fatalf("OpenableEvaluation: %v", err)
+		}
+		if got.ID != 2 {
+			t.Fatalf("ID = %d, want 2 (já começou)", got.ID)
+		}
+	})
+
+	t.Run("sem iniciada, pega a próxima", func(t *testing.T) {
+		t.Parallel()
+		svc := NewUserService(&fakeUsers{asCorrector: []models.ScaleTeam{
+			{ID: 3, BeginAt: &future, Team: models.EvaluationTeam{Name: "next"}},
+		}})
+		got, err := svc.OpenableEvaluation(context.Background(), now)
+		if err != nil {
+			t.Fatalf("OpenableEvaluation: %v", err)
+		}
+		if got.ID != 3 {
+			t.Fatalf("ID = %d, want 3", got.ID)
+		}
+		if got.HasStarted(now) {
+			t.Fatal("próxima ainda não deveria ter começado")
+		}
+	})
+
+	t.Run("vazio", func(t *testing.T) {
+		t.Parallel()
+		svc := NewUserService(&fakeUsers{})
+		_, err := svc.OpenableEvaluation(context.Background(), now)
+		if !errors.Is(err, ErrNoOpenableEvaluation) {
+			t.Fatalf("err = %v, want ErrNoOpenableEvaluation", err)
+		}
+	})
 }

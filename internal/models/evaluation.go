@@ -3,14 +3,22 @@ package models
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"time"
 )
+
+// ScaleTeamFillURLFormat builds the Intra page used to start/fill an evaluation.
+// Confirmed path may change when we capture a real "Start evaluation" link —
+// update this constant (or switch to token-based URLs) then.
+const ScaleTeamFillURLFormat = "https://profile.intra.42.fr/scale_teams/%d/edit"
 
 // ScaleTeam is a scheduled evaluation (/v2/me/scale_teams): someone
 // evaluating a team, with the authenticated user on either side.
 type ScaleTeam struct {
 	ID         int             `json:"id"`
 	BeginAt    *time.Time      `json:"begin_at"`
+	FilledAt   *time.Time      `json:"filled_at"`
+	Token      string          `json:"token"`
 	Corrector  ScaleTeamActor  `json:"corrector"`
 	Correcteds ScaleTeamActors `json:"correcteds"`
 	Team       EvaluationTeam  `json:"team"`
@@ -66,6 +74,25 @@ func (as *ScaleTeamActors) UnmarshalJSON(data []byte) error {
 }
 
 // IsCorrector reports whether login is the evaluator of this scale team.
-func (st *ScaleTeam) IsCorrector(login string) bool {
+func (st ScaleTeam) IsCorrector(login string) bool {
 	return st.Corrector.Login != "" && st.Corrector.Login == login
+}
+
+// IsFilled reports whether the evaluation form was already submitted.
+func (st ScaleTeam) IsFilled() bool {
+	return st.FilledAt != nil
+}
+
+// HasStarted reports whether begin_at is in the past (or now).
+func (st ScaleTeam) HasStarted(now time.Time) bool {
+	return st.BeginAt != nil && !st.BeginAt.After(now)
+}
+
+// FillURL returns the Intra URL to start/fill this evaluation as corrector.
+// Empty when the scale team has no id.
+func (st ScaleTeam) FillURL() string {
+	if st.ID <= 0 {
+		return ""
+	}
+	return fmt.Sprintf(ScaleTeamFillURLFormat, st.ID)
 }

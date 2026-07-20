@@ -3,6 +3,7 @@ package models
 import (
 	"encoding/json"
 	"testing"
+	"time"
 )
 
 func TestScaleTeamUnmarshal_VisibleParticipants(t *testing.T) {
@@ -32,6 +33,38 @@ func TestScaleTeamUnmarshal_VisibleParticipants(t *testing.T) {
 	}
 	if !st.IsCorrector("jdiniz") || st.IsCorrector("malima-m") {
 		t.Error("IsCorrector deveria valer só para jdiniz")
+	}
+}
+
+func TestScaleTeam_FillURLAndTiming(t *testing.T) {
+	t.Parallel()
+
+	begin := time.Date(2026, 7, 18, 14, 0, 0, 0, time.UTC)
+	st := ScaleTeam{ID: 99, BeginAt: &begin}
+
+	wantURL := "https://profile.intra.42.fr/scale_teams/99/edit"
+	if got := st.FillURL(); got != wantURL {
+		t.Errorf("FillURL() = %q, want %q", got, wantURL)
+	}
+	if (ScaleTeam{}).FillURL() != "" {
+		t.Error("FillURL sem id deveria ser vazio")
+	}
+
+	before := begin.Add(-time.Minute)
+	after := begin.Add(time.Minute)
+	if st.HasStarted(before) {
+		t.Error("HasStarted antes de begin_at deveria ser false")
+	}
+	if !st.HasStarted(after) {
+		t.Error("HasStarted depois de begin_at deveria ser true")
+	}
+	if st.IsFilled() {
+		t.Error("IsFilled sem filled_at deveria ser false")
+	}
+	filled := begin
+	st.FilledAt = &filled
+	if !st.IsFilled() {
+		t.Error("IsFilled com filled_at deveria ser true")
 	}
 }
 

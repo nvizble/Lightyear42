@@ -29,6 +29,12 @@ func RenderEvaluations(evaluations []models.ScaleTeam, meLogin string, limit int
 		b.WriteString(styleLevel.Render(evaluationWhen(st.BeginAt)))
 		b.WriteString("  ")
 		b.WriteString(evaluationLine(st, meLogin))
+		if st.IsCorrector(meLogin) {
+			if url := st.FillURL(); url != "" {
+				b.WriteString("\n")
+				b.WriteString(styleLabel.Render("  → " + url))
+			}
+		}
 	}
 	if hidden := len(evaluations) - len(shown); hidden > 0 {
 		b.WriteString("\n")

@@ -24,6 +24,7 @@ func TestRenderEvaluations(t *testing.T) {
 		begin := time.Date(2026, 7, 18, 14, 0, 0, 0, time.Local)
 		out := RenderEvaluations([]models.ScaleTeam{
 			{
+				ID:        42,
 				BeginAt:   &begin,
 				Corrector: models.ScaleTeamActor{Login: "jdiniz"},
 				Team:      models.EvaluationTeam{Name: "malima-m's libft"},
@@ -40,6 +41,7 @@ func TestRenderEvaluations(t *testing.T) {
 			"18/07 14:00",
 			"você avalia", "malima-m's libft",
 			"someone", "avalia você", "jdiniz's gnl",
+			"profile.intra.42.fr/scale_teams/42/edit",
 		} {
 			if !strings.Contains(out, want) {
 				t.Errorf("out sem %q:\n%s", want, out)
