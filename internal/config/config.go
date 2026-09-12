@@ -15,6 +15,9 @@ const (
 
 	// EnvPrefix is the environment variable prefix (e.g. FORTYTWO_CLIENT_ID).
 	EnvPrefix = "FORTYTWO"
+
+	// DefaultNtfyServer is the push server used when none is configured.
+	DefaultNtfyServer = "https://ntfy.sh"
 )
 
 // Config holds runtime configuration for the CLI.
@@ -23,10 +26,22 @@ type Config struct {
 	ClientSecret string `mapstructure:"client_secret"`
 	APIBaseURL   string `mapstructure:"api_base_url"`
 	RedirectURI  string `mapstructure:"redirect_uri"`
+	// Notifications configures push delivery for "lightyear notify".
+	Notifications Notifications `mapstructure:"notifications"`
 	// CampusLayout optionally describes the physical cluster grids of the
 	// user's campus (key: cluster number as string). The API has no layout
 	// endpoint, so without this the map is inferred from active sessions.
 	CampusLayout map[string]ClusterLayout `mapstructure:"campus_layout"`
+}
+
+// Notifications holds the push notification settings. Today the only
+// backend is ntfy (https://ntfy.sh): anyone who knows the topic name can
+// read the notifications, so the topic doubles as the secret.
+type Notifications struct {
+	NtfyServer string `mapstructure:"ntfy_server"`
+	NtfyTopic  string `mapstructure:"ntfy_topic"`
+	// NtfyToken authenticates against protected topics; optional on ntfy.sh.
+	NtfyToken string `mapstructure:"ntfy_token"`
 }
 
 // ClusterLayout is the grid size of one cluster. Seats is the real seat
@@ -56,6 +71,9 @@ func Default() Config {
 	return Config{
 		APIBaseURL:  "https://api.intra.42.fr/v2",
 		RedirectURI: "http://127.0.0.1:53682/callback",
+		Notifications: Notifications{
+			NtfyServer: DefaultNtfyServer,
+		},
 	}
 }
 
@@ -112,6 +130,7 @@ func Load() (Config, error) {
 	v.SetDefault("client_secret", defaults.ClientSecret)
 	v.SetDefault("api_base_url", defaults.APIBaseURL)
 	v.SetDefault("redirect_uri", defaults.RedirectURI)
+	v.SetDefault("notifications.ntfy_server", defaults.Notifications.NtfyServer)
 
 	v.SetEnvPrefix(EnvPrefix)
 	v.AutomaticEnv()
@@ -119,6 +138,9 @@ func Load() (Config, error) {
 	_ = v.BindEnv("client_secret", EnvPrefix+"_CLIENT_SECRET")
 	_ = v.BindEnv("api_base_url", EnvPrefix+"_API_BASE_URL")
 	_ = v.BindEnv("redirect_uri", EnvPrefix+"_REDIRECT_URI")
+	_ = v.BindEnv("notifications.ntfy_server", EnvPrefix+"_NTFY_SERVER")
+	_ = v.BindEnv("notifications.ntfy_topic", EnvPrefix+"_NTFY_TOPIC")
+	_ = v.BindEnv("notifications.ntfy_token", EnvPrefix+"_NTFY_TOKEN")
 
 	if err := v.ReadInConfig(); err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {

@@ -36,6 +36,7 @@ internal/
   models/      # Domínio
   services/    # Regras de negócio
   repository/  # Acesso à API / GitHub Releases
+  notify/      # Push (ntfy) + estado do que já foi avisado
   update/      # Download/extração/replace do binário
   tui/         # Bubble Tea
 pkg/           # Só APIs públicas exportáveis
@@ -92,7 +93,8 @@ lightyear me
 lightyear profile
 lightyear projects
 lightyear subject     # baixa/abre o PDF do subject (catálogo embutido; set-id / import)
-lightyear evaluations # próximas avaliações (alias: evals)
+lightyear evaluations # próximas avaliações (alias: evals; --open abre na Intra)
+lightyear notify      # push no celular a cada avaliação nova (setup/test/check/watch)
 lightyear slots       # disponibilidade para avaliar (list/open/close; scope projects)
 lightyear campus      # mapa de online por cluster/posto (--friends filtra)
 lightyear friends     # lista local de amigos (add/remove/list/online)
@@ -129,10 +131,11 @@ UX: progresso, tabelas, cores, loading — sem poluição visual.
 | 5 | Dashboard | Bubble Tea em tempo real (**concluído**) |
 | 6 | Release | Testes, docs, GoReleaser, GitHub (**concluído**) |
 | 7 | Self-update | `lightyear update` via GitHub Releases (**concluído**) |
+| 8 | Notificações | Push via ntfy quando surge avaliação nova (**concluído**) |
 
 Chat (DM/fórum/relay): **parked** — sem DM na API pública; fórum ≠ chat; relay próprio fora de escopo.
 
-Futuro: notificações, offline, sync, plugins, export CSV/JSON.
+Futuro: offline, sync, plugins, export CSV/JSON.
 
 ---
 
