@@ -1,16 +1,21 @@
 # Editor de Código Modal Embutido para TUI em Go
 
-> **Status:** Fase 1 (Editor Core) implementada em `internal/editor` +
-> componente em `internal/tui/editorview` (comando experimental escondido
-> `lightyear edit <arquivo>`). Próximas: Fase 2 (edição modal) e Fase 3
-> (command parser), em `internal/vim`.
+> **Status:** Fases 1 (Editor Core, `internal/editor`) e 2 (edição modal,
+> `internal/vim`) implementadas, com o componente em `internal/tui/editorview`
+> (comando experimental escondido `lightyear edit <arquivo>`, modal por
+> padrão; `--plain` para o editor sem modos). Próxima: Fase 3 (command
+> parser: contadores, operadores × motions).
 >
 > **Desvios desta implementação em relação ao texto abaixo:**
 > - o componente visual mora em `internal/tui/editorview` (a TUI do projeto
 >   fica em `internal/tui`), não em `internal/ui/editor`;
 > - `Selection` entra só na Fase 4 (Visual Mode);
 > - colunas do `Position` contam runes; a expansão de tabs (tab = 4) é usada
->   no viewport e nos movimentos verticais (coluna "visual" preservada).
+>   no viewport e nos movimentos verticais (coluna "visual" preservada);
+> - a Fase 2 já traz `I A O` (listados na seção 9) e uma linha de comando
+>   mínima (`:w`, `:q`, `:q!`, `:wq`, `:x`), para sair e salvar do jeito Vim;
+> - uma sessão de INSERT inteira é um passo de undo (grupos no core:
+>   `BeginGroup`/`EndGroup`).
 
 ## 1. Visão Geral
 
@@ -205,8 +210,8 @@ Configuração própria (ex.: `editor.line_numbers`, `editor.relative_numbers`, 
 | Fase | Escopo | Status |
 |---|---|---|
 | 1 — Editor Core | Buffer, Cursor, Viewport, Insert, Delete, Save, Undo, Redo | **implementada** |
-| 2 — Edição Modal | NORMAL/INSERT, `hjkl`, `i a o`, `x`, `dd`, `u`, `Ctrl-r` | próxima |
-| 3 — Command Parser | count + operator + motion (`3j`, `3dd`, `dw`, `3dw`, `d$`) | |
+| 2 — Edição Modal | NORMAL/INSERT, `hjkl`, `i a o`, `x`, `dd`, `u`, `Ctrl-r` | **implementada** |
+| 3 — Command Parser | count + operator + motion (`3j`, `3dd`, `dw`, `3dw`, `d$`) | próxima |
 | 4 — Visual Mode | `v`, `V` e operações sobre seleções | |
 | 5 — Registers | `yy`, `dd`, `p`, `P` com register padrão | |
 | 6 — Syntax Highlighting | Tree-sitter, highlighting incremental | |

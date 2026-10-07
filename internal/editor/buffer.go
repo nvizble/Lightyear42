@@ -62,6 +62,12 @@ func (b *Buffer) Clamp(p Position) Position {
 	return p
 }
 
+// Indent is the leading whitespace (spaces and tabs) of line i.
+func (b *Buffer) Indent(i int) string {
+	line := b.Line(i)
+	return line[:len(line)-len(strings.TrimLeft(line, " \t"))]
+}
+
 // End is the position after the last character of the document.
 func (b *Buffer) End() Position {
 	last := len(b.lines) - 1

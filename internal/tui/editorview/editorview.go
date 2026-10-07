@@ -15,6 +15,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/x/ansi"
 	"github.com/nvizble/Lightyear42/internal/editor"
+	"github.com/nvizble/Lightyear42/internal/vim"
 )
 
 var (
@@ -28,6 +29,8 @@ var (
 	styleTilde      = lipgloss.NewStyle().Foreground(colorAccent)
 	styleCursor     = lipgloss.NewStyle().Reverse(true)
 	styleMode       = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("0")).Background(colorGood).Padding(0, 1)
+	styleModeNormal = styleMode.Background(colorAccent)
+	stylePending    = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.AdaptiveColor{Light: "130", Dark: "214"})
 	styleStatus     = lipgloss.NewStyle().Foreground(colorMuted)
 	styleFile       = lipgloss.NewStyle().Bold(true)
 	styleError      = lipgloss.NewStyle().Foreground(colorFail)
@@ -43,11 +46,18 @@ type Model struct {
 	// quitArmed is set after Ctrl-Q with unsaved changes; a second Ctrl-Q quits.
 	quitArmed bool
 	done      bool
+	// vim, when set, interprets keys Vim style (modes, :w, :q).
+	vim *vim.Controller
 }
 
-// New wraps an editor.
+// New wraps an editor as a plain (non-modal) editor.
 func New(ed *editor.Editor) Model {
 	return Model{ed: ed}
+}
+
+// NewVim wraps an editor with Vim-style modal editing.
+func NewVim(ed *editor.Editor) Model {
+	return Model{ed: ed, vim: vim.New(ed)}
 }
 
 // Editor is the document being edited.
@@ -79,6 +89,24 @@ func (m Model) key(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.quitArmed = false
 	}
 	m.message, m.isError = "", false
+
+	if m.vim != nil && k != "ctrl+s" && k != "ctrl+q" {
+		var res vim.Result
+		switch msg.Type {
+		case tea.KeyRunes:
+			res = m.vim.HandleText(string(msg.Runes))
+		case tea.KeySpace:
+			res = m.vim.HandleKey(" ")
+		default:
+			res = m.vim.HandleKey(k)
+		}
+		m.message, m.isError = res.Message, res.Err
+		if res.Quit {
+			m.done = true
+			return m, tea.Quit
+		}
+		return m, nil
+	}
 
 	switch msg.Type {
 	case tea.KeyRunes:
@@ -169,7 +197,12 @@ func (m *Model) mouse(msg tea.MouseMsg) {
 	v := m.ed.Viewport()
 	line := v.Top + msg.Y
 	visual := max(msg.X-m.gutterWidth(), 0) + v.Left
-	m.ed.MoveCursor(editor.Position{Line: line, Column: m.ed.ColumnAt(line, visual)})
+	p := editor.Position{Line: line, Column: m.ed.ColumnAt(line, visual)}
+	if m.vim != nil {
+		m.vim.MoveCursor(p)
+		return
+	}
+	m.ed.MoveCursor(p)
 }
 
 // Layout: text area above a one-line status bar, line numbers on the left.
@@ -243,6 +276,10 @@ func renderLine(line string, tabSize, left, width, cursorCol int) string {
 
 // statusLine: " EDIT │ first_word.c [+] │ C │ 6:5        message".
 func (m Model) statusLine() string {
+	if m.vim != nil && m.vim.Mode() == vim.Command {
+		// The ex command line takes over the status bar, like Vim.
+		return ":" + m.vim.CommandLine() + styleCursor.Render(" ")
+	}
 	name := "[sem nome]"
 	if p := m.ed.Path(); p != "" {
 		name = filepath.Base(p)
@@ -251,10 +288,21 @@ func (m Model) statusLine() string {
 		name += " [+]"
 	}
 	cur := m.ed.Cursor()
-	left := styleMode.Render("EDIT") + styleStatus.Render(" │ ") + styleFile.Render(name) +
+	mode := styleMode.Render("EDIT")
+	right := styleStatus.Render("ctrl+s salva · ctrl+z desfaz · ctrl+q sai ")
+	if m.vim != nil {
+		mode = styleModeNormal.Render(m.vim.Mode().String())
+		if m.vim.Mode() == vim.Insert {
+			mode = styleMode.Render(m.vim.Mode().String())
+		}
+		right = styleStatus.Render("i insere · esc volta ao normal · :wq salva e sai ")
+		if p := m.vim.Pending(); p != "" {
+			right = stylePending.Render(p + " ")
+		}
+	}
+	left := mode + styleStatus.Render(" │ ") + styleFile.Render(name) +
 		styleStatus.Render(fmt.Sprintf(" │ %s │ %d:%d ", language(m.ed.Path()), cur.Line+1, cur.Column+1))
 
-	right := styleStatus.Render("ctrl+s salva · ctrl+z desfaz · ctrl+q sai ")
 	if m.message != "" {
 		right = styleStatus.Render(m.message + " ")
 		if m.isError {
