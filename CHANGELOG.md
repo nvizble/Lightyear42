@@ -7,6 +7,13 @@ Mudanças visíveis do lightyear, da mais nova para a mais antiga. O
 Versões `-canary.N` são pre-releases: `lightyear update --canary` entra no
 canal canary e `lightyear update --stable` volta para a estável.
 
+## [1.3.0-canary.12] — 2026-10-07
+
+- Editor: modo Visual — `v` seleciona caracteres e `V` linhas inteiras
+  (com motions e contadores: `vjd`, `V3jd`, `vwd`), `o` troca a ponta e
+  `d`/`x` apagam a seleção. Arrastar o mouse também seleciona.
+- Editor: o `u` volta o cursor para o início do trecho desfeito, como no Vim.
+
 ## [1.3.0-canary.11] — 2026-10-07
 
 - `lightyear --version` (e `lightyear version`) mostra as novidades da

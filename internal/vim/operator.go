@@ -32,8 +32,14 @@ func (c *Controller) apply(op Operator, t Target) {
 	if t.Inclusive {
 		end.Column++
 	}
-	c.ed.Delete(editor.Range{Start: start, End: end})
-	c.ed.MoveCursor(start)
+	c.deleteRange(editor.Range{Start: start, End: end})
+}
+
+// deleteRange removes r and leaves the cursor at its start. The cursor goes
+// there first, so undo brings it back to the start of the change, like Vim.
+func (c *Controller) deleteRange(r editor.Range) {
+	c.ed.MoveCursor(r.Start)
+	c.ed.Delete(r)
 	c.clampNormal()
 }
 
@@ -55,6 +61,10 @@ func (c *Controller) deleteLines(first, last int) {
 	default:
 		// The whole document: leave one empty line.
 		r.End = editor.Position{Line: last, Column: buf.LineLen(last)}
+	}
+	if cur := c.ed.Cursor(); cur.Line != first {
+		// Undo brings the cursor back to the first line, like Vim.
+		c.ed.MoveCursor(editor.Position{Line: first, Column: cur.Column})
 	}
 	c.ed.Delete(r)
 	target := min(first, buf.LineCount()-1)

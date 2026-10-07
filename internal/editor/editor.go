@@ -24,6 +24,7 @@ type Editor struct {
 	path    string
 	dirty   bool
 	tabSize int
+	sel     Selection
 }
 
 // New opens an unnamed document with text.

@@ -9,7 +9,9 @@ import (
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/x/ansi"
+	"github.com/muesli/termenv"
 	"github.com/nvizble/Lightyear42/internal/editor"
 )
 
@@ -119,18 +121,45 @@ func TestMouseClickPlacesCursor(t *testing.T) {
 
 func TestRenderLine(t *testing.T) {
 	// Tabs expand to the next stop of 4; the cursor past the end draws a cell.
-	if got := ansi.Strip(renderLine("\tx", 4, 0, 20, -1)); got != "    x" {
+	if got := ansi.Strip(renderLine("\tx", 4, 0, 20, -1, -1, -1)); got != "    x" {
 		t.Fatalf("tab: %q", got)
 	}
-	if got := ansi.Strip(renderLine("ab\tc", 4, 0, 20, -1)); got != "ab  c" {
+	if got := ansi.Strip(renderLine("ab\tc", 4, 0, 20, -1, -1, -1)); got != "ab  c" {
 		t.Fatalf("tab no meio: %q", got)
 	}
-	if got := ansi.Strip(renderLine("abc", 4, 0, 20, 5)); got != "abc   " {
+	if got := ansi.Strip(renderLine("abc", 4, 0, 20, 5, -1, -1)); got != "abc   " {
 		t.Fatalf("cursor depois do fim: %q", got)
 	}
-	if got := ansi.Strip(renderLine("abcdef", 4, 2, 3, -1)); got != "cde" {
+	if got := ansi.Strip(renderLine("abcdef", 4, 2, 3, -1, -1, -1)); got != "cde" {
 		t.Fatalf("rolagem horizontal: %q", got)
 	}
+
+	colors(t)
+	sel, cur := styleSelection.Render, styleCursor.Render
+	tests := []struct {
+		name                                string
+		line                                string
+		left, width, cursor, selFrom, selTo int
+		want                                string
+	}{
+		{"seleção com o cursor na ponta", "abcd", 0, 20, 2, 0, 3, sel("ab") + cur("c") + "d"},
+		{"tab selecionado inteiro", "a\tb", 0, 20, 0, 0, 5, cur("a") + sel("   b")},
+		{"linha vazia selecionada", "", 0, 20, -1, 0, 1, sel(" ")},
+		{"seleção cortada pela rolagem", "abcdef", 1, 3, -1, 0, 3, sel("bc") + "d"},
+	}
+	for _, tt := range tests {
+		if got := renderLine(tt.line, 4, tt.left, tt.width, tt.cursor, tt.selFrom, tt.selTo); got != tt.want {
+			t.Errorf("%s: %q, esperado %q", tt.name, got, tt.want)
+		}
+	}
+}
+
+// colors makes lipgloss emit styles (tests have no terminal), for checks
+// that look at highlighting.
+func colors(t *testing.T) {
+	prev := lipgloss.ColorProfile()
+	lipgloss.SetColorProfile(termenv.ANSI256)
+	t.Cleanup(func() { lipgloss.SetColorProfile(prev) })
 }
 
 // The whole loop with real keyboard bytes: type, Ctrl-S, Ctrl-Q.
@@ -206,6 +235,51 @@ func TestVimClickRespectsNormalMode(t *testing.T) {
 	m, _ = press(t, m, tea.MouseMsg{X: 40, Y: 0, Action: tea.MouseActionPress, Button: tea.MouseButtonLeft})
 	if got := m.Editor().Cursor(); got != (editor.Position{Line: 0, Column: 1}) {
 		t.Fatalf("no NORMAL o clique para no último caractere: %v", got)
+	}
+}
+
+func TestVimVisualSelection(t *testing.T) {
+	colors(t)
+	next, _ := NewVim(editor.New("abc\n\tdef")).Update(tea.WindowSizeMsg{Width: 60, Height: 8})
+	m := next.(Model)
+	view := func() []string { return strings.Split(m.View(), "\n") }
+	status := func() string { v := view(); return ansi.Strip(v[len(v)-1]) }
+
+	m, _ = press(t, m, runes("vj"))
+	if !strings.Contains(status(), "VISUAL") || !strings.Contains(status(), "d apaga") {
+		t.Fatalf("v deveria mostrar VISUAL e as dicas: %q", status())
+	}
+	// Line 0 is selected from "a"; line 1 up to the cursor, on the tab.
+	if v := view(); !strings.HasSuffix(v[0], styleSelection.Render("abc")) ||
+		!strings.HasSuffix(v[1], styleCursor.Render(" ")+styleSelection.Render("   ")+"def") {
+		t.Fatalf("seleção na tela:\n%q\n%q", v[0], v[1])
+	}
+	m, _ = press(t, m, runes("V"))
+	if !strings.Contains(status(), "V-LINE") || !strings.HasSuffix(view()[1], styleSelection.Render("   def")) {
+		t.Fatalf("V deveria selecionar as linhas inteiras: %q\n%q", status(), view()[1])
+	}
+	m, _ = press(t, m, tea.KeyMsg{Type: tea.KeyEsc})
+	if !strings.Contains(status(), "NORMAL") || strings.Contains(m.View(), styleSelection.Render("abc")) {
+		t.Fatalf("esc deveria limpar a seleção: %q", status())
+	}
+
+	// Drag from "b" to "e": press, then motion with the button held. The
+	// gutter is "1 │ " (4 cells); "e" is after the tab, at screen column 5.
+	left := tea.MouseButtonLeft
+	m, _ = press(t, m,
+		tea.MouseMsg{X: 5, Y: 0, Action: tea.MouseActionPress, Button: left},
+		tea.MouseMsg{X: 9, Y: 1, Action: tea.MouseActionMotion, Button: left},
+		tea.MouseMsg{X: 9, Y: 1, Action: tea.MouseActionRelease, Button: left})
+	if r, _, ok := m.Editor().SelectedRange(); !ok || m.Editor().Buffer().Slice(r) != "bc\n\tde" || !strings.Contains(status(), "VISUAL") {
+		t.Fatalf("arrastar deveria selecionar: %q %q", m.Editor().Buffer().Slice(r), status())
+	}
+	m, _ = press(t, m, runes("d"))
+	if got := m.Editor().Buffer().Text(); got != "af" {
+		t.Fatalf("d apaga o que o mouse selecionou: %q", got)
+	}
+	m, _ = press(t, m, runes("vl"), tea.MouseMsg{X: 4, Y: 0, Action: tea.MouseActionPress, Button: left})
+	if _, _, ok := m.Editor().SelectedRange(); ok || !strings.Contains(status(), "NORMAL") {
+		t.Fatalf("um clique deveria encerrar a seleção: %q", status())
 	}
 }
 
