@@ -7,6 +7,13 @@ Mudanças visíveis do lightyear, da mais nova para a mais antiga. O
 Versões `-canary.N` são pre-releases: `lightyear update --canary` entra no
 canal canary e `lightyear update --stable` volta para a estável.
 
+## [1.3.0-canary.18] — 2026-10-07
+
+- Editor: `.` repete a última mudança — `dw.`, `ciwfoo<esc>` e `.` em outra
+  palavra, `A;<esc>j.`; com contador (`3.`).
+- Editor: macros — `qa` começa a gravar (a barra mostra "gravando @a"), `q`
+  para, `@a` toca, `@@` repete e `5@a` toca cinco vezes.
+
 ## [1.3.0-canary.17] — 2026-10-07
 
 - Editor: text objects — `diw`, `daw`, `ci"`, `da(`, `di{` (mantém as

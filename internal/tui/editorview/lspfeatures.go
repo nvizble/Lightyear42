@@ -201,8 +201,7 @@ func (m Model) completionKey(k string) bool {
 	case "ctrl+p", "up":
 		comp.selected = (comp.selected + len(comp.shown) - 1) % len(comp.shown)
 	case "tab", "enter":
-		item := comp.shown[comp.selected]
-		m.ed.Replace(editor.Range{Start: comp.start, End: m.ed.Cursor()}, item.Text)
+		m.accept(comp.shown[comp.selected])
 		m.closeCompletion()
 	case "esc":
 		m.closeCompletion()
@@ -211,6 +210,26 @@ func (m Model) completionKey(k string) bool {
 		return false
 	}
 	return true
+}
+
+// accept puts item in place of the word being typed. In Vim mode it goes
+// through the controller, so "." and macros repeat it: like Vim, only what
+// completes the typed word is added when the item extends it.
+func (m Model) accept(item lsp.Item) {
+	typed := m.ed.Buffer().Slice(editor.Range{Start: m.lsp.comp.start, End: m.ed.Cursor()})
+	switch {
+	case m.vim == nil:
+		m.ed.Replace(editor.Range{Start: m.lsp.comp.start, End: m.ed.Cursor()}, item.Text)
+	case strings.HasPrefix(item.Text, typed):
+		if rest := item.Text[len(typed):]; rest != "" {
+			m.vim.HandleText(rest)
+		}
+	default:
+		for range []rune(typed) {
+			m.vim.HandleKey("backspace")
+		}
+		m.vim.HandleText(item.Text)
+	}
 }
 
 func (m Model) closeCompletion() {

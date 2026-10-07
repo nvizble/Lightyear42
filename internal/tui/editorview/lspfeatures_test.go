@@ -67,6 +67,15 @@ func TestCompletionList(t *testing.T) {
 	if line := m.Editor().Buffer().Line(1); line != "int\tmain(void) { return (cou" {
 		t.Fatalf("u deveria desfazer o insert com a completion: %q", line)
 	}
+	// "." repeats the insert with the completion: the typed "cou" and the
+	// "nter" that completed it.
+	m = withFakeLSP(t, "int\tcounter;\n\nx")
+	m, _ = press(t, m, runes("jA"), runes("c"), runes("o"), runes("u"))
+	m = m.lspReply(completionMsg{seq: m.lsp.seq, items: items})
+	m, _ = press(t, m, tea.KeyMsg{Type: tea.KeyTab}, tea.KeyMsg{Type: tea.KeyEsc}, runes("j."))
+	if got := m.Editor().Buffer().Text(); got != "int\tcounter;\ncounter\nxcounter" {
+		t.Fatalf(". depois da completion: %q", got)
+	}
 	// An answer to an older request is dropped.
 	m, _ = press(t, m, runes("A"))
 	m = m.lspReply(completionMsg{seq: m.lsp.seq - 1, items: items})

@@ -378,3 +378,16 @@ func TestSearchPromptAndHighlight(t *testing.T) {
 		t.Fatal(":noh apaga os destaques")
 	}
 }
+
+func TestRecordingShown(t *testing.T) {
+	next, _ := NewVim(editor.New("a")).Update(tea.WindowSizeMsg{Width: 60, Height: 4})
+	m := next.(Model)
+	m, _ = press(t, m, runes("qa"))
+	if !strings.Contains(ansi.Strip(m.statusLine()), "NORMAL  gravando @a") {
+		t.Fatalf("statusline gravando: %q", ansi.Strip(m.statusLine()))
+	}
+	m, _ = press(t, m, runes("q"))
+	if strings.Contains(ansi.Strip(m.statusLine()), "gravando") {
+		t.Fatal("q para a gravação")
+	}
+}
