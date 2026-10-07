@@ -53,6 +53,7 @@ Gerencie autenticação, perfil, projetos, campus e mais — direto do terminal.
 	root.AddCommand(newProjectsCmd())
 	root.AddCommand(newSubjectCmd())
 	root.AddCommand(newEvaluationsCmd())
+	root.AddCommand(newNotifyCmd())
 	root.AddCommand(newSlotsCmd())
 	root.AddCommand(newCampusCmd())
 	root.AddCommand(newDashboardCmd())

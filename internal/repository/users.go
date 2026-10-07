@@ -42,6 +42,10 @@ type Users interface {
 	// UpcomingEvaluations lists the authenticated user's future scale teams,
 	// as evaluator or evaluated, soonest first.
 	UpcomingEvaluations(ctx context.Context) ([]models.ScaleTeam, error)
+	// UnfilledAsCorrector lists evaluations where the user is the corrector
+	// and the form is not filled yet (includes ones that already started —
+	// filter[future] would drop those).
+	UnfilledAsCorrector(ctx context.Context) ([]models.ScaleTeam, error)
 }
 
 // UsersRepository implements Users over the API client with read-through caching.
@@ -131,6 +135,25 @@ func (r *UsersRepository) UpcomingEvaluations(ctx context.Context) ([]models.Sca
 
 		var teams []models.ScaleTeam
 		if err := r.api.Get(ctx, "/me/scale_teams", query, &teams); err != nil {
+			return nil, err
+		}
+		return teams, nil
+	})
+}
+
+// UnfilledAsCorrector lists scale teams where the authenticated user is the
+// evaluator and has not submitted the form yet.
+func (r *UsersRepository) UnfilledAsCorrector(ctx context.Context) ([]models.ScaleTeam, error) {
+	key := cacheKey("users", "me", "scale_teams", "as_corrector", "unfilled")
+	return fetchCached[[]models.ScaleTeam](ctx, r.cache, key, evaluationsTTL, func(ctx context.Context) ([]models.ScaleTeam, error) {
+		query := url.Values{
+			"filter[filled]": {"false"},
+			"sort":           {"begin_at"},
+			"page[size]":     {strconv.Itoa(evaluationsPageSize)},
+		}
+
+		var teams []models.ScaleTeam
+		if err := r.api.Get(ctx, "/me/scale_teams/as_corrector", query, &teams); err != nil {
 			return nil, err
 		}
 		return teams, nil

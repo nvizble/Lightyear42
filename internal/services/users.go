@@ -101,6 +101,40 @@ func (s *UserService) UpcomingEvaluations(ctx context.Context) ([]models.ScaleTe
 	return s.users.UpcomingEvaluations(ctx)
 }
 
+// ErrNoOpenableEvaluation means there is no unfilled evaluation as corrector.
+var ErrNoOpenableEvaluation = errors.New("nenhuma avaliação sua para abrir (como avaliador)")
+
+// OpenableEvaluation picks the best scale team to open in the browser:
+// prefer one that already started and is unfilled; otherwise the soonest
+// upcoming unfilled evaluation where the user is corrector.
+func (s *UserService) OpenableEvaluation(ctx context.Context, now time.Time) (models.ScaleTeam, error) {
+	teams, err := s.users.UnfilledAsCorrector(ctx)
+	if err != nil {
+		return models.ScaleTeam{}, err
+	}
+	if len(teams) == 0 {
+		return models.ScaleTeam{}, ErrNoOpenableEvaluation
+	}
+
+	var soonest *models.ScaleTeam
+	for i := range teams {
+		st := &teams[i]
+		if st.ID <= 0 || st.IsFilled() {
+			continue
+		}
+		if st.HasStarted(now) {
+			return *st, nil
+		}
+		if soonest == nil {
+			soonest = st
+		}
+	}
+	if soonest == nil {
+		return models.ScaleTeam{}, ErrNoOpenableEvaluation
+	}
+	return *soonest, nil
+}
+
 // Search lists users whose login starts with term, up to limit results.
 // A non-positive limit falls back to the default; the maximum is capped
 // to respect the API page size.

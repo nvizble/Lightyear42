@@ -21,22 +21,9 @@ func NewFriendsFile() *FriendsFile {
 	return &FriendsFile{}
 }
 
-// fileViper returns a Viper bound exclusively to the config file.
-func (f *FriendsFile) fileViper() (*viper.Viper, Paths, error) {
-	paths, err := ResolvePaths()
-	if err != nil {
-		return nil, Paths{}, err
-	}
-
-	v := viper.New()
-	v.SetConfigFile(paths.ConfigFile)
-	v.SetConfigType("yaml")
-	return v, paths, nil
-}
-
 // Load returns the stored friends list; empty when the file or key is absent.
 func (f *FriendsFile) Load() ([]string, error) {
-	v, _, err := f.fileViper()
+	v, _, err := fileViper()
 	if err != nil {
 		return nil, err
 	}
@@ -56,7 +43,7 @@ func (f *FriendsFile) Load() ([]string, error) {
 
 // Save writes the friends list, preserving the other keys of the file.
 func (f *FriendsFile) Save(friends []string) error {
-	v, paths, err := f.fileViper()
+	v, paths, err := fileViper()
 	if err != nil {
 		return err
 	}

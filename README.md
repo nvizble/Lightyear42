@@ -99,6 +99,11 @@ lightyear subject <proj>   # baixa e abre o PDF do subject (CDN + catálogo embu
 lightyear subject set-id <proj> <id>  # atualiza o pdf-id no índice local
 lightyear subject import <f.json>     # merge de um JSON externo no índice local
 lightyear evaluations      # próximas avaliações agendadas (alias: evals)
+lightyear evaluations --open # abre a avaliação atual na Intra (como avaliador)
+lightyear notify setup     # configura o push no celular (ntfy) e mostra como assinar
+lightyear notify test      # envia uma notificação de teste
+lightyear notify watch     # monitora e avisa a cada avaliação nova (--interval)
+lightyear notify check     # checa uma vez e sai (para cron / systemd timer)
 lightyear slots            # lista slots futuros de disponibilidade
 lightyear slots open --duration 1h   # abre a partir do momento mais cedo (~30min)
 lightyear slots open --from "..." --to "..."  # ou --from + --duration
@@ -126,6 +131,41 @@ Para reinstalar: `lightyear completion install` (depois `exec zsh` / novo termin
 Em `lightyear subject <TAB>` aparecem os projetos do catálogo (ex.: `push_swap`).
 
 O token OAuth (access + refresh) é guardado no keyring do sistema — Keychain (macOS), Secret Service (Linux) ou Credential Manager (Windows) — e renovado automaticamente.
+
+### Notificações no celular
+
+Avisa por push quando uma avaliação nova entra na sua agenda — como avaliador
+ou como avaliado. A entrega usa o [ntfy](https://ntfy.sh): grátis, open source,
+sem conta.
+
+```bash
+lightyear notify setup   # gera um tópico aleatório e grava no config.yaml
+lightyear notify test    # confirma que a notificação chega no celular
+lightyear notify watch   # deixa rodando (Ctrl+C para sair)
+```
+
+No celular, instale o app **ntfy** (App Store / Play Store / F-Droid) e assine o
+tópico mostrado pelo `setup`.
+
+> O tópico é o segredo: em servidores públicos, quem souber o nome recebe as
+> suas notificações. Por isso o `setup` gera um nome aleatório — evite trocar
+> por algo fácil de adivinhar. Para um servidor próprio ou tópico protegido,
+> use `--server` e `--token`.
+
+Na primeira checagem nada é enviado: a agenda atual vira a linha de base, para
+você não receber uma rajada de avisos sobre avaliações que já conhecia.
+
+Para rodar sem deixar um terminal aberto, agende o `check` (que checa uma vez e
+sai):
+
+```cron
+*/5 * * * * /usr/local/bin/lightyear notify check >/dev/null 2>&1
+```
+
+O intervalo mínimo do `watch` é 1 minuto — a agenda é cacheada por 1 minuto e o
+rate limit da Intra é compartilhado com os outros comandos.
+
+O estado do que já foi avisado fica em `$XDG_DATA_HOME/42cli/notifications.json`.
 
 ### Subjects (PDF)
 
@@ -192,6 +232,9 @@ Variáveis de ambiente (prefixo `FORTYTWO_`):
 | `FORTYTWO_CLIENT_SECRET` | OAuth Client Secret |
 | `FORTYTWO_API_BASE_URL` | Base da API (default: `https://api.intra.42.fr/v2`) |
 | `FORTYTWO_REDIRECT_URI` | Redirect URI do login local |
+| `FORTYTWO_NTFY_SERVER` | Servidor ntfy (default: `https://ntfy.sh`) |
+| `FORTYTWO_NTFY_TOPIC` | Tópico ntfy que recebe as notificações |
+| `FORTYTWO_NTFY_TOKEN` | Token ntfy, para tópicos protegidos |
 
 Exemplo de `config.yaml`:
 
@@ -200,6 +243,12 @@ client_id: "seu-client-id"
 client_secret: "seu-client-secret"
 api_base_url: "https://api.intra.42.fr/v2"
 redirect_uri: "http://127.0.0.1:53682/callback"
+
+# Escrito por `lightyear notify setup`.
+notifications:
+  ntfy_server: "https://ntfy.sh"
+  ntfy_topic: "lightyear-3f9a2c...."   # gerado aleatoriamente; funciona como segredo
+  ntfy_token: ""                       # só para tópicos protegidos
 
 # Opcional: planta física dos clusters, usada no mapa do `lightyear campus` e nas
 # barras de ocupação do `lightyear dashboard`. A API não expõe o layout do campus;
@@ -247,6 +296,7 @@ os binários em [Releases](https://github.com/nvizble/Lightyear42/releases).
 5. **Dashboard** (concluído) — Bubble Tea em tempo real
 6. **Release** (concluído) — docs, GoReleaser, GitHub Releases
 7. **Self-update** (concluído) — `lightyear update` via GitHub Releases
+8. **Notificações** (concluído) — push no celular via ntfy (`lightyear notify`)
 9. **Simulador de provas** — `lightyear exam` (Exam Rank 02); próximo: TUI examshell
 
 Chat/DM no terminal: parked (API sem DMs públicos; fórum ≠ chat).
