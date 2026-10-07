@@ -29,6 +29,13 @@ func TestDiagnosticUnderTheMouse(t *testing.T) {
 	if s := hover(9, 0); !strings.Contains(s, "erro: expected ';' after top level declarator") || !strings.Contains(s, "nota: insira ';'") {
 		t.Fatalf("mouse depois do fim (o ';' que falta):\n%s", s)
 	}
+	if s := hover(8, 0); strings.Contains(s, "gra aplica") {
+		t.Fatalf("sem correção, sem dica:\n%s", s)
+	}
+	m.lsp.diags[0].Message = "Expected ';' after expression (fix available)"
+	if s := hover(9, 0); !strings.Contains(s, "com o cursor nesta linha, gra aplica a correção") {
+		t.Fatalf("com correção, a dica de como aplicar:\n%s", s)
+	}
 	if s := hover(12, 0); strings.Contains(s, "expected") || strings.Contains(s, "unused") {
 		t.Fatalf("longe do erro não mostra nada:\n%s", s)
 	}
