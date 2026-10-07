@@ -71,6 +71,7 @@ clicáveis, mouse e teclado); os subcomandos abaixo continuam iguais.`,
 	root.AddCommand(newDashboardCmd())
 	root.AddCommand(newFriendsCmd())
 	root.AddCommand(newExamCmd())
+	root.AddCommand(newEditCmd())
 	root.AddCommand(newCacheCmd())
 	attachCompletionInstall(root)
 
