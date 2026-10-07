@@ -14,6 +14,8 @@ canal canary e `lightyear update --stable` volta para a estável.
   (com contador: `10 Ctrl-w >`), `Ctrl-w +`/`-`, `Ctrl-w =` para igualar,
   `Ctrl-w |` para maximizar e `:vertical resize 50`. Na aba Exam, o editor
   reabre com o tamanho que você deixou.
+- Editor: quando o erro tem correção ("fix available"), a caixa do mouse e
+  o `K` dizem como aplicar: com o cursor na linha, `gra` e Enter.
 
 ## [1.3.0-canary.23] — 2026-10-07
 

@@ -76,12 +76,15 @@ func diagnosticsOn(diags []lsp.Diagnostic, line int) []lsp.Diagnostic {
 }
 
 // diagnosticLines are the messages, worst first: "erro: expected ';'…",
-// wrapped, with the server's extra lines (notes) below each.
+// wrapped, with the server's extra lines (notes) below each, and how to
+// apply the fix when the server has one ("(fix available)", from clangd).
 func diagnosticLines(diags []lsp.Diagnostic) []string {
 	diags = slices.Clone(diags)
 	slices.SortStableFunc(diags, func(a, b lsp.Diagnostic) int { return int(a.Severity) - int(b.Severity) })
 	var lines []string
+	fix := false
 	for _, d := range diags {
+		fix = fix || strings.Contains(d.Message, "fix available")
 		label := severityStyles[d.Severity].Render(severityNames[d.Severity] + ":")
 		text := strings.Split(ansi.Wrap(d.Message, 70, ""), "\n")
 		lines = append(lines, label+" "+text[0])
@@ -91,6 +94,9 @@ func diagnosticLines(diags []lsp.Diagnostic) []string {
 	}
 	if len(lines) > 14 {
 		lines = append(lines[:13], "…")
+	}
+	if fix {
+		lines = append(lines, styleStatus.Render("com o cursor nesta linha, gra aplica a correção"))
 	}
 	return lines
 }
