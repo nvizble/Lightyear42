@@ -168,7 +168,7 @@
 <main id="top">
 <header class="hero">
   <div class="wrap">
-    <div class="eyebrow"><span data-ver="stable">v1.2.0</span> estável<span data-canary-only> · <a href="#canary">canary <span data-ver="canary">v1.3.0-canary.3</span> →</a></span> · open source · MIT · feito por cadetes da 42</div>
+    <div class="eyebrow"><span data-ver="stable">v1.2.1</span> estável<span data-canary-only> · <a href="#canary">canary <span data-ver="canary">v1.3.0-canary.3</span> →</a></span> · open source · MIT · feito por cadetes da 42</div>
     <h1>A 42 inteira, direto do <span>terminal.</span></h1>
     <p class="lead">Perfil, projetos, avaliações, notificação no celular, mapa do campus, slots, subjects e um simulador de provas com o Exam Rank 02 inteiro. Tudo numa CLI só, rápida, que você instala com um comando.</p>
     <div class="cta">
@@ -275,7 +275,7 @@
     <h2>Um binário. Nenhuma dependência.</h2>
     <p class="sub">No campus, prefira o binário ou o <span class="mono">.deb</span>: o Go das máquinas costuma ser mais antigo que o 1.25 que o lightyear exige.</p>
     <div class="channels" role="tablist" aria-label="Canal" data-canary-only>
-      <button class="chan" role="tab" aria-selected="true" data-channel="stable">Estável<span class="mono" data-ver="stable">v1.2.0</span></button>
+      <button class="chan" role="tab" aria-selected="true" data-channel="stable">Estável<span class="mono" data-ver="stable">v1.2.1</span></button>
       <button class="chan" role="tab" aria-selected="false" data-channel="canary">Canary<span class="mono" data-ver="canary">v1.3.0-canary.3</span></button>
     </div>
     <div class="install">
@@ -426,7 +426,7 @@ tópico gerado pelo "lightyear notify setup" e pronto.
   // Versions: discovered from the GitHub API (stable = newest release that is
   // not a pre-release; canary = newest pre-release, if ahead of the stable),
   // with these values as the fallback.
-  const versions = { stable: "1.2.0", canary: "1.3.0-canary.3" };
+  const versions = { stable: "1.2.1", canary: "1.3.0-canary.3" };
   let channel = "stable";
 
   // Install snippets for a version; the stable Go install tracks @latest.
@@ -480,6 +480,22 @@ go install github.com/nvizble/Lightyear42/cmd/lightyear@${chan === "canary" ? "v
   document.querySelectorAll("[data-pick-channel]").forEach(a => a.addEventListener("click", () => pickChannel(a.dataset.pickChannel)));
   showInstall("mac");
 
+  // Semver comparison (1.2.1 < 1.3.0-canary.2 < 1.3.0-canary.10 < 1.3.0).
+  function cmpVer(a, b) {
+    const parse = v => { const i = v.indexOf("-"); return { n: (i < 0 ? v : v.slice(0, i)).split(".").map(Number), pre: i < 0 ? [] : v.slice(i + 1).split(".") }; };
+    const x = parse(a), y = parse(b);
+    for (let i = 0; i < 3; i++) if ((x.n[i] || 0) !== (y.n[i] || 0)) return (x.n[i] || 0) - (y.n[i] || 0);
+    if (!x.pre.length || !y.pre.length) return y.pre.length - x.pre.length;
+    for (let i = 0; i < Math.min(x.pre.length, y.pre.length); i++) {
+      const p = x.pre[i], q = y.pre[i], pn = /^\d+$/.test(p), qn = /^\d+$/.test(q);
+      if (p === q) continue;
+      if (pn && qn) return Number(p) - Number(q);
+      if (pn !== qn) return pn ? -1 : 1;
+      return p < q ? -1 : 1;
+    }
+    return x.pre.length - y.pre.length;
+  }
+
   function applyVersions() {
     document.querySelectorAll("[data-ver]").forEach(el => (el.textContent = "v" + versions[el.dataset.ver]));
     document.querySelectorAll("[data-canary-only]").forEach(el => (el.hidden = !versions.canary));
@@ -491,13 +507,15 @@ go install github.com/nvizble/Lightyear42/cmd/lightyear@${chan === "canary" ? "v
   fetch("https://api.github.com/repos/nvizble/Lightyear42/releases?per_page=30")
     .then(r => (r.ok ? r.json() : Promise.reject(r.status)))
     .then(releases => {
-      const live = releases.filter(r => !r.draft);
-      const stableIdx = live.findIndex(r => !r.prerelease);
-      const canaryIdx = live.findIndex(r => r.prerelease);
-      if (stableIdx >= 0) versions.stable = live[stableIdx].tag_name.replace(/^v/, "");
-      // GitHub lists newest first: a canary older than the stable is stale.
-      versions.canary = canaryIdx >= 0 && (stableIdx < 0 || canaryIdx < stableIdx)
-        ? live[canaryIdx].tag_name.replace(/^v/, "") : null;
+      // Same rule as `lightyear update`: highest semver per channel; the canary
+      // only shows while it is ahead of the stable. (The API order is not
+      // reliable for this: it sorts by the release commit date.)
+      const tags = releases.filter(r => !r.draft).map(r => ({ v: r.tag_name.replace(/^v/, ""), pre: r.prerelease }));
+      const newest = list => list.reduce((best, v) => (!best || cmpVer(v, best) > 0 ? v : best), null);
+      const stable = newest(tags.filter(r => !r.pre).map(r => r.v));
+      const canary = newest(tags.filter(r => r.pre).map(r => r.v));
+      if (stable) versions.stable = stable;
+      versions.canary = canary && (!stable || cmpVer(canary, stable) > 0) ? canary : null;
       applyVersions();
     })
     .catch(() => { /* keep the fallback versions */ });
