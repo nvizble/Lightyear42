@@ -54,6 +54,9 @@ var (
 
 // Model is the editor component.
 type Model struct {
+	// ses holds the buffers and language servers, shared by the model's
+	// copies; ed, syn and lsp are the current buffer's (see synced).
+	ses           *session
 	ed            *editor.Editor
 	width, height int
 	// message is the status line note (saved, nothing to undo, errors).
@@ -66,32 +69,34 @@ type Model struct {
 	vim *vim.Controller
 	// syn colors the code (nil for files without a grammar).
 	syn *syntax.Highlighter
-	// lsp runs the language server (nil unless WithLSP found one).
+	// lsp is the buffer's language server side (nil without one).
 	lsp *lspState
 }
 
 // New wraps an editor as a plain (non-modal) editor.
 func New(ed *editor.Editor) Model {
-	m := Model{ed: ed, syn: syntax.For(ed.Path(), ed.Buffer().Text())}
-	if m.syn != nil {
-		ed.OnChange(m.syn.Edit)
-	}
-	return m
+	ses := &session{bufs: []*buffer{newBuffer(ed)}, servers: map[string]*lspServer{}}
+	return Model{ses: ses}.synced()
 }
 
-// NewVim wraps an editor with Vim-style modal editing.
+// NewVim wraps an editor with Vim-style modal editing, with buffers (:e,
+// :bn...).
 func NewVim(ed *editor.Editor) Model {
 	m := New(ed)
 	m.vim = vim.New(ed)
+	m.vim.ExCommands = m.exCommands()
+	m.vim.Commands = map[string]func(int) vim.Result{"ctrl+o": m.back}
 	return m
 }
 
-// Close stops the language server and frees the syntax highlighter; call
+// Close stops the language servers and frees the syntax highlighters; call
 // it once the editor is closed.
 func (m Model) Close() {
 	m.closeLSP()
-	if m.syn != nil {
-		m.syn.Close()
+	for _, b := range m.ses.bufs {
+		if b.syn != nil {
+			b.syn.Close()
+		}
 	}
 }
 
@@ -101,18 +106,33 @@ func (m Model) Editor() *editor.Editor { return m.ed }
 // Done reports that the user closed the editor.
 func (m Model) Done() bool { return m.done }
 
-// Init implements tea.Model: it starts the language server, if any.
-func (m Model) Init() tea.Cmd { return m.startLSP() }
+// Init implements tea.Model: it starts the language servers, if any.
+func (m Model) Init() tea.Cmd {
+	starts := m.ses.starts
+	m.ses.starts = nil
+	return tea.Batch(starts...)
+}
 
 // Update implements tea.Model.
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	next, cmd := m.update(msg)
+	m = next.(Model).synced()
+	// Opening a buffer of a new project starts its server.
+	if starts := m.ses.starts; len(starts) > 0 {
+		m.ses.starts = nil
+		cmd = tea.Batch(append(starts, cmd)...)
+	}
+	return m, cmd
+}
+
+func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		m.width, m.height = msg.Width, msg.Height
 		m.ed.SetViewportSize(m.textWidth(), m.textHeight())
 	case tea.KeyMsg:
 		next, cmd := m.key(msg)
-		m = next.(Model)
+		m = next.(Model).synced() // the key may have switched buffers
 		m.syncLSP()
 		if st := m.lsp; st != nil {
 			cmd = tea.Batch(cmd, st.pending, m.afterKey(msg))
@@ -423,20 +443,23 @@ func (m Model) statusLine() string {
 	if m.ed.Dirty() {
 		name += " [+]"
 	}
+	if n := len(m.ses.bufs); n > 1 {
+		name += fmt.Sprintf(" [%d/%d]", m.ses.cur+1, n)
+	}
 	cur := m.ed.Cursor()
 	mode := styleMode.Render("EDIT")
 	right := styleStatus.Render("ctrl+s salva · ctrl+z desfaz · ctrl+q sai ")
 	if m.vim != nil {
 		mode = styleModeNormal.Render(m.vim.Mode().String())
 		right = styleStatus.Render("i insere · v seleciona · yy copia · p cola · :wq salva e sai ")
-		if m.lsp != nil && m.lsp.client != nil {
+		if m.lsp != nil && m.lsp.srv.client != nil {
 			right = styleStatus.Render("K info · gd definição · ]d próximo erro · :wq salva e sai ")
 		}
 		switch m.vim.Mode() {
 		case vim.Insert:
 			mode = styleMode.Render(m.vim.Mode().String())
 			right = styleStatus.Render("esc volta ao normal ")
-			if m.lsp != nil && m.lsp.client != nil {
+			if m.lsp != nil && m.lsp.srv.client != nil {
 				right = styleStatus.Render("ctrl+n completa · esc volta ao normal ")
 			}
 		case vim.Visual, vim.VisualLine:
@@ -458,11 +481,11 @@ func (m Model) statusLine() string {
 		}
 	}
 	lang := styleStatus.Render(" │ " + language(m.ed.Path()))
-	if m.lsp != nil && m.lsp.starting {
-		lang += styleStatus.Render(" · " + m.lsp.server.Name + "…")
+	if m.lsp != nil && m.lsp.srv.starting {
+		lang += styleStatus.Render(" · " + m.lsp.srv.server.Name + "…")
 	}
-	if m.lsp != nil && m.lsp.client != nil {
-		lang += styleStatus.Render(" · " + m.lsp.server.Name)
+	if m.lsp != nil && m.lsp.srv.client != nil {
+		lang += styleStatus.Render(" · " + m.lsp.srv.server.Name)
 		if n := m.count(lsp.Error); n > 0 {
 			lang += severityStyles[lsp.Error].Render(fmt.Sprintf(" ✖ %d", n))
 		}

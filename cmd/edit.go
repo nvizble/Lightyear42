@@ -12,7 +12,7 @@ import (
 func newEditCmd() *cobra.Command {
 	var plain bool
 	cmd := &cobra.Command{
-		Use:   "edit <arquivo>",
+		Use:   "edit <arquivo>...",
 		Short: "Editor embutido (experimental)",
 		Long: `Abre o editor embutido do lightyear, com edição modal estilo Vim e
 cores (Tree-sitter) e erros do language server (clangd, gopls, pyright,
@@ -20,7 +20,9 @@ rust-analyzer) para C, C++, Go, Python e Rust — K mostra a assinatura, gd
 vai à definição, ]d e [d andam entre os erros e o INSERT completa enquanto
 você digita (ou com Ctrl-n), Tab aceita. Text objects (diw, ci", da(, yi{),
 f/F/t/T com ; e ,, busca com / ? n N * (:noh apaga os destaques), . repete
-a última mudança e macros com qa…q e @a:
+a última mudança e macros com qa…q e @a. Vários arquivos viram buffers
+(:e abre outro, :bn/:bp/:b N trocam, :ls lista, :bd fecha, :wa salva todos;
+gd em outro arquivo abre e Ctrl-o volta):
 i/a/o/I/A/O entram no INSERT, esc volta ao NORMAL; movimentos hjkl, w b e,
 0 ^ $, gg G; operador d com qualquer movimento (dw, d$, dG, dd) e contadores
 (3j, 3dd, 2d3w); y copia (yy, yw, Y), c muda (cw, cc, C) e p/P colam o
@@ -30,7 +32,7 @@ o mouse), o troca a ponta e d, y, c e p agem na seleção; :w salva, :wq salva
 e sai, :q! sai sem salvar. Ctrl-S e Ctrl-Q também salvam e saem.
 Use --plain para o editor sem modos.`,
 		Hidden: true,
-		Args:   cobra.ExactArgs(1),
+		Args:   cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ed, err := editor.Open(args[0])
 			if err != nil {
@@ -39,6 +41,12 @@ Use --plain para o editor sem modos.`,
 			model := editorview.NewVim(ed)
 			if plain {
 				model = editorview.New(ed)
+			}
+			// More files open in buffers; the first one shows.
+			for _, path := range append(args[1:], args[0]) {
+				if model, err = model.Open(path); err != nil {
+					return err
+				}
 			}
 			model = model.WithLSP()
 			defer model.Close()

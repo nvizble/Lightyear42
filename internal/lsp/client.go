@@ -1,6 +1,6 @@
 // Package lsp is a small Language Server Protocol client for the embedded
-// editor: it starts the server for a file, keeps that document in sync,
-// reports the server's diagnostics and asks it for hover text,
+// editor: it starts a server for a project, keeps the open documents in
+// sync, reports the server's diagnostics and asks it for hover text,
 // definitions and completions. It knows nothing about the TUI.
 //
 // Positions are lines and rune columns, like the editor's; the client
@@ -45,14 +45,15 @@ type Diagnostic struct {
 	Message    string
 }
 
-// Event is news from the server: the document's diagnostics, or Err when
-// the server stopped.
+// Event is news from the server: the diagnostics of the document at Path,
+// or Err when the server stopped.
 type Event struct {
+	Path        string
 	Diagnostics []Diagnostic
 	Err         error
 }
 
-// Client talks to one language server about one open document.
+// Client talks to one language server about the documents open in it.
 type Client struct {
 	server Server
 	cmd    *exec.Cmd
@@ -61,28 +62,36 @@ type Client struct {
 	exited chan struct{} // closed when the server process ends
 	closed bool
 
-	uri     string
-	utf16   bool // the server counts columns in UTF-16 code units
-	mu      sync.Mutex
-	version int
-	lines   []string // the document as last sent, to convert positions
+	utf16 bool // the server counts columns in UTF-16 code units
+	mu    sync.Mutex
+	docs  map[string]*document // by URI
 
 	events chan Event
 }
 
-// Start runs the server for the file at path, holding text, and opens the
-// document. A server that is missing or stops while starting is an error
-// that tells how to install it.
-func Start(ctx context.Context, s Server, path, text string) (*Client, error) {
+// document is an open document as the server last got it.
+type document struct {
+	version int
+	lines   []string // to convert positions
+}
+
+// Root is the project root of the file at path for server s: the nearest
+// directory up holding one of its markers (go.mod, compile_commands.json...).
+func Root(s Server, path string) string {
+	abs, err := filepath.Abs(path)
+	if err != nil {
+		return filepath.Dir(path)
+	}
+	return findRoot(filepath.Dir(abs), s.RootMarkers)
+}
+
+// Start runs the server for the project at root. A server that is missing
+// or stops while starting is an error that tells how to install it.
+func Start(ctx context.Context, s Server, root string) (*Client, error) {
 	argv, err := s.command()
 	if err != nil {
 		return nil, err
 	}
-	abs, err := filepath.Abs(path)
-	if err != nil {
-		return nil, err
-	}
-	root := findRoot(filepath.Dir(abs), s.RootMarkers)
 
 	cmd := exec.Command(argv[0], argv[1:]...)
 	cmd.Dir = root
@@ -94,7 +103,7 @@ func Start(ctx context.Context, s Server, path, text string) (*Client, error) {
 	if err != nil {
 		return nil, err
 	}
-	c := &Client{server: s, cmd: cmd, stderr: &tail{}, exited: make(chan struct{}), uri: fileURI(abs), events: make(chan Event, 1)}
+	c := &Client{server: s, cmd: cmd, stderr: &tail{}, exited: make(chan struct{}), docs: map[string]*document{}, events: make(chan Event, 64)}
 	cmd.Stderr = c.stderr
 	if err := cmd.Start(); err != nil {
 		return nil, fmt.Errorf("%s não iniciou: %w — %s", s.Name, err, s.Hint)
@@ -146,16 +155,19 @@ func Start(ctx context.Context, s Server, path, text string) (*Client, error) {
 	}
 	c.utf16 = res.Capabilities.PositionEncoding != "utf-32"
 	_ = c.conn.notify("initialized", map[string]any{})
-
-	c.mu.Lock()
-	c.version = 1
-	c.lines = strings.Split(text, "\n")
-	c.mu.Unlock()
-	_ = c.conn.notify("textDocument/didOpen", map[string]any{
-		"textDocument": map[string]any{"uri": c.uri, "languageId": s.LanguageID, "version": 1, "text": text},
-	})
 	go c.watch()
 	return c, nil
+}
+
+// DidOpen opens the document at path, holding text.
+func (c *Client) DidOpen(path, text string) {
+	uri := pathURI(path)
+	c.mu.Lock()
+	c.docs[uri] = &document{version: 1, lines: strings.Split(text, "\n")}
+	c.mu.Unlock()
+	_ = c.conn.notify("textDocument/didOpen", map[string]any{
+		"textDocument": map[string]any{"uri": uri, "languageId": c.server.LanguageID, "version": 1, "text": text},
+	})
 }
 
 // Events delivers diagnostics as they change, and the server stopping.
@@ -164,25 +176,47 @@ func (c *Client) Events() <-chan Event { return c.events }
 // Server is the server this client runs.
 func (c *Client) Server() Server { return c.server }
 
-// DidChange sends the document's new text (the whole text: full sync).
-func (c *Client) DidChange(text string) {
+// DidChange sends the new text of the document at path (the whole text:
+// full sync).
+func (c *Client) DidChange(path, text string) {
+	uri := pathURI(path)
 	c.mu.Lock()
-	c.version++
-	version := c.version
-	c.lines = strings.Split(text, "\n")
+	doc, ok := c.docs[uri]
+	if !ok {
+		c.mu.Unlock()
+		return
+	}
+	doc.version++
+	version := doc.version
+	doc.lines = strings.Split(text, "\n")
 	c.mu.Unlock()
 	_ = c.conn.notify("textDocument/didChange", map[string]any{
-		"textDocument":   map[string]any{"uri": c.uri, "version": version},
+		"textDocument":   map[string]any{"uri": uri, "version": version},
 		"contentChanges": []map[string]string{{"text": text}},
 	})
 }
 
-// Close closes the document and stops the server, politely first.
+// DidClose closes the document at path.
+func (c *Client) DidClose(path string) {
+	uri := pathURI(path)
+	c.mu.Lock()
+	delete(c.docs, uri)
+	c.mu.Unlock()
+	_ = c.conn.notify("textDocument/didClose", map[string]any{"textDocument": map[string]string{"uri": uri}})
+}
+
+// Close closes the documents and stops the server, politely first.
 func (c *Client) Close() {
 	c.mu.Lock()
 	c.closed = true
+	uris := make([]string, 0, len(c.docs))
+	for uri := range c.docs {
+		uris = append(uris, uri)
+	}
 	c.mu.Unlock()
-	_ = c.conn.notify("textDocument/didClose", map[string]any{"textDocument": map[string]string{"uri": c.uri}})
+	for _, uri := range uris {
+		_ = c.conn.notify("textDocument/didClose", map[string]any{"textDocument": map[string]string{"uri": uri}})
+	}
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 	if c.conn.call(ctx, "shutdown", nil, nil) == nil {
@@ -224,8 +258,8 @@ func (c *Client) startError(err error) error {
 	return fmt.Errorf("o %s não iniciou%s — %s", c.server.Name, c.stderr.reason(), c.server.Hint)
 }
 
-// emit delivers an event, replacing one the editor hasn't taken yet
-// (diagnostics supersede each other).
+// emit delivers an event; when the editor falls far behind, the oldest
+// one waiting goes (newer diagnostics supersede it).
 func (c *Client) emit(ev Event) {
 	for {
 		select {
@@ -252,7 +286,13 @@ func (c *Client) notification(method string, params json.RawMessage) {
 			Message  string   `json:"message"`
 		} `json:"diagnostics"`
 	}
-	if json.Unmarshal(params, &p) != nil || p.URI != c.uri {
+	if json.Unmarshal(params, &p) != nil {
+		return
+	}
+	c.mu.Lock()
+	_, open := c.docs[p.URI]
+	c.mu.Unlock()
+	if !open {
 		return
 	}
 	ds := make([]Diagnostic, 0, len(p.Diagnostics))
@@ -261,9 +301,9 @@ func (c *Client) notification(method string, params json.RawMessage) {
 		if sev < Error || sev > Hint {
 			sev = Error
 		}
-		ds = append(ds, Diagnostic{Start: c.fromLSP(d.Range.Start), End: c.fromLSP(d.Range.End), Severity: sev, Message: d.Message})
+		ds = append(ds, Diagnostic{Start: c.fromLSP(p.URI, d.Range.Start), End: c.fromLSP(p.URI, d.Range.End), Severity: sev, Message: d.Message})
 	}
-	c.emit(Event{Diagnostics: ds})
+	c.emit(Event{Path: uriPath(p.URI), Diagnostics: ds})
 }
 
 // serverRequest answers what servers commonly ask the client.
@@ -291,18 +331,19 @@ type lspRange struct {
 	End   lspPos `json:"end"`
 }
 
-// fromLSP converts a server position to a rune column.
-func (c *Client) fromLSP(p lspPos) Pos {
+// fromLSP converts a position in the document at uri to a rune column.
+func (c *Client) fromLSP(uri string, p lspPos) Pos {
 	if !c.utf16 {
 		return Pos{p.Line, p.Character}
 	}
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	if p.Line >= len(c.lines) {
+	doc, ok := c.docs[uri]
+	if !ok || p.Line >= len(doc.lines) {
 		return Pos{p.Line, p.Character}
 	}
 	col, units := 0, 0
-	for _, r := range c.lines[p.Line] {
+	for _, r := range doc.lines[p.Line] {
 		if units >= p.Character {
 			break
 		}
@@ -310,6 +351,14 @@ func (c *Client) fromLSP(p lspPos) Pos {
 		col++
 	}
 	return Pos{p.Line, col}
+}
+
+// pathURI is the file:// URI of path (made absolute).
+func pathURI(path string) string {
+	if abs, err := filepath.Abs(path); err == nil {
+		path = abs
+	}
+	return fileURI(path)
 }
 
 // fileURI is the file:// URI of an absolute path.

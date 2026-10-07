@@ -9,10 +9,11 @@ import (
 	"github.com/nvizble/Lightyear42/internal/lsp"
 )
 
-// The language server side of the editor (internal/lsp): the server starts
-// with the editor, gets the text after every change, and its diagnostics
-// are drawn on the code, in the gutter and in the status line. Hover,
-// definition and completion are in lspfeatures.go.
+// The language server side of the editor (internal/lsp): a server per
+// project starts with the editor (or when a buffer of a new project opens),
+// gets each buffer's text after every change, and its diagnostics are drawn
+// on the code, in the gutter and in the status line. Hover, definition and
+// completion are in lspfeatures.go.
 
 var (
 	colorWarn = lipgloss.AdaptiveColor{Light: "130", Dark: "214"}
@@ -33,14 +34,23 @@ var (
 	severityNames = [...]string{lsp.Error: "erro", lsp.Warning: "aviso", lsp.Information: "info", lsp.Hint: "dica"}
 )
 
-// lspState is shared by the model's copies.
-type lspState struct {
+// lspServer is one running language server, shared by the buffers of its
+// project.
+type lspServer struct {
 	server   lsp.Server
+	root     string
 	client   *lsp.Client   // nil until started, and after the server stops
 	starting bool          // started in the background, not ready yet
 	stop     chan struct{} // closed by Close
-	dirty    bool          // the text changed since the server last got it
-	diags    []lsp.Diagnostic
+}
+
+// lspState is a buffer's side of its language server.
+type lspState struct {
+	srv   *lspServer
+	path  string
+	open  bool // the server got the document
+	dirty bool // the text changed since the server last got it
+	diags []lsp.Diagnostic
 
 	pending tea.Cmd     // a request a key started, for Update to return
 	hover   []string    // the hover popup's lines (nil when closed)
@@ -49,99 +59,134 @@ type lspState struct {
 }
 
 type lspStartedMsg struct {
+	srv    *lspServer
 	client *lsp.Client
 	err    error
 }
 
-type lspEventMsg lsp.Event
-
-// WithLSP makes the editor run the language server for its file (clangd,
-// gopls, pyright, rust-analyzer), when there is one. A missing server is
-// reported in the status line, with how to install it.
-func (m Model) WithLSP() Model {
-	s, ok := lsp.ServerFor(m.ed.Path())
-	if !ok || m.ed.Path() == "" {
-		return m
-	}
-	st := &lspState{server: s, starting: true, stop: make(chan struct{})}
-	m.ed.OnChange(func(editor.Change) { st.dirty = true })
-	m.lsp = st
-	if m.vim != nil {
-		m.vim.Commands = m.lspCommands()
-	}
-	return m
+type lspEventMsg struct {
+	srv *lspServer
+	ev  lsp.Event
 }
 
-// startLSP starts the server in the background.
-func (m Model) startLSP() tea.Cmd {
-	if m.lsp == nil {
-		return nil
+// WithLSP makes the editor run language servers for its files (clangd,
+// gopls, pyright, rust-analyzer): one per project, shared by its buffers. A
+// missing server is reported in the status line, with how to install it.
+func (m Model) WithLSP() Model {
+	m.ses.lsp = true
+	for _, b := range m.ses.bufs {
+		m.ses.attach(b)
 	}
-	server, path, text := m.lsp.server, m.ed.Path(), m.ed.Buffer().Text()
-	return func() tea.Msg {
-		c, err := lsp.Start(context.Background(), server, path, text)
-		return lspStartedMsg{c, err}
+	if m.vim != nil {
+		for key, f := range m.lspCommands() {
+			m.vim.Commands[key] = f
+		}
+	}
+	return m.synced()
+}
+
+// attach links b to the server of its project, starting it when needed
+// (Update returns the start, see session.starts).
+func (ses *session) attach(b *buffer) {
+	path := b.ed.Path()
+	s, ok := lsp.ServerFor(path)
+	if !ses.lsp || !ok || path == "" {
+		return
+	}
+	root := lsp.Root(s, path)
+	key := s.Name + "\x00" + root
+	srv, running := ses.servers[key]
+	if !running {
+		srv = &lspServer{server: s, root: root, starting: true, stop: make(chan struct{})}
+		ses.servers[key] = srv
+		ses.starts = append(ses.starts, func() tea.Msg {
+			c, err := lsp.Start(context.Background(), s, root)
+			return lspStartedMsg{srv, c, err}
+		})
+	}
+	st := &lspState{srv: srv, path: path}
+	b.lsp = st
+	b.ed.OnChange(func(editor.Change) { st.dirty = true })
+	if srv.client != nil {
+		srv.client.DidOpen(path, b.ed.Buffer().Text())
+		st.open = true
 	}
 }
 
 // waitLSP waits for the server's next event.
-func waitLSP(st *lspState) tea.Cmd {
-	events := st.client.Events()
+func waitLSP(srv *lspServer) tea.Cmd {
+	events := srv.client.Events()
 	return func() tea.Msg {
 		select {
 		case ev := <-events:
-			return lspEventMsg(ev)
-		case <-st.stop:
+			return lspEventMsg{srv, ev}
+		case <-srv.stop:
 			return nil
 		}
 	}
 }
 
-// lspMsg handles the server's news.
+// lspMsg handles the servers' news.
 func (m Model) lspMsg(msg tea.Msg) (Model, tea.Cmd) {
-	st := m.lsp
 	switch msg := msg.(type) {
 	case lspStartedMsg:
-		st.starting = false
+		srv := msg.srv
+		srv.starting = false
 		if msg.err != nil {
 			m.message, m.isError = msg.err.Error(), true
 			return m, nil
 		}
 		select {
-		case <-st.stop: // closed while starting
+		case <-srv.stop: // closed while starting
 			msg.client.Close()
 			return m, nil
 		default:
 		}
-		st.client = msg.client
-		m.syncLSP() // edits made while it started
-		return m, waitLSP(st)
+		srv.client = msg.client
+		// The buffers opened while it started, as they are now.
+		for _, b := range m.ses.bufs {
+			if st := b.lsp; st != nil && st.srv == srv && !st.open {
+				srv.client.DidOpen(st.path, b.ed.Buffer().Text())
+				st.open, st.dirty = true, false
+			}
+		}
+		return m, waitLSP(srv)
 	case lspEventMsg:
-		if msg.Err != nil {
-			st.client, st.diags = nil, nil
-			m.message, m.isError = msg.Err.Error(), true
+		srv := msg.srv
+		if msg.ev.Err != nil {
+			srv.client = nil
+			for _, b := range m.ses.bufs {
+				if b.lsp != nil && b.lsp.srv == srv {
+					b.lsp.diags, b.lsp.open = nil, false
+				}
+			}
+			m.message, m.isError = msg.ev.Err.Error(), true
 			return m, nil
 		}
-		st.diags = msg.Diagnostics
-		return m, waitLSP(st)
+		for _, b := range m.ses.bufs {
+			if b.lsp != nil && b.lsp.srv == srv && sameFile(b.lsp.path, msg.ev.Path) {
+				b.lsp.diags = msg.ev.Diagnostics
+			}
+		}
+		return m, waitLSP(srv)
 	}
 	return m, nil
 }
 
-// syncLSP sends the text to the server when it changed.
+// syncLSP sends the current buffer's text to its server when it changed.
 func (m Model) syncLSP() {
-	if st := m.lsp; st != nil && st.client != nil && st.dirty {
-		st.client.DidChange(m.ed.Buffer().Text())
+	if st := m.lsp; st != nil && st.srv.client != nil && st.open && st.dirty {
+		st.srv.client.DidChange(st.path, m.ed.Buffer().Text())
 		st.dirty = false
 	}
 }
 
-// closeLSP stops the server.
+// closeLSP stops the servers.
 func (m Model) closeLSP() {
-	if st := m.lsp; st != nil {
-		close(st.stop)
-		if st.client != nil {
-			st.client.Close()
+	for _, srv := range m.ses.servers {
+		close(srv.stop)
+		if srv.client != nil {
+			srv.client.Close()
 		}
 	}
 }

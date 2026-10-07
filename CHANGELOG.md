@@ -7,6 +7,15 @@ Mudanças visíveis do lightyear, da mais nova para a mais antiga. O
 Versões `-canary.N` são pre-releases: `lightyear update --canary` entra no
 canal canary e `lightyear update --stable` volta para a estável.
 
+## [1.3.0-canary.19] — 2026-10-07
+
+- Editor: vários arquivos — `lightyear edit a.c b.c`, `:e arquivo`,
+  `:bn`/`:bp`/`:b 2`, `:ls`, `:bd`, `:wa`; o `:q` avisa se outro arquivo
+  tem alterações. O `gd` abre a definição em outro arquivo e `Ctrl-o`
+  volta. Copiar, colar, macros e busca valem entre os arquivos.
+- Editor: um language server por projeto, compartilhado pelos arquivos
+  abertos (antes era um por arquivo).
+
 ## [1.3.0-canary.18] — 2026-10-07
 
 - Editor: `.` repete a última mudança — `dw.`, `ciwfoo<esc>` e `.` em outra
