@@ -1,0 +1,28 @@
+Assignment name  : lcm
+Expected files   : lcm.c
+Allowed functions: none
+--------------------------------------------------------------------------------
+
+Write a function that receives two unsigned ints and returns their LCM.
+
+The LCM (Lowest Common Multiple) of two non-zero integers is the smallest
+positive integer that both of them divide.
+
+There are two usual ways to compute it:
+
+- Walk through the multiples of each integer until you reach a common
+multiple other than 0.
+
+- Use the HCF (Highest Common Factor) of the two integers:
+
+	LCM(x, y) = | x * y | / HCF(x, y)
+
+  where | x * y | is the absolute value of the product of x and y.
+
+If either integer is 0, the LCM is 0.
+
+Your function must be prototyped as follows:
+
+  unsigned int    lcm(unsigned int a, unsigned int b);
+
+Turn in the function only, without a main.

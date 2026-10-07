@@ -1,0 +1,39 @@
+Nome do exercício : fizzbuzz
+Arquivos esperados: fizzbuzz.c
+Funções permitidas: write
+--------------------------------------------------------------------------------
+
+Escreva um programa que escreve todos os números de 1 a 100, um por linha
+(cada um seguido de uma quebra de linha).
+
+Os números múltiplos de 3 são escritos como 'fizz' no lugar do número.
+
+Os números múltiplos de 5 são escritos como 'buzz' no lugar do número.
+
+Os números múltiplos de 3 e de 5 ao mesmo tempo são escritos como 'fizzbuzz'
+no lugar do número.
+
+Exemplo:
+
+$>./fizzbuzz
+1
+2
+fizz
+4
+buzz
+fizz
+7
+8
+fizz
+buzz
+11
+fizz
+13
+14
+fizzbuzz
+[...]
+97
+98
+fizz
+buzz
+$>

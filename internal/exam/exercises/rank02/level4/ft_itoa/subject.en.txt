@@ -1,0 +1,13 @@
+Assignment name  : ft_itoa
+Expected files   : ft_itoa.c
+Allowed functions: malloc
+--------------------------------------------------------------------------------
+
+Write a function that converts an int into a null-terminated string. The
+result must be returned in a char array that you allocate yourself.
+
+The function must be declared as follows:
+
+char	*ft_itoa(int nbr);
+
+Turn in the function only, without a main.

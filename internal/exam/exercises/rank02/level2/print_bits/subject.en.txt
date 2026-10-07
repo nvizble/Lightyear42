@@ -1,0 +1,15 @@
+Assignment name  : print_bits
+Expected files   : print_bits.c
+Allowed functions: write
+--------------------------------------------------------------------------------
+
+Write a function that takes a byte and prints its binary representation,
+WITHOUT a newline at the end.
+
+It must be prototyped as follows:
+
+void	print_bits(unsigned char octet);
+
+For example, calling print_bits with 2 prints "00000010".
+
+Turn in the function only, without a main.

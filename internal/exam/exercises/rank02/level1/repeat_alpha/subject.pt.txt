@@ -1,0 +1,23 @@
+Nome do exercício : repeat_alpha
+Arquivos esperados: repeat_alpha.c
+Funções permitidas: write
+--------------------------------------------------------------------------------
+
+Escreva um programa que recebe uma string e a exibe repetindo cada letra
+tantas vezes quanto a sua posição no alfabeto, seguida de uma quebra de linha.
+
+'a' e 'A' aparecem uma vez, 'b' e 'B' duas vezes, ..., 'z' e 'Z' 26 vezes.
+Qualquer outro caractere é exibido como está, uma única vez. Maiúsculas e
+minúsculas são mantidas.
+
+Se o número de argumentos for diferente de 1, exiba apenas uma quebra de
+linha.
+
+Exemplos:
+
+$> ./a.out "abc" | cat -e
+abbccc$
+$> ./a.out "Ab, 1!" | cat -e
+Abb, 1!$
+$> ./a.out | cat -e
+$

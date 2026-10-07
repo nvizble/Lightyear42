@@ -1,0 +1,16 @@
+{
+  "files": ["last_word.c"],
+  "tests": [
+    [],
+    ["FOR PONY"],
+    ["this        ...       is sparta, then again, maybe    not"],
+    ["   "],
+    [""],
+    ["a", "b"],
+    ["  lorem,ipsum  "],
+    ["single"],
+    ["word\t\t"],
+    ["one\ttwo"],
+    ["\t x \t"]
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "files": ["rot_13.c"],
+  "tests": [
+    ["abc"],
+    ["My horse is Amazing."],
+    ["AkjhZ zLKIJz , 23y "],
+    ["abcdefghijklmnopqrstuvwxyz ABCDEFGHIJKLMNOPQRSTUVWXYZ"],
+    ["@[`{ 0123456789 !?~"],
+    [],
+    [""],
+    ["abc", "def"]
+  ]
+}

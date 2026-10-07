@@ -1,0 +1,22 @@
+Assignment name  : swap_bits
+Expected files   : swap_bits.c
+Allowed functions: none
+--------------------------------------------------------------------------------
+
+Write a function that takes a byte, exchanges its two halves (its upper and
+lower 4 bits, as shown below) and returns the result.
+
+It must be prototyped as follows:
+
+unsigned char	swap_bits(unsigned char octet);
+
+Example:
+
+  1 byte
+_____________
+ 0100 | 0001
+     \ /
+     / \
+ 0001 | 0100
+
+Turn in the function only, without a main.

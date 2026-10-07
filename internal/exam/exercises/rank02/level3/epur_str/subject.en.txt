@@ -1,0 +1,26 @@
+Assignment name  : epur_str
+Expected files   : epur_str.c
+Allowed functions: write
+--------------------------------------------------------------------------------
+
+Write a program that receives a string and prints it with exactly one space
+between consecutive words, with no spaces or tabs at the start or at the end,
+followed by a \n.
+
+A "word" is a run of characters delimited by spaces/tabs, or by the start/end
+of the string.
+
+If the number of arguments is not 1, or if the string contains no words, the
+program prints only \n.
+
+Example:
+
+$> ./epur_str "See? It's easy to print the same thing" | cat -e
+See? It's easy to print the same thing$
+$> ./epur_str " this        time it      will     be    more complex  . " | cat -e
+this time it will be more complex .$
+$> ./epur_str "No S*** Sherlock..." "nAw S*** ShErLaWQ..." | cat -e
+$
+$> ./epur_str "" | cat -e
+$
+$>

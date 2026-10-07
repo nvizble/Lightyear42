@@ -1,0 +1,26 @@
+Nome do exercício : epur_str
+Arquivos esperados: epur_str.c
+Funções permitidas: write
+--------------------------------------------------------------------------------
+
+Escreva um programa que recebe uma string e a exibe com exatamente um espaço
+entre palavras consecutivas, sem espaços ou tabulações no início ou no fim,
+seguida de um \n.
+
+Uma "palavra" é uma sequência de caracteres delimitada por espaços/tabulações,
+ou pelo início/fim da string.
+
+Se o número de argumentos for diferente de 1, ou se a string não tiver
+nenhuma palavra, o programa exibe apenas \n.
+
+Exemplo:
+
+$> ./epur_str "See? It's easy to print the same thing" | cat -e
+See? It's easy to print the same thing$
+$> ./epur_str " this        time it      will     be    more complex  . " | cat -e
+this time it will be more complex .$
+$> ./epur_str "No S*** Sherlock..." "nAw S*** ShErLaWQ..." | cat -e
+$
+$> ./epur_str "" | cat -e
+$
+$>

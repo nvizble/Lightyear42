@@ -1,0 +1,14 @@
+{
+  "files": ["ft_strspn.c"],
+  "tests": [
+    ["hello", "leh"],
+    ["hello", "ehlo"],
+    ["hello", "xyz"],
+    ["aaabbbccc", "ab"],
+    ["abc", ""],
+    ["", "abc"],
+    ["", ""],
+    ["   indented", " "],
+    ["12345abc", "0123456789"]
+  ]
+}

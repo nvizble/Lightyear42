@@ -1,0 +1,14 @@
+Assignment name  : ft_atoi
+Expected files   : ft_atoi.c
+Allowed functions: none
+--------------------------------------------------------------------------------
+
+Write a function that converts the string str to an int and returns it.
+
+It behaves like the standard atoi(const char *str) function (see man atoi).
+
+It must be prototyped as follows:
+
+int	ft_atoi(const char *str);
+
+Turn in the function only, without a main.

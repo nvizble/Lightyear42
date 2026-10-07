@@ -1,0 +1,14 @@
+{
+  "files": ["ft_strcspn.c"],
+  "tests": [
+    ["hello", "l"],
+    ["hello world", " "],
+    ["hello", "xyz"],
+    ["hello", "oh"],
+    ["abc", "a"],
+    ["abc", ""],
+    ["", "abc"],
+    ["", ""],
+    ["abcdef", "fed"]
+  ]
+}

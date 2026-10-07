@@ -1,0 +1,29 @@
+Nome do exercício : rotone
+Arquivos esperados: rotone.c
+Funções permitidas: write
+--------------------------------------------------------------------------------
+
+Escreva um programa que recebe uma string e a exibe com cada letra
+substituída pela letra seguinte no alfabeto.
+
+'z' volta para 'a' e 'Z' volta para 'A'. As letras mantêm a caixa (maiúscula
+ou minúscula); caracteres que não são letras são exibidos sem alteração.
+
+A saída termina com um \n.
+
+Se o número de argumentos for diferente de 1, o programa exibe apenas um \n.
+
+Exemplos:
+
+$>./rotone "abc"
+bcd
+$>./rotone "Les stagiaires du staff ne sentent pas toujours tres bon." | cat -e
+Mft tubhjbjsft ev tubgg of tfoufou qbt upvkpvst usft cpo.$
+$>./rotone "AkjhZ zLKIJz , 23y " | cat -e
+BlkiA aMLJKa , 23z $
+$>./rotone | cat -e
+$
+$>
+$>./rotone "" | cat -e
+$
+$>

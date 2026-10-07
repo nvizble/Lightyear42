@@ -1,0 +1,12 @@
+Nome do exercício : ft_strlen
+Arquivos esperados: ft_strlen.c
+Funções permitidas: nenhuma
+--------------------------------------------------------------------------------
+
+Escreva uma função que retorna o tamanho de uma string.
+
+Ela deve ter o seguinte protótipo:
+
+int	ft_strlen(char *str);
+
+Entregue apenas a função, sem main.

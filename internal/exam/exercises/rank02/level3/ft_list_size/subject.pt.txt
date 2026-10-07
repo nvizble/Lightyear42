@@ -1,0 +1,22 @@
+Nome do exercício : ft_list_size
+Arquivos esperados: ft_list_size.c, ft_list.h
+Funções permitidas: nenhuma
+--------------------------------------------------------------------------------
+
+Escreva uma função que retorna quantos elementos a lista encadeada recebida
+contém.
+
+Ela deve ser declarada assim:
+
+int	ft_list_size(t_list *begin_list);
+
+Você deve usar a estrutura abaixo e entregá-la em um arquivo chamado
+ft_list.h:
+
+typedef struct    s_list
+{
+    struct s_list *next;
+    void          *data;
+}                 t_list;
+
+Entregue apenas a função, sem main.

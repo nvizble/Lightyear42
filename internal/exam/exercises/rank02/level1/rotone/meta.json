@@ -1,0 +1,13 @@
+{
+  "files": ["rotone.c"],
+  "tests": [
+    ["abc"],
+    ["Les stagiaires du staff ne sentent pas toujours tres bon."],
+    ["AkjhZ zLKIJz , 23y "],
+    ["abcdefghijklmnopqrstuvwxyz ABCDEFGHIJKLMNOPQRSTUVWXYZ"],
+    ["@[`{ 0123456789 !?~"],
+    [],
+    [""],
+    ["abc", "def"]
+  ]
+}

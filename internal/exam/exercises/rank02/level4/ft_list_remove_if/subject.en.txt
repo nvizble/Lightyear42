@@ -1,0 +1,30 @@
+Assignment name  : ft_list_remove_if
+Expected files   : ft_list_remove_if.c
+Allowed functions: free
+--------------------------------------------------------------------------------
+
+Write a function named ft_list_remove_if that removes, from the list it
+receives, every element whose data is "equal" to the reference data.
+
+It must be declared as follows:
+
+void ft_list_remove_if(t_list **begin_list, void *data_ref, int (*cmp)());
+
+cmp receives two void* and returns 0 when both are equal.
+
+You must use the ft_list.h file, provided next to this subject, which contains:
+
+$>cat ft_list.h
+typedef struct      s_list
+{
+    struct s_list   *next;
+    void            *data;
+}                   t_list;
+$>
+
+Notes for lightyear:
+- Modern compilers reject calling cmp(a, b) through an int (*cmp)() parameter
+  when warnings are errors. Call it through a cast instead:
+  ((int (*)(void *, void *))cmp)(a, b)
+
+Turn in the function only, without a main.

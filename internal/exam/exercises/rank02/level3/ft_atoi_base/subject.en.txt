@@ -1,0 +1,23 @@
+Assignment name  : ft_atoi_base
+Expected files   : ft_atoi_base.c
+Allowed functions: none
+--------------------------------------------------------------------------------
+
+Write a function that reads the string str as a number written in base
+str_base (with str_base <= 16) and returns its value as an int (base 10).
+
+The digits that may appear in the input are: 0123456789abcdef
+Only the first str_base of them are valid for a given base: base 4 accepts
+"0123", base 16 accepts "0123456789abcdef".
+
+Uppercase letters are accepted too: "12fdb3" and "12FDB3" mean the same
+number.
+
+A minus sign ('-') is taken into account only when it is the first character
+of the string.
+
+Your function must be declared as follows:
+
+int	ft_atoi_base(const char *str, int str_base);
+
+Turn in the function only, without a main.

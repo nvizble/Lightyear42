@@ -1,0 +1,11 @@
+Nome do exercício : ft_strcpy
+Arquivos esperados: ft_strcpy.c
+Funções permitidas:
+--------------------------------------------------------------------------------
+
+Escreva uma função que se comporta exatamente como a função padrão strcpy
+(veja man strcpy).
+
+Ela deve ter o seguinte protótipo:
+
+char    *ft_strcpy(char *s1, char *s2);

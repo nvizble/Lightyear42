@@ -1,0 +1,16 @@
+{
+  "files": ["expand_str.c"],
+  "tests": [
+    [],
+    ["See? It's easy to print the same thing"],
+    [" this        time it      will     be    more complex  "],
+    ["No S*** Sherlock...", "nAw S*** ShErLaWQ..."],
+    [""],
+    ["   \t  \t "],
+    ["\t\tword\t\t"],
+    ["a\tb  \t c"],
+    ["single"],
+    ["   leading"],
+    ["trailing   "]
+  ]
+}

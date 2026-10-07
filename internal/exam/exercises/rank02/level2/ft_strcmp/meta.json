@@ -1,0 +1,15 @@
+{
+  "files": ["ft_strcmp.c"],
+  "tests": [
+    ["hello", "hello"],
+    ["", ""],
+    ["abc", "abd"],
+    ["abd", "abc"],
+    ["abc", "abcd"],
+    ["abcd", "abc"],
+    ["", "a"],
+    ["a", ""],
+    ["Hello", "hello"],
+    ["same prefix X", "same prefix Y"]
+  ]
+}

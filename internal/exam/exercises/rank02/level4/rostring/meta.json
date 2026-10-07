@@ -1,0 +1,15 @@
+{
+  "files": ["rostring.c"],
+  "tests": [
+    [],
+    ["abc   "],
+    ["Que la      lumiere soit et la lumiere fut"],
+    ["     AkjhZ zLKIJz , 23y"],
+    ["first", "2", "11000000"],
+    ["a b"],
+    ["\tone\t\ttwo  three\t"],
+    [""],
+    ["  \t  "],
+    ["single"]
+  ]
+}

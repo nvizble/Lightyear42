@@ -1,0 +1,25 @@
+Assignment name  : pgcd
+Expected files   : pgcd.c
+Allowed functions: printf, atoi, malloc, free
+--------------------------------------------------------------------------------
+
+Write a program that receives two strings, each representing a strictly
+positive integer that fits in an int.
+
+Print their greatest common divisor followed by a newline (the result is
+always a strictly positive integer).
+
+If the number of arguments is not 2, print only a newline.
+
+Examples:
+
+$> ./pgcd 42 10 | cat -e
+2$
+$> ./pgcd 42 12 | cat -e
+6$
+$> ./pgcd 14 77 | cat -e
+7$
+$> ./pgcd 17 3 | cat -e
+1$
+$> ./pgcd | cat -e
+$

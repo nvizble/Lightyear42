@@ -1,0 +1,12 @@
+{
+  "files": ["ft_strrev.c"],
+  "tests": [
+    ["hello"],
+    ["abcd"],
+    [""],
+    ["a"],
+    ["ab"],
+    ["Hello, World!"],
+    ["racecar"]
+  ]
+}

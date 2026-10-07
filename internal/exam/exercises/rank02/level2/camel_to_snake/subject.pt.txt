@@ -1,0 +1,21 @@
+Nome do exercício : camel_to_snake
+Arquivos esperados: camel_to_snake.c
+Funções permitidas: malloc, realloc, write
+--------------------------------------------------------------------------------
+
+Escreva um programa que recebe uma string escrita em lowerCamelCase e a
+exibe convertida para snake_case, seguida de uma quebra de linha.
+
+Em lowerCamelCase, toda palavra começa com letra maiúscula, exceto a
+primeira palavra.
+
+Em snake_case, toda palavra é escrita em minúsculas e as palavras são
+unidas por um sublinhado "_".
+
+Exemplos:
+$>./camel_to_snake "hereIsACamelCaseWord"
+here_is_a_camel_case_word
+$>./camel_to_snake "helloWorld" | cat -e
+hello_world$
+$>./camel_to_snake | cat -e
+$

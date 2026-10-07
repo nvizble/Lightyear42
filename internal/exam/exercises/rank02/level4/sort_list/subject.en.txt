@@ -1,0 +1,40 @@
+Assignment name  : sort_list
+Expected files   : sort_list.c
+Allowed functions: none
+--------------------------------------------------------------------------------
+
+Write the following function:
+
+t_list	*sort_list(t_list* lst, int (*cmp)(int, int));
+
+It must sort the list it receives, using the function pointer cmp to decide
+the order, and return a pointer to the first element of the sorted list.
+
+Duplicate values must be kept.
+
+The input is always consistent.
+
+You must use the t_list type from list.h and include that file in your code
+(#include "list.h"). The header is provided next to this subject; do not turn
+it in. It contains:
+
+typedef struct s_list t_list;
+
+struct s_list
+{
+	int     data;
+	t_list  *next;
+};
+
+Any function given as cmp returns a value other than 0 when a and b are in
+the right order, and 0 otherwise.
+
+For example, using the following function as cmp sorts the list in ascending
+order:
+
+int ascending(int a, int b)
+{
+	return (a <= b);
+}
+
+Turn in the function only, without a main.

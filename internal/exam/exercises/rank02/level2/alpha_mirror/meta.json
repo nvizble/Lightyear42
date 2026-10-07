@@ -1,0 +1,13 @@
+{
+  "files": ["alpha_mirror.c"],
+  "tests": [
+    [],
+    ["abc"],
+    ["My horse is Amazing."],
+    ["abcdefghijklmnopqrstuvwxyz"],
+    ["ABCDEFGHIJKLMNOPQRSTUVWXYZ"],
+    ["azAZ mnMN @[`{ 0129"],
+    [""],
+    ["abc", "def"]
+  ]
+}
