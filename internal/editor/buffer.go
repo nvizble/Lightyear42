@@ -124,8 +124,8 @@ func (b *Buffer) Delete(r Range) string {
 	if removed == "" {
 		return ""
 	}
-	head := append([]rune(nil), b.lines[s.Line][:s.Column]...)
-	joined := append(head, b.lines[e.Line][e.Column:]...)
+	joined := append([]rune(nil), b.lines[s.Line][:s.Column]...)
+	joined = append(joined, b.lines[e.Line][e.Column:]...)
 	b.lines = append(b.lines[:s.Line], append([][]rune{joined}, b.lines[e.Line+1:]...)...)
 	return removed
 }
