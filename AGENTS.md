@@ -16,6 +16,7 @@ Seu objetivo é ajudar a desenvolver **lightyear**, uma CLI moderna, open source
 - **Bubble Tea / Lip Gloss** — TUI e UX (quando necessário)
 - **OAuth2** (`golang.org/x/oauth2`) + `net/http`
 - **SQLite** (`modernc.org/sqlite`, sem CGO) — cache
+- **Tree-sitter** (`github.com/tree-sitter/go-tree-sitter` + gramáticas oficiais, **com CGO**) — syntax highlighting do editor. É a única parte em C: os releases rodam num runner macOS (clang para darwin, Zig para Linux estático/musl e Windows) e o `go install` precisa de `cc`
 - **OS keyring** — tokens
 - **Testes:** `testing`, table-driven, mocks
 
@@ -40,6 +41,7 @@ internal/
   update/      # Download/extração/replace do binário
   editor/      # Editor embutido: core (buffer, cursor, viewport, undo) — ver editor/DESIGN.md
   vim/         # Controller Vim-like do editor (modos, contadores, motions, operadores, Visual, registers, :w/:q)
+  syntax/      # Syntax highlighting do editor com Tree-sitter (cgo): C, C++, Go, Python, Rust
   tui/         # Bubble Tea
 pkg/           # Só APIs públicas exportáveis
 ```
@@ -142,7 +144,7 @@ UX: progresso, tabelas, cores, loading — sem poluição visual.
 | 8 | Notificações | Push via ntfy quando surge avaliação nova (**concluído**) |
 | 9 | Simulador de provas | `lightyear exam`: Exam Rank 02 completo, grader local com `cc` + solução de referência, sessão persistida, modo prática (**passos 1–2 concluídos**; próximo: TUI examshell, histórico/pontos fracos) |
 | 10 | App TUI | `lightyear` sozinho abre o app em tela cheia: abas clicáveis reaproveitando services e renderers dos comandos (**canary v1.3.0-canary.1**) |
-| 11 | Editor embutido | Editor modal estilo Vim dentro do app, em 8 fases (`internal/editor/DESIGN.md`). **Fases 1 (core), 2 (edição modal), 3 (contadores, operador × motion), 4 (Visual Mode) e 5 (registers, `y`/`p`/`c`) concluídas**; próxima: Syntax Highlighting. LSP (Fase 7): C/C++, Go, Python, Rust |
+| 11 | Editor embutido | Editor modal estilo Vim dentro do app, em 8 fases (`internal/editor/DESIGN.md`). **Fases 1 (core), 2 (edição modal), 3 (contadores, operador × motion), 4 (Visual Mode), 5 (registers, `y`/`p`/`c`) e 6 (syntax highlighting com Tree-sitter) concluídas**; próxima: LSP. LSP (Fase 7): C/C++, Go, Python, Rust |
 
 Chat (DM/fórum/relay): **parked** — sem DM na API pública; fórum ≠ chat; relay próprio fora de escopo.
 

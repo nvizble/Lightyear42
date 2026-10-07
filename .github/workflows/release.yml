@@ -4,6 +4,13 @@ on:
   push:
     tags:
       - "v*"
+  # PRs that touch the build check it with a snapshot (nothing is published).
+  pull_request:
+    paths:
+      - .goreleaser.yaml
+      - .github/workflows/release.yml
+      - go.mod
+      - go.sum
 
 permissions:
   contents: write
@@ -11,7 +18,8 @@ permissions:
 jobs:
   release:
     name: GoReleaser
-    runs-on: ubuntu-latest
+    # macOS: clang builds the darwin binaries (cgo); Zig the others.
+    runs-on: macos-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -24,11 +32,23 @@ jobs:
           go-version: "1.25.x"
           cache: true
 
+      - name: Set up Zig
+        uses: mlugg/setup-zig@v2
+        with:
+          version: 0.14.1
+
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v6
         with:
           distribution: goreleaser
           version: "~> v2"
-          args: release --clean
+          args: ${{ startsWith(github.ref, 'refs/tags/') && 'release --clean' || 'release --snapshot --clean' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Check the binaries
+        run: |
+          file dist/*/lightyear dist/*/lightyear.exe
+          for f in dist/lightyear_linux_*/lightyear; do file "$f" | grep -q "statically linked"; done
+          otool -l dist/lightyear_darwin_arm64*/lightyear | grep -A4 LC_BUILD_VERSION | grep -q "minos 12.0"
+          dist/lightyear_darwin_arm64*/lightyear --version

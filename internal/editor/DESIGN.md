@@ -2,10 +2,10 @@
 
 > **Status:** Fases 1 (Editor Core, `internal/editor`), 2 (edição modal,
 > `internal/vim`), 3 (command parser: contadores, operador × motion), 4
-> (Visual Mode) e 5 (Registers) implementadas, com o componente em
-> `internal/tui/editorview` (comando experimental escondido
-> `lightyear edit <arquivo>`, modal por padrão; `--plain` para o editor sem
-> modos). Próxima: Fase 6 (Syntax Highlighting).
+> (Visual Mode), 5 (Registers) e 6 (Syntax Highlighting, `internal/syntax`)
+> implementadas, com o componente em `internal/tui/editorview` (comando
+> experimental escondido `lightyear edit <arquivo>`, modal por padrão;
+> `--plain` para o editor sem modos). Próxima: Fase 7 (LSP).
 >
 > **Desvios desta implementação em relação ao texto abaixo:**
 > - o componente visual mora em `internal/tui/editorview` (a TUI do projeto
@@ -34,7 +34,18 @@
 >   a indentação), os atalhos `C`, `D` e `Y`, e `y`/`c`/`p` no Visual (o
 >   texto trocado pelo `p` vai para o register, como no Vim). Os registers
 >   são um mapa por nome no Controller: named registers (`"a`) só precisam
->   do parser. Ainda sem o clipboard do sistema.
+>   do parser. Ainda sem o clipboard do sistema;
+> - Fase 6: Tree-sitter **oficial**, via cgo (decisão de 2026-10-07; havia
+>   um Tree-sitter em Go puro e o Chroma como alternativas sem CGO). É a
+>   única parte em C do projeto: o release roda num runner macOS (clang
+>   para darwin, Zig para Linux estático/musl e Windows) e o `go install`
+>   precisa de `cc`. Gramáticas: C, C++, Go, Python e Rust. As queries de
+>   highlight vêm dos repositórios das gramáticas (`internal/syntax/
+>   queries`, MIT); quando dois padrões capturam o mesmo nó, vence o de
+>   baixo (a do Go foi reordenada para isso). O core avisa cada mudança
+>   (`Editor.OnChange`, que o LSP também vai usar) e o `syntax.Highlighter`
+>   aplica a edição na árvore e reparseia de forma incremental só quando a
+>   tela pede as cores, consultando só as linhas visíveis.
 
 ## 1. Visão Geral
 
@@ -254,8 +265,8 @@ Configuração própria (ex.: `editor.line_numbers`, `editor.relative_numbers`, 
 | 3 — Command Parser | count + operator + motion (`3j`, `3dd`, `dw`, `3dw`, `d$`) | **implementada** |
 | 4 — Visual Mode | `v`, `V` e operações sobre seleções | **implementada** |
 | 5 — Registers | `yy`, `dd`, `p`, `P` com register padrão | **implementada** |
-| 6 — Syntax Highlighting | Tree-sitter, highlighting incremental | próxima |
-| 7 — LSP | cliente JSON-RPC; diagnostics, hover, completion, go-to-definition | |
+| 6 — Syntax Highlighting | Tree-sitter, highlighting incremental | **implementada** |
+| 7 — LSP | cliente JSON-RPC; diagnostics, hover, completion, go-to-definition | próxima |
 | 8 — Avançados | `ciw diw daw`, busca, `f F t T`, `.`, macros, buffers, splits, code actions, rename, format, references | |
 
 ## 26. Princípios

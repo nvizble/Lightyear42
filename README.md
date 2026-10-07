@@ -12,7 +12,7 @@ CLI moderna, open source, para a [42 Network](https://www.42network.org/), inspi
 
 ## Requisitos
 
-- Go 1.25+ (só para instalar via `go install` ou desenvolver)
+- Go 1.25+ e um compilador C (`gcc` ou `clang`) — só para instalar via `go install` ou desenvolver (o editor usa Tree-sitter, que é C)
 - Uma aplicação OAuth registrada na Intra: [profile.intra.42.fr/oauth/applications](https://profile.intra.42.fr/oauth/applications/new) com Redirect URI `http://127.0.0.1:53682/callback`
 - Para `lightyear slots open/close`, ative o scope **projects** na app e rode `lightyear logout && lightyear login`
 
@@ -58,7 +58,7 @@ lightyear version
 
 (Ajuste `Darwin_arm64` conforme o SO: `Darwin_x86_64`, `Linux_x86_64`, `Linux_arm64`, `Windows_x86_64`.)
 
-### Via Go (requer Go 1.25+)
+### Via Go (requer Go 1.25+ e um compilador C)
 
 ```bash
 go install github.com/nvizble/Lightyear42/cmd/lightyear@latest

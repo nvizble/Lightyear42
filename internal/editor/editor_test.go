@@ -327,3 +327,45 @@ func TestSelection(t *testing.T) {
 		t.Fatal("a linha seguinte não está selecionada")
 	}
 }
+
+// A listener that applies every Change to its own copy must always agree
+// with the buffer, through edits, undo and redo.
+func TestChangesKeepAMirrorInSync(t *testing.T) {
+	e := New("int main(void)\n{\n}")
+	mirror := []rune(e.Buffer().Text())
+	offset := func(text []rune, p Position) int {
+		line, i := 0, 0
+		for ; line < p.Line; i++ {
+			if text[i] == '\n' {
+				line++
+			}
+		}
+		return i + p.Column
+	}
+	e.OnChange(func(c Change) {
+		start, oldEnd := offset(mirror, c.Start), offset(mirror, c.OldEnd)
+		mirror = append(append(append([]rune{}, mirror[:start]...), []rune(c.Text)...), mirror[oldEnd:]...)
+		if got := offset(mirror, c.NewEnd); got != start+len([]rune(c.Text)) {
+			t.Fatalf("NewEnd %v não bate com o texto inserido %q", c.NewEnd, c.Text)
+		}
+	})
+	check := func(step string) {
+		t.Helper()
+		if string(mirror) != e.Buffer().Text() {
+			t.Fatalf("%s: cópia %q, buffer %q", step, string(mirror), e.Buffer().Text())
+		}
+	}
+	e.MoveCursor(Position{1, 1})
+	e.Insert("\n\treturn (0);")
+	check("insert")
+	e.Delete(Range{Start: Position{0, 4}, End: Position{1, 1}})
+	check("delete entre linhas")
+	e.Replace(Range{Start: Position{0, 0}, End: Position{0, 3}}, "é")
+	check("replace")
+	for e.Undo() {
+		check("undo")
+	}
+	for e.Redo() {
+		check("redo")
+	}
+}

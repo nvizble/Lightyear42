@@ -25,6 +25,43 @@ type Editor struct {
 	dirty   bool
 	tabSize int
 	sel     Selection
+	// listeners hear about every change to the text (see OnChange).
+	listeners []func(Change)
+}
+
+// Change is one edit to the text, for listeners that keep their own copy in
+// sync (syntax trees, language servers): the text from Start to OldEnd was
+// replaced by Text, which now ends at NewEnd.
+type Change struct {
+	Start, OldEnd, NewEnd Position
+	Text                  string
+}
+
+// OnChange calls f after every change to the text, undo and redo included.
+func (e *Editor) OnChange(f func(Change)) {
+	e.listeners = append(e.listeners, f)
+}
+
+// insert and remove change the buffer and tell the listeners; every edit
+// goes through them.
+func (e *Editor) insert(p Position, text string) Position {
+	end := e.buf.Insert(p, text)
+	if text != "" {
+		for _, f := range e.listeners {
+			f(Change{Start: p, OldEnd: p, NewEnd: end, Text: text})
+		}
+	}
+	return end
+}
+
+func (e *Editor) remove(r Range) string {
+	removed := e.buf.Delete(r)
+	if removed != "" {
+		for _, f := range e.listeners {
+			f(Change{Start: r.Start, OldEnd: r.End, NewEnd: r.Start})
+		}
+	}
+	return removed
 }
 
 // New opens an unnamed document with text.
@@ -104,7 +141,7 @@ func (e *Editor) Insert(text string) {
 		return
 	}
 	start := e.cursor
-	end := e.buf.Insert(start, text)
+	end := e.insert(start, text)
 	e.hist.record(edit{kind: editInsert, start: start, text: text, before: start, after: end})
 	e.setCursor(end)
 	e.dirty = true
@@ -116,7 +153,7 @@ func (e *Editor) Delete(r Range) string {
 	r = r.Normalized()
 	r.Start, r.End = e.buf.Clamp(r.Start), e.buf.Clamp(r.End)
 	before := e.cursor
-	removed := e.buf.Delete(r)
+	removed := e.remove(r)
 	if removed == "" {
 		return ""
 	}
@@ -132,8 +169,8 @@ func (e *Editor) Replace(r Range, text string) {
 	r = r.Normalized()
 	r.Start, r.End = e.buf.Clamp(r.Start), e.buf.Clamp(r.End)
 	before := e.cursor
-	removed := e.buf.Delete(r)
-	end := e.buf.Insert(r.Start, text)
+	removed := e.remove(r)
+	end := e.insert(r.Start, text)
 	if removed == "" && text == "" {
 		return
 	}
@@ -266,9 +303,9 @@ func (e *Editor) Undo() bool {
 		e.hist.undo = e.hist.undo[:n-1]
 		switch ed.kind {
 		case editInsert:
-			e.buf.Delete(Range{Start: ed.start, End: advance(ed.start, ed.text)})
+			e.remove(Range{Start: ed.start, End: advance(ed.start, ed.text)})
 		case editDelete:
-			e.buf.Insert(ed.start, ed.text)
+			e.insert(ed.start, ed.text)
 		}
 		e.hist.redo = append(e.hist.redo, ed)
 		e.setCursor(ed.before)
@@ -293,9 +330,9 @@ func (e *Editor) Redo() bool {
 		e.hist.redo = e.hist.redo[:n-1]
 		switch ed.kind {
 		case editInsert:
-			e.buf.Insert(ed.start, ed.text)
+			e.insert(ed.start, ed.text)
 		case editDelete:
-			e.buf.Delete(Range{Start: ed.start, End: advance(ed.start, ed.text)})
+			e.remove(Range{Start: ed.start, End: advance(ed.start, ed.text)})
 		}
 		e.hist.undo = append(e.hist.undo, ed)
 		e.setCursor(ed.after)
