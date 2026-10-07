@@ -102,6 +102,8 @@ abas clicáveis (Início, Avaliações, Projetos, Campus, Slots, Exam), rolagem 
 o mouse e ações no rodapé. Teclado: `1`–`6`/`←→` trocam de aba, `↑↓`/`PgUp`/`PgDn`
 rolam, `r` atualiza, `q` sai; na aba Exam, `s` começa, `e` abre o subject e a
 sua entrega lado a lado no vim (ou no `$EDITOR`), `g` corrige e `f` encerra.
+No vim, o cursor já começa no código e o subject fica só leitura; `Ctrl-w w`
+alterna entre as duas janelas e `:wq` salva e volta para o app.
 Fora de um terminal (pipes, scripts) o `lightyear` sozinho continua mostrando o help.
 
 ```bash

@@ -193,9 +193,9 @@ func TestEditorCommand(t *testing.T) {
 		visual, editor string
 		want           []string
 	}{
-		{"", "", []string{"vim", "-O", "s.txt", "a.c"}},
-		{"", "nvim", []string{"nvim", "-O", "s.txt", "a.c"}},
-		{"", "/usr/local/bin/vim", []string{"/usr/local/bin/vim", "-O", "s.txt", "a.c"}},
+		{"", "", []string{"vim", "-O", "-c", "setlocal nomodifiable readonly", "-c", "wincmd l", "s.txt", "a.c"}},
+		{"", "nvim", []string{"nvim", "-O", "-c", "setlocal nomodifiable readonly", "-c", "wincmd l", "s.txt", "a.c"}},
+		{"", "/usr/local/bin/vim", []string{"/usr/local/bin/vim", "-O", "-c", "setlocal nomodifiable readonly", "-c", "wincmd l", "s.txt", "a.c"}},
 		{"code -w", "vim", []string{"code", "-w", "s.txt", "a.c"}},
 		{"", "nano", []string{"nano", "s.txt", "a.c"}},
 	}

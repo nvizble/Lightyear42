@@ -391,7 +391,7 @@ func (m AppModel) examBody() string {
 	}
 	if m.examSess != nil {
 		parts = append(parts, RenderExamSession(*m.examSess, m.now),
-			styleLabel.Render("Aperte e para abrir o subject e a sua entrega lado a lado no vim;\nao sair (:wq), aperte g para corrigir."))
+			styleLabel.Render("Aperte e para abrir o subject e a sua entrega lado a lado no vim\n(o cursor já começa no código; Ctrl-w w alterna entre os dois).\nAo sair (:wq), aperte g para corrigir."))
 	} else {
 		parts = append(parts,
 			styleTitle.Render("Simulador de provas")+"\n"+
@@ -494,7 +494,8 @@ func (m AppModel) footer() string {
 
 // editorCommand opens the subject next to the files to turn in, using
 // $VISUAL or $EDITOR (vim by default). Vim-family editors get a vertical
-// split (-O): subject on the left, code on the right.
+// split (-O): subject on the left (read-only), code on the right, with the
+// cursor already in the code.
 func editorCommand(subject string, files []string) *exec.Cmd {
 	editor := os.Getenv("VISUAL")
 	if editor == "" {
@@ -508,7 +509,8 @@ func editorCommand(subject string, files []string) *exec.Cmd {
 	args := fields[1:]
 	switch filepath.Base(fields[0]) {
 	case "vim", "nvim", "vi", "mvim", "gvim":
-		args = append(args, "-O")
+		// -c runs in the first window (the subject): lock it, then move right.
+		args = append(args, "-O", "-c", "setlocal nomodifiable readonly", "-c", "wincmd l")
 	}
 	args = append(args, subject)
 	args = append(args, files...)
