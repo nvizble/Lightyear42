@@ -23,7 +23,7 @@ func NewRootCmd() *cobra.Command {
 
 Gerencie autenticação, perfil, projetos, campus e mais — direto do terminal.
 
-Rode "lightyear" sem argumentos para abrir o app em tela cheia (abas
+Rode só "lightyear" para abrir o app em tela cheia (abas
 clicáveis, mouse e teclado); os subcomandos abaixo continuam iguais.`,
 		SilenceUsage:  true,
 		SilenceErrors: true,
