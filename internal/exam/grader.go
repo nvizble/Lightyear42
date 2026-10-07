@@ -17,9 +17,10 @@ import (
 // chosen so it never collides with a file the student turns in.
 const harnessFile = "lightyear_main.c"
 
-// refTimeout bounds each run of the reference solution. It is generous on
-// purpose: the per-test Timeout judges the student, and on macOS the first run
-// of a freshly built binary can be slow while it is scanned.
+// refTimeout bounds each run of the reference solution, and the student's
+// first run. It is generous on purpose: on macOS the first run of a freshly
+// built binary can take seconds while Gatekeeper scans it, which must not be
+// graded as a timeout. Later runs are judged by the per-test Timeout.
 const refTimeout = 10 * time.Second
 
 // maxOutput caps the stdout kept per run, so a program stuck printing in a
@@ -87,12 +88,16 @@ func (g Grader) Grade(ctx context.Context, ex Exercise, submissionDir string) (R
 		return Result{Trace: "erro de compilação:\n" + out}, nil
 	}
 
-	for _, args := range ex.Tests {
+	for i, args := range ex.Tests {
 		want, err := run(ctx, refBin, args, refTimeout)
 		if err != nil {
 			return Result{}, fmt.Errorf("solução de referência de %s falhou com %q: %w", ex.Name, args, err)
 		}
-		got, err := run(ctx, userBin, args, g.Timeout)
+		timeout := g.Timeout
+		if i == 0 {
+			timeout = max(timeout, refTimeout)
+		}
+		got, err := run(ctx, userBin, args, timeout)
 		if err != nil {
 			return Result{Trace: fmt.Sprintf("%s %s\n%v", ex.Name, quoteArgs(args), err)}, nil
 		}
