@@ -207,6 +207,25 @@ type Hotspot struct {
 	// Search is the text matched by the "/" search (e.g. the login);
 	// Info is used when empty.
 	Search string
+	// Label names the hotspot in the search suggestions (Search when empty).
+	Label string
+	// ID identifies the hotspot for an exact search pick and for the tab's
+	// Activate action (Search when empty).
+	ID string
+}
+
+func (h Hotspot) label() string {
+	if h.Label != "" {
+		return h.Label
+	}
+	return h.Search
+}
+
+func (h Hotspot) id() string {
+	if h.ID != "" {
+		return h.ID
+	}
+	return h.Search
 }
 
 // AppView is a tab's rendered content plus its interactive regions.
@@ -303,6 +322,81 @@ func CampusSeatsView(campusName string, locations []models.Location, layout map[
 }
 
 func seatHost(cluster, row, post int) string { return fmt.Sprintf("c%dr%dp%d", cluster, row, post) }
+
+// Subject catalog grid: columns and their width (in cells).
+const (
+	subjectColumns  = 4
+	subjectColWidth = 28
+)
+
+// SubjectName is how a catalog slug is shown: without the "42cursus-"
+// prefix ("42cursus-push_swap" → "push_swap").
+func SubjectName(slug string) string {
+	return strings.TrimPrefix(slug, "42cursus-")
+}
+
+// SubjectsView lists your projects first, then every project of the subject
+// catalog in columns. Each project is a hotspot: the search finds it by name
+// or slug, and the tab's action (clicking) opens its subject.
+func SubjectsView(mine []models.ProjectUser, catalog []string) AppView {
+	lines := []string{
+		styleTitle.Render("Subjects") + styleLabel.Render(fmt.Sprintf(" — %d projetos", len(catalog))),
+		styleLabel.Render("clique num projeto para abrir o PDF · / busca"),
+	}
+	var spots []Hotspot
+	// shown is what the grid draws (maybe truncated); name is the full one.
+	spot := func(line, col int, shown, name, slug string) Hotspot {
+		return Hotspot{Line: line, Col: col, Width: lipgloss.Width(shown), Info: name + " · abrir o subject (PDF)",
+			Search: strings.ToLower(name + " " + slug), Label: name, ID: slug}
+	}
+
+	if len(mine) > 0 {
+		lines = append(lines, "", styleTitle.Render("Seus projetos"))
+		width := 0
+		for _, pu := range mine {
+			width = max(width, lipgloss.Width(pu.Project.Name))
+		}
+		for _, pu := range mine {
+			name := pu.Project.Name
+			line := styleValue.Render(name+strings.Repeat(" ", width-lipgloss.Width(name))) + "   " + projectStatus(pu)
+			if pu.FinalMark != nil {
+				line += styleLabel.Render(fmt.Sprintf("  %d", *pu.FinalMark))
+			}
+			spots = append(spots, spot(len(lines), 0, name, name, pu.Project.Slug))
+			lines = append(lines, line)
+		}
+	}
+
+	sorted := append([]string(nil), catalog...)
+	sort.Slice(sorted, func(i, j int) bool { return SubjectName(sorted[i]) < SubjectName(sorted[j]) })
+	lines = append(lines, "", styleTitle.Render("Todos os projetos"))
+	for i := 0; i < len(sorted); i += subjectColumns {
+		var b strings.Builder
+		for c := 0; c < subjectColumns && i+c < len(sorted); c++ {
+			slug := sorted[i+c]
+			shown := ansiTruncate(SubjectName(slug), subjectColWidth-2)
+			if c > 0 {
+				b.WriteString(strings.Repeat(" ", c*subjectColWidth-lipgloss.Width(b.String())))
+			}
+			spots = append(spots, spot(len(lines), c*subjectColWidth, shown, SubjectName(slug), slug))
+			b.WriteString(styleValue.Render(shown))
+		}
+		lines = append(lines, b.String())
+	}
+	return AppView{Content: strings.Join(lines, "\n"), Hotspots: spots}
+}
+
+// ansiTruncate cuts plain text to n cells with an ellipsis.
+func ansiTruncate(s string, n int) string {
+	if lipgloss.Width(s) <= n {
+		return s
+	}
+	r := []rune(s)
+	for len(r) > 0 && lipgloss.Width(string(r))+1 > n {
+		r = r[:len(r)-1]
+	}
+	return string(r) + "…"
+}
 
 // examCard draws the session card. The app shows the essentials; the
 // detailed version (CLI) adds attempts and the subject folder. hint, when
