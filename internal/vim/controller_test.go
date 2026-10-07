@@ -191,13 +191,13 @@ func TestSetEditorAndExCommands(t *testing.T) {
 	}
 	run(c, "p")
 	if b.Buffer().Text() != "babb" {
-		t.Fatalf("o register vale entre editores: %q", b.Buffer().Text())
+		t.Fatalf("o register vale entre buffers: %q", b.Buffer().Text())
 	}
 	run(c, "x")
 	c.SetEditor(a)
 	run(c, ".")
 	if a.Buffer().Text() != "aa" {
-		t.Fatalf("o . vale entre editores: %q", a.Buffer().Text())
+		t.Fatalf("o . vale entre buffers: %q", a.Buffer().Text())
 	}
 	var got []string
 	c.ExCommands = map[string]func(string) Result{
