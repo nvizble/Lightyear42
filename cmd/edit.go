@@ -15,7 +15,8 @@ func newEditCmd() *cobra.Command {
 		Use:   "edit <arquivo>",
 		Short: "Editor embutido (experimental)",
 		Long: `Abre o editor embutido do lightyear, com edição modal estilo Vim e
-cores (Tree-sitter) para C, C++, Go, Python e Rust:
+cores (Tree-sitter) e erros do language server (clangd, gopls, pyright,
+rust-analyzer) para C, C++, Go, Python e Rust:
 i/a/o/I/A/O entram no INSERT, esc volta ao NORMAL; movimentos hjkl, w b e,
 0 ^ $, gg G; operador d com qualquer movimento (dw, d$, dG, dd) e contadores
 (3j, 3dd, 2d3w); y copia (yy, yw, Y), c muda (cw, cc, C) e p/P colam o
@@ -35,6 +36,7 @@ Use --plain para o editor sem modos.`,
 			if plain {
 				model = editorview.New(ed)
 			}
+			model = model.WithLSP()
 			defer model.Close()
 			_, err = tea.NewProgram(model, tea.WithAltScreen(), tea.WithMouseCellMotion(), tea.WithContext(cmd.Context())).Run()
 			return err
