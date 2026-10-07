@@ -91,13 +91,35 @@ type Controller struct {
 	// ("K", "gd", "]d": a language server's hover, definition...). They get
 	// the count (1 when none); the controller only dispatches them.
 	Commands map[string]func(count int) Result
+	// ExCommands are ex commands the host provides or takes over, by name
+	// (":e file", ":bn", ":q" with several buffers); they get what follows
+	// the name.
+	ExCommands map[string]func(arg string) Result
+
+	watched map[*editor.Editor]bool // editors whose changes are counted
 }
 
 // New controls ed, starting in Normal mode.
 func New(ed *editor.Editor) *Controller {
-	c := &Controller{ed: ed, regs: map[rune]Register{}, macros: map[rune][]stroke{}}
-	ed.OnChange(func(editor.Change) { c.changes++ })
+	c := &Controller{regs: map[rune]Register{}, macros: map[rune][]stroke{}, watched: map[*editor.Editor]bool{}}
+	c.SetEditor(ed)
 	return c
+}
+
+// SetEditor switches to another editor (another buffer), back in Normal
+// mode; registers, macros, the search and "." carry over.
+func (c *Controller) SetEditor(ed *editor.Editor) {
+	if c.ed != nil {
+		c.ed.ClearSelection()
+		if c.mode == Insert {
+			c.ed.EndGroup()
+		}
+	}
+	c.ed, c.mode, c.state, c.cmdline = ed, Normal, CommandState{}, ""
+	if !c.watched[ed] {
+		c.watched[ed] = true
+		ed.OnChange(func(editor.Change) { c.changes++ })
+	}
 }
 
 // Mode is the current mode.
@@ -598,8 +620,12 @@ func (c *Controller) commandKey(key string) Result {
 	return Result{}
 }
 
-// execute runs an ex command: w, q, q!, wq, x.
+// execute runs an ex command: w, q, q!, wq, x, noh, or one of the host's.
 func (c *Controller) execute(cmd string) Result {
+	name, arg, _ := strings.Cut(cmd, " ")
+	if f, ok := c.ExCommands[name]; ok {
+		return f(strings.TrimSpace(arg))
+	}
 	switch cmd {
 	case "":
 		return Result{}

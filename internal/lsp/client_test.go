@@ -95,6 +95,7 @@ func fakeServer() {
 			}
 			publish(p.TextDocument.Text)
 		case "textDocument/didChange":
+			uri = p.TextDocument.URI
 			publish(p.ContentChanges[0].Text)
 		case "textDocument/hover":
 			write(map[string]any{"jsonrpc": "2.0", "id": *m.ID, "result": map[string]any{
@@ -128,6 +129,16 @@ func fakeServer() {
 	}
 }
 
+// open starts s for the folder of path and opens the document.
+func open(s Server, path, text string) (*Client, error) {
+	c, err := Start(context.Background(), s, filepath.Dir(path))
+	if err != nil {
+		return nil, err
+	}
+	c.DidOpen(path, text)
+	return c, nil
+}
+
 func fake(t *testing.T, mode string) Server {
 	t.Helper()
 	t.Setenv("FAKE_LSP", mode)
@@ -147,7 +158,7 @@ func next(t *testing.T, c *Client) Event {
 
 func TestDiagnosticsInRuneColumns(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "main.c")
-	c, err := Start(context.Background(), fake(t, "ok"), path, "ok\nxy ERR\n😀ERR")
+	c, err := open(fake(t, "ok"), path, "ok\nxy ERR\n😀ERR")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -161,33 +172,34 @@ func TestDiagnosticsInRuneColumns(t *testing.T) {
 		t.Fatalf("diagnostics: %v, esperado %v", ev.Diagnostics, want)
 	}
 
-	c.DidChange("ERR")
+	c.DidChange(path, "ERR")
 	if ev := next(t, c); len(ev.Diagnostics) != 1 || ev.Diagnostics[0].Start != (Pos{0, 0}) {
 		t.Fatalf("depois da mudança: %+v", ev)
 	}
-	c.DidChange("tudo certo")
+	c.DidChange(path, "tudo certo")
 	if ev := next(t, c); ev.Err != nil || len(ev.Diagnostics) != 0 {
 		t.Fatalf("sem erros deveria limpar: %+v", ev)
 	}
 }
 
 func TestHoverDefinitionCompletion(t *testing.T) {
-	c, err := Start(context.Background(), fake(t, "ok"), filepath.Join(t.TempDir(), "main.c"), "a\nb\n😀st")
+	path := filepath.Join(t.TempDir(), "main.c")
+	c, err := open(fake(t, "ok"), path, "a\nb\n😀st")
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer c.Close()
 	ctx := context.Background()
 	// Rune column 3 is after "😀st": 4 UTF-16 units.
-	if h, err := c.Hover(ctx, Pos{2, 3}); err != nil || h != "hover 2:4" {
+	if h, err := c.Hover(ctx, path, Pos{2, 3}); err != nil || h != "hover 2:4" {
 		t.Fatalf("hover: %q %v", h, err)
 	}
-	locs, err := c.Definition(ctx, Pos{2, 3})
-	want := []Location{{Path: c.uri[len("file://"):], Pos: Pos{2, 1}}, {Path: "/tmp/outro arquivo.c", Pos: Pos{3, 4}}}
+	locs, err := c.Definition(ctx, path, Pos{2, 3})
+	want := []Location{{Path: path, Pos: Pos{2, 1}}, {Path: "/tmp/outro arquivo.c", Pos: Pos{3, 4}}}
 	if err != nil || fmt.Sprint(locs) != fmt.Sprint(want) {
 		t.Fatalf("definition: %v %v", locs, err)
 	}
-	items, err := c.Completion(ctx, Pos{2, 3})
+	items, err := c.Completion(ctx, path, Pos{2, 3})
 	if err != nil || len(items) != 2 {
 		t.Fatalf("completion: %+v %v", items, err)
 	}
@@ -212,9 +224,39 @@ func TestHoverText(t *testing.T) {
 	}
 }
 
+// One server, two documents: diagnostics say whose they are.
+func TestSeveralDocuments(t *testing.T) {
+	dir := t.TempDir()
+	a, b := filepath.Join(dir, "a.c"), filepath.Join(dir, "b.c")
+	c, err := Start(context.Background(), fake(t, "ok"), dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer c.Close()
+	c.DidOpen(a, "ERR")
+	c.DidOpen(b, "ok\nok ERR")
+	got := map[string]Pos{}
+	for len(got) < 2 {
+		ev := next(t, c)
+		got[ev.Path] = ev.Diagnostics[0].Start
+	}
+	if got[a] != (Pos{0, 0}) || got[b] != (Pos{1, 3}) {
+		t.Fatalf("diagnostics por arquivo: %v", got)
+	}
+	c.DidClose(a)
+	c.DidChange(a, "ERR") // closed: ignored
+	c.DidChange(b, "ERR")
+	if ev := next(t, c); ev.Path != b {
+		t.Fatalf("só o aberto muda: %+v", ev)
+	}
+	if Root(Server{RootMarkers: []string{"nada"}}, a) != dir {
+		t.Fatal("Root sem marcador é a pasta do arquivo")
+	}
+}
+
 func TestUTF32IsUsedWhenTheServerAgrees(t *testing.T) {
 	t.Setenv("FAKE_ENC", "utf-32")
-	c, err := Start(context.Background(), fake(t, "ok"), filepath.Join(t.TempDir(), "a.c"), "😀ERR")
+	c, err := open(fake(t, "ok"), filepath.Join(t.TempDir(), "a.c"), "😀ERR")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -226,17 +268,17 @@ func TestUTF32IsUsedWhenTheServerAgrees(t *testing.T) {
 
 func TestServerProblemsExplainHowToInstall(t *testing.T) {
 	dir := t.TempDir()
-	_, err := Start(context.Background(), fake(t, "die"), filepath.Join(dir, "a.c"), "")
+	_, err := open(fake(t, "die"), filepath.Join(dir, "a.c"), "")
 	if err == nil || !strings.Contains(err.Error(), "Unknown binary 'rust-analyzer'") || !strings.Contains(err.Error(), "instale o fake") {
 		t.Fatalf("servidor que morre ao iniciar: %v", err)
 	}
 
 	missing := Server{Name: "nada", Commands: [][]string{{"lightyear-servidor-que-nao-existe"}}, Hint: "instale o nada"}
-	if _, err := Start(context.Background(), missing, filepath.Join(dir, "a.c"), ""); err == nil || !strings.Contains(err.Error(), "não encontrado — instale o nada") {
+	if _, err := open(missing, filepath.Join(dir, "a.c"), ""); err == nil || !strings.Contains(err.Error(), "não encontrado — instale o nada") {
 		t.Fatalf("servidor ausente: %v", err)
 	}
 
-	c, err := Start(context.Background(), fake(t, "crash"), filepath.Join(dir, "a.c"), "")
+	c, err := open(fake(t, "crash"), filepath.Join(dir, "a.c"), "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -289,7 +331,7 @@ func TestClangdFeatures(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "main.c")
 	text := "int\tadd(int a, int b)\n{\n\treturn (a + b);\n}\n\nint\tcounter;\n\nint\tmain(void)\n{\n\treturn (add(1, cou));\n}\n"
 	s, _ := ServerFor(path)
-	c, err := Start(context.Background(), s, path, text)
+	c, err := open(s, path, text)
 	if err != nil {
 		t.Skipf("clangd não iniciou aqui: %v", err)
 	}
@@ -297,13 +339,13 @@ func TestClangdFeatures(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 	// Line 9 is "\treturn (add(1, cou));": "add" starts at rune 9.
-	if h, err := c.Hover(ctx, Pos{9, 10}); err != nil || !strings.Contains(h, "int add(int a, int b)") {
+	if h, err := c.Hover(ctx, path, Pos{9, 10}); err != nil || !strings.Contains(h, "int add(int a, int b)") {
 		t.Fatalf("hover: %q %v", h, err)
 	}
-	if locs, err := c.Definition(ctx, Pos{9, 10}); err != nil || len(locs) != 1 || locs[0].Pos.Line != 0 {
+	if locs, err := c.Definition(ctx, path, Pos{9, 10}); err != nil || len(locs) != 1 || locs[0].Pos.Line != 0 {
 		t.Fatalf("definition: %+v %v", locs, err)
 	}
-	items, err := c.Completion(ctx, Pos{9, 19})
+	items, err := c.Completion(ctx, path, Pos{9, 19})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -323,7 +365,7 @@ func TestClangd(t *testing.T) {
 	}
 	path := filepath.Join(t.TempDir(), "main.c")
 	s, _ := ServerFor(path)
-	c, err := Start(context.Background(), s, path, "int\tmain(void)\n{\n\tint\tx;\n\n\treturn (0);\n}\n")
+	c, err := open(s, path, "int\tmain(void)\n{\n\tint\tx;\n\n\treturn (0);\n}\n")
 	if err != nil {
 		t.Skipf("clangd não iniciou aqui: %v", err)
 	}

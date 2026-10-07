@@ -5,7 +5,7 @@
 > (Visual Mode), 5 (Registers) e 6 (Syntax Highlighting, `internal/syntax`)
 > implementadas, e a Fase 7 (LSP, `internal/lsp`) também: diagnostics,
 > hover, go-to-definition e completion. A Fase 8 (avançados) está em
-> andamento: text objects, `f F t T`, busca, `.` e macros prontos. O
+> andamento: text objects, `f F t T`, busca, `.`, macros e buffers prontos. O
 > componente fica em `internal/tui/editorview` (comando experimental
 > escondido `lightyear edit <arquivo>`, modal por padrão; `--plain` para o
 > editor sem modos).
@@ -88,7 +88,18 @@
 >   mesma para em 20 níveis. Ficam num mapa próprio (ainda não nos
 >   registers de texto). A completion aceita entra pelo controller, então
 >   `.` e macros a repetem (só o que completa a palavra, como no Vim).
->   Depois: buffers, splits e os extras de LSP.
+>   Depois: buffers, splits e os extras de LSP;
+> - Fase 8, terceira parte: buffers. `lightyear edit a.c b.c` abre vários
+>   arquivos; `:e arquivo` abre outro (ou volta a ele), `:bn`/`:bp`/`:b N`
+>   (ou parte do nome) trocam, `:ls` lista, `:bd`/`:bd!` fecham. O `gd` com
+>   a definição em outro arquivo abre um buffer e `Ctrl-o` volta (jump list
+>   dos saltos do `gd`). `:q`, `:wq`, `:x` e `:qa` olham todos os buffers
+>   (`E162` quando outro tem alterações), `:wa` salva todos e `:q!`/`:qa!`
+>   saem. Registers, macros, busca e `.` valem entre buffers
+>   (`Controller.SetEditor`); os comandos de buffer são do host
+>   (`Controller.ExCommands`). O cliente LSP virou multi-documento: um
+>   servidor por projeto (nome + raiz), compartilhado pelos buffers, com
+>   `didOpen`/`didClose` e diagnostics por arquivo.
 
 ## 1. Visão Geral
 
@@ -310,7 +321,7 @@ Configuração própria (ex.: `editor.line_numbers`, `editor.relative_numbers`, 
 | 5 — Registers | `yy`, `dd`, `p`, `P` com register padrão | **implementada** |
 | 6 — Syntax Highlighting | Tree-sitter, highlighting incremental | **implementada** |
 | 7 — LSP | cliente JSON-RPC; diagnostics, hover, completion, go-to-definition | **implementada** |
-| 8 — Avançados | `ciw diw daw`, busca, `f F t T`, `.`, macros, buffers, splits, code actions, rename, format, references | em andamento (text objects, `f t`, busca, `.`, macros) |
+| 8 — Avançados | `ciw diw daw`, busca, `f F t T`, `.`, macros, buffers, splits, code actions, rename, format, references | em andamento (text objects, `f t`, busca, `.`, macros, buffers) |
 
 ## 26. Princípios
 

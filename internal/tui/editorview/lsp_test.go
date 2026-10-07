@@ -14,14 +14,23 @@ import (
 	"github.com/nvizble/Lightyear42/internal/lsp"
 )
 
+// setLSP gives the current buffer a language server side, with no server.
+func setLSP(m Model, st *lspState) Model {
+	if st.srv == nil {
+		st.srv = &lspServer{}
+	}
+	m.ses.current().lsp = st
+	return m.synced()
+}
+
 func TestDiagnosticsOnScreen(t *testing.T) {
 	colors(t)
 	next, _ := NewVim(editor.New("int x\nok")).Update(tea.WindowSizeMsg{Width: 70, Height: 6})
 	m := next.(Model)
-	m.lsp = &lspState{diags: []lsp.Diagnostic{
+	m = setLSP(m, &lspState{diags: []lsp.Diagnostic{
 		{Start: lsp.Pos{Line: 0, Col: 5}, End: lsp.Pos{Line: 0, Col: 5}, Severity: lsp.Error, Message: "expected ';'\nnota"},
 		{Start: lsp.Pos{Line: 0, Col: 4}, End: lsp.Pos{Line: 0, Col: 5}, Severity: lsp.Warning, Message: "unused variable 'x'"},
-	}}
+	}})
 	rows := strings.Split(m.View(), "\n")
 	// The worst severity colors the gutter; the code is underlined, past
 	// the end too (the missing ";").
@@ -60,6 +69,7 @@ func TestLSPWithClangd(t *testing.T) {
 	}
 	m := NewVim(ed).WithLSP()
 	defer m.Close()
+	start := m.Init() // Bubble Tea calls Init before any Update
 	next, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 10})
 	m = next.(Model)
 	if status := ansi.Strip(m.statusLine()); !strings.Contains(status, "C · clangd…") {
@@ -81,8 +91,8 @@ func TestLSPWithClangd(t *testing.T) {
 			return nil
 		}
 	}
-	cmd := run(m.Init())
-	if m.lsp.client == nil {
+	cmd := run(start)
+	if m.lsp.srv.client == nil {
 		t.Skipf("clangd não iniciou aqui: %s", m.message)
 	}
 	for m.worst(2) == nil {

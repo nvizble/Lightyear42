@@ -180,3 +180,35 @@ func TestHandleText(t *testing.T) {
 		t.Fatalf("texto no normal deveria virar comandos: %q", ed.Buffer().Text())
 	}
 }
+
+func TestSetEditorAndExCommands(t *testing.T) {
+	a, b := editor.New("aaa"), editor.New("bbb")
+	c := New(a)
+	run(c, "ylvl")
+	c.SetEditor(b)
+	if c.Mode() != Normal || a.Selection().Mode != editor.SelectNone {
+		t.Fatal("trocar de editor volta ao Normal e limpa a seleção")
+	}
+	run(c, "p")
+	if b.Buffer().Text() != "babb" {
+		t.Fatalf("o register vale entre editores: %q", b.Buffer().Text())
+	}
+	run(c, "x")
+	c.SetEditor(a)
+	run(c, ".")
+	if a.Buffer().Text() != "aa" {
+		t.Fatalf("o . vale entre editores: %q", a.Buffer().Text())
+	}
+	var got []string
+	c.ExCommands = map[string]func(string) Result{
+		"e": func(arg string) Result { got = append(got, "e "+arg); return Result{Message: "aberto"} },
+		"q": func(string) Result { got = append(got, "q"); return Result{} },
+	}
+	if res := run(c, ":e  src/main.c <cr>"); res.Message != "aberto" {
+		t.Fatalf(":e: %+v", res)
+	}
+	run(c, ":q<cr>")
+	if strings.Join(got, "|") != "e src/main.c|q" {
+		t.Fatalf("comandos do host: %q", got)
+	}
+}

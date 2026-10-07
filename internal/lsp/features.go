@@ -30,13 +30,13 @@ type Item struct {
 	HasStart bool
 }
 
-// Hover is the server's description of what is at p, as plain text ("" when
-// there is nothing).
-func (c *Client) Hover(ctx context.Context, p Pos) (string, error) {
+// Hover is the server's description of what is at p in the document at
+// path, as plain text ("" when there is nothing).
+func (c *Client) Hover(ctx context.Context, path string, p Pos) (string, error) {
 	var res *struct {
 		Contents json.RawMessage `json:"contents"`
 	}
-	if err := c.conn.call(ctx, "textDocument/hover", c.at(p), &res); err != nil || res == nil {
+	if err := c.conn.call(ctx, "textDocument/hover", c.at(path, p), &res); err != nil || res == nil {
 		return "", err
 	}
 	return hoverText(res.Contents), nil
@@ -74,10 +74,10 @@ func hoverText(raw json.RawMessage) string {
 	return strings.TrimSpace(strings.Join(lines, "\n"))
 }
 
-// Definition is where the symbol at p is defined.
-func (c *Client) Definition(ctx context.Context, p Pos) ([]Location, error) {
+// Definition is where the symbol at p in the document at path is defined.
+func (c *Client) Definition(ctx context.Context, path string, p Pos) ([]Location, error) {
 	var raw json.RawMessage
-	if err := c.conn.call(ctx, "textDocument/definition", c.at(p), &raw); err != nil {
+	if err := c.conn.call(ctx, "textDocument/definition", c.at(path, p), &raw); err != nil {
 		return nil, err
 	}
 	// Location, []Location or []LocationLink.
@@ -101,20 +101,25 @@ func (c *Client) Definition(ctx context.Context, p Pos) ([]Location, error) {
 		if pl.TargetURI != "" {
 			uri, r = pl.TargetURI, pl.TargetSelectionRange
 		}
-		if uri == c.uri {
-			out = append(out, Location{Path: uriPath(uri), Pos: c.fromLSP(r.Start)})
+		c.mu.Lock()
+		_, open := c.docs[uri]
+		c.mu.Unlock()
+		if open {
+			out = append(out, Location{Path: uriPath(uri), Pos: c.fromLSP(uri, r.Start)})
 			continue
 		}
-		path := uriPath(uri)
-		out = append(out, Location{Path: path, Pos: Pos{r.Start.Line, c.fileColumn(path, r.Start)}})
+		file := uriPath(uri)
+		out = append(out, Location{Path: file, Pos: Pos{r.Start.Line, c.fileColumn(file, r.Start)}})
 	}
 	return out, nil
 }
 
-// Completion lists what could be typed at p, best first.
-func (c *Client) Completion(ctx context.Context, p Pos) ([]Item, error) {
+// Completion lists what could be typed at p in the document at path, best
+// first.
+func (c *Client) Completion(ctx context.Context, path string, p Pos) ([]Item, error) {
+	uri := pathURI(path)
 	var raw json.RawMessage
-	if err := c.conn.call(ctx, "textDocument/completion", c.at(p), &raw); err != nil {
+	if err := c.conn.call(ctx, "textDocument/completion", c.at(path, p), &raw); err != nil {
 		return nil, err
 	}
 	type textEdit struct {
@@ -154,7 +159,7 @@ func (c *Client) Completion(ctx context.Context, p Pos) ([]Item, error) {
 		label := strings.TrimSpace(strings.TrimPrefix(strings.TrimSpace(it.Label), "•"))
 		i := Item{Label: label, Detail: it.Detail, Text: text}
 		if start != nil {
-			i.Start, i.HasStart = c.fromLSP(start.Start), true
+			i.Start, i.HasStart = c.fromLSP(uri, start.Start), true
 		}
 		out = append(out, i)
 	}
@@ -168,23 +173,25 @@ func plainSnippet(s string) string {
 	return snippetVar.ReplaceAllString(s, "$1")
 }
 
-// at is the params of a request about position p of the document.
-func (c *Client) at(p Pos) map[string]any {
-	return map[string]any{"textDocument": map[string]string{"uri": c.uri}, "position": c.toLSP(p)}
+// at is the params of a request about position p of the document at path.
+func (c *Client) at(path string, p Pos) map[string]any {
+	uri := pathURI(path)
+	return map[string]any{"textDocument": map[string]string{"uri": uri}, "position": c.toLSP(uri, p)}
 }
 
-// toLSP converts a rune column to the server's unit.
-func (c *Client) toLSP(p Pos) lspPos {
+// toLSP converts a rune column in the document at uri to the server's unit.
+func (c *Client) toLSP(uri string, p Pos) lspPos {
 	if !c.utf16 {
 		return lspPos{p.Line, p.Col}
 	}
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	if p.Line >= len(c.lines) {
+	doc, ok := c.docs[uri]
+	if !ok || p.Line >= len(doc.lines) {
 		return lspPos{p.Line, p.Col}
 	}
 	units := 0
-	for i, r := range []rune(c.lines[p.Line]) {
+	for i, r := range []rune(doc.lines[p.Line]) {
 		if i >= p.Col {
 			break
 		}

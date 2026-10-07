@@ -2,7 +2,6 @@ package editorview
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"path/filepath"
 	"slices"
@@ -57,20 +56,26 @@ type completionMsg struct {
 
 // lspCommands are the Normal-mode keys the language server answers.
 func (m Model) lspCommands() map[string]func(int) vim.Result {
-	st, ed := m.lsp, m.ed
-	at := func() lsp.Pos { c := ed.Cursor(); return lsp.Pos{Line: c.Line, Col: c.Column} }
+	// ask sends a request about the cursor of the current buffer.
+	ask := func(f func(ctx context.Context, c *lsp.Client, path string, p lsp.Pos) tea.Msg) vim.Result {
+		b := m.ses.current()
+		if b.lsp == nil {
+			return vim.Result{Message: "sem language server para este arquivo", Err: true}
+		}
+		cur, path := b.ed.Cursor(), b.lsp.path
+		p := lsp.Pos{Line: cur.Line, Col: cur.Column}
+		return b.lsp.request(func(ctx context.Context, c *lsp.Client) tea.Msg { return f(ctx, c, path, p) })
+	}
 	return map[string]func(int) vim.Result{
 		"K": func(int) vim.Result {
-			p := at()
-			return st.request(func(ctx context.Context, c *lsp.Client) tea.Msg {
-				text, err := c.Hover(ctx, p)
+			return ask(func(ctx context.Context, c *lsp.Client, path string, p lsp.Pos) tea.Msg {
+				text, err := c.Hover(ctx, path, p)
 				return hoverMsg{text, err}
 			})
 		},
 		"gd": func(int) vim.Result {
-			p := at()
-			return st.request(func(ctx context.Context, c *lsp.Client) tea.Msg {
-				locs, err := c.Definition(ctx, p)
+			return ask(func(ctx context.Context, c *lsp.Client, path string, p lsp.Pos) tea.Msg {
+				locs, err := c.Definition(ctx, path, p)
 				return definitionMsg{locs, err}
 			})
 		},
@@ -82,10 +87,10 @@ func (m Model) lspCommands() map[string]func(int) vim.Result {
 // request runs f against the server in the background; Update returns it
 // after the key.
 func (st *lspState) request(f func(context.Context, *lsp.Client) tea.Msg) vim.Result {
-	c := st.client
+	c := st.srv.client
 	if c == nil {
-		if st.starting {
-			return vim.Result{Message: "o " + st.server.Name + " ainda está iniciando"}
+		if st.srv.starting {
+			return vim.Result{Message: "o " + st.srv.server.Name + " ainda está iniciando"}
 		}
 		return vim.Result{Message: "sem language server", Err: true}
 	}
@@ -100,7 +105,11 @@ func (st *lspState) request(f func(context.Context, *lsp.Client) tea.Msg) vim.Re
 // jumpDiagnostic moves to the n-th diagnostic after the cursor (before it
 // when n < 0), wrapping around the file.
 func (m Model) jumpDiagnostic(n int) vim.Result {
-	diags := slices.Clone(m.lsp.diags)
+	b := m.ses.current()
+	if b.lsp == nil || len(b.lsp.diags) == 0 {
+		return vim.Result{Message: "nenhum diagnóstico"}
+	}
+	diags := slices.Clone(b.lsp.diags)
 	if len(diags) == 0 {
 		return vim.Result{Message: "nenhum diagnóstico"}
 	}
@@ -114,7 +123,7 @@ func (m Model) jumpDiagnostic(n int) vim.Result {
 		}
 		return 0
 	})
-	cur := m.ed.Cursor()
+	cur := b.ed.Cursor()
 	i := slices.IndexFunc(diags, func(d lsp.Diagnostic) bool { return cur.Before(key(d.Start)) })
 	if i < 0 {
 		i = len(diags) // past the last one
@@ -157,16 +166,10 @@ func (m Model) lspReply(msg tea.Msg) Model {
 			m.message = "definição não encontrada"
 		default:
 			loc := msg.locs[0]
-			if !sameFile(loc.Path, m.ed.Path()) {
-				m.message = fmt.Sprintf("definição em %s:%d (outro arquivo: abrir ainda não dá)", filepath.Base(loc.Path), loc.Pos.Line+1)
-				break
+			if err := m.jumpTo(loc.Path, editor.Position{Line: loc.Pos.Line, Column: loc.Pos.Col}); err != nil {
+				m.message, m.isError = err.Error(), true
 			}
-			p := editor.Position{Line: loc.Pos.Line, Column: loc.Pos.Col}
-			if m.vim != nil {
-				m.vim.MoveCursor(p)
-			} else {
-				m.ed.MoveCursor(p)
-			}
+			m = m.synced()
 		}
 	case completionMsg:
 		if msg.seq != st.seq || !m.typing() {
@@ -264,17 +267,17 @@ func (m Model) afterKey(msg tea.KeyMsg) tea.Cmd {
 		m.filterCompletion()
 		return nil
 	}
-	if !trigger || st.client == nil {
+	if !trigger || st.srv.client == nil || !st.open {
 		return nil
 	}
 	st.seq++
-	seq, c := st.seq, st.client
+	seq, c, path := st.seq, st.srv.client, st.path
 	cur := m.ed.Cursor()
 	p := lsp.Pos{Line: cur.Line, Col: cur.Column}
 	return func() tea.Msg {
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
-		items, err := c.Completion(ctx, p)
+		items, err := c.Completion(ctx, path, p)
 		return completionMsg{seq, items, err}
 	}
 }
@@ -305,8 +308,14 @@ func (m Model) filterCompletion() {
 	comp.selected = min(comp.selected, len(comp.shown)-1)
 }
 
-// sameFile compares paths on disk (macOS's /var is /private/var).
+// sameFile compares paths: the same absolute path, or the same file on
+// disk (macOS's /var is /private/var).
 func sameFile(a, b string) bool {
+	absA, errA := filepath.Abs(a)
+	absB, errB := filepath.Abs(b)
+	if errA == nil && errB == nil && absA == absB {
+		return true
+	}
 	fa, errA := os.Stat(a)
 	fb, errB := os.Stat(b)
 	return errA == nil && errB == nil && os.SameFile(fa, fb)

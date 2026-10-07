@@ -27,7 +27,7 @@ func withFakeLSP(t *testing.T, text string) Model {
 		t.Fatal(err)
 	}
 	m := NewVim(ed).WithLSP()
-	m.lsp.starting = false
+	m.lsp.srv.starting = false
 	next, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 12})
 	return next.(Model)
 }
@@ -100,9 +100,18 @@ func TestHoverDefinitionAndDiagnosticJumps(t *testing.T) {
 	if got := m.Editor().Cursor(); got != (editor.Position{Line: 0, Column: 4}) {
 		t.Fatalf("gd no mesmo arquivo move o cursor: %v", got)
 	}
-	m = m.lspReply(definitionMsg{locs: []lsp.Location{{Path: "/src/ft_add.c", Pos: lsp.Pos{Line: 11}}}})
-	if !strings.Contains(m.message, "ft_add.c:12") {
-		t.Fatalf("outro arquivo vira mensagem: %q", m.message)
+	// In another file: it opens in a buffer; Ctrl-o comes back.
+	other := filepath.Join(filepath.Dir(abs), "ft_add.c")
+	if err := os.WriteFile(other, []byte("#include \"ft.h\"\n\tint\tft_add(int a, int b);\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	m = m.lspReply(definitionMsg{locs: []lsp.Location{{Path: other, Pos: lsp.Pos{Line: 1, Col: 1}}}})
+	if filepath.Base(m.Editor().Path()) != "ft_add.c" || m.Editor().Cursor() != (editor.Position{Line: 1, Column: 1}) || !strings.Contains(ansi.Strip(m.statusLine()), "ft_add.c [2/2]") {
+		t.Fatalf("gd em outro arquivo: %s %v %q", m.Editor().Path(), m.Editor().Cursor(), ansi.Strip(m.statusLine()))
+	}
+	m, _ = press(t, m, tea.KeyMsg{Type: tea.KeyCtrlO})
+	if filepath.Base(m.Editor().Path()) != "main.c" || m.Editor().Cursor() != (editor.Position{Line: 0, Column: 4}) {
+		t.Fatalf("ctrl+o volta: %s %v", m.Editor().Path(), m.Editor().Cursor())
 	}
 	m = m.lspReply(definitionMsg{})
 	if m.message != "definição não encontrada" {
@@ -125,7 +134,7 @@ func TestHoverDefinitionAndDiagnosticJumps(t *testing.T) {
 	if got := m.Editor().Cursor(); got != (editor.Position{Line: 4, Column: 9}) {
 		t.Fatalf("[d volta (dando a volta): %v", got)
 	}
-	m.lsp.client, m.lsp.starting = nil, true
+	m.lsp.srv.client, m.lsp.srv.starting = nil, true
 	if m, _ = press(t, m, runes("K")); !strings.Contains(m.message, "ainda está iniciando") {
 		t.Fatalf("K sem servidor pronto: %q", m.message)
 	}
@@ -195,8 +204,8 @@ func TestLSPFeaturesWithClangd(t *testing.T) {
 	defer h.m.Close()
 	h.send(tea.WindowSizeMsg{Width: 80, Height: 14})
 	h.exec(h.m.Init())
-	h.until("o clangd iniciar", func() bool { return !h.m.lsp.starting })
-	if h.m.lsp.client == nil {
+	h.until("o clangd iniciar", func() bool { return !h.m.lsp.srv.starting })
+	if h.m.lsp.srv.client == nil {
 		t.Skipf("clangd não iniciou aqui: %s", h.m.message)
 	}
 
