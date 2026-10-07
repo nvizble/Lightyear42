@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/x/ansi"
 	"github.com/nvizble/Lightyear42/internal/editor"
 	"github.com/nvizble/Lightyear42/internal/syntax"
 )
@@ -58,5 +59,23 @@ func TestColorschemes(t *testing.T) {
 		if findScheme(name) == nil {
 			t.Fatalf("tema %s não encontrado", name)
 		}
+	}
+}
+
+func TestColorschemeCompletion(t *testing.T) {
+	m := NewVim(editor.New("x"))
+	next, _ := m.Update(tea.WindowSizeMsg{Width: 60, Height: 10})
+	m = next.(Model)
+	tab := tea.KeyMsg{Type: tea.KeyTab}
+	m, _ = press(t, m, runes(":colo o"), tab)
+	rows := strings.Split(ansi.Strip(m.View()), "\n")
+	n := len(rows)
+	// The matches sit over the command line, lined up with the word.
+	if !strings.HasPrefix(rows[n-1], ":colo onedark") || strings.Index(rows[n-3], "onedark") != 6 || strings.Index(rows[n-2], "off") != 6 {
+		t.Fatalf("Tab completa o tema e mostra as opções:\n%s", strings.Join(rows, "\n"))
+	}
+	m, _ = press(t, m, tab, tea.KeyMsg{Type: tea.KeyEnter})
+	if m.Colorscheme() != "off" || strings.Contains(m.View(), "onedark") {
+		t.Fatalf("Tab vai para o próximo e Enter troca: %s", m.Colorscheme())
 	}
 }

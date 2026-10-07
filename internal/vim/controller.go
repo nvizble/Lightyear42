@@ -72,7 +72,8 @@ type Controller struct {
 	mode    Mode
 	state   CommandState
 	cmdline string
-	prompt  string // ":" for ex commands, "/" or "?" for a search
+	prompt  string      // ":" for ex commands, "/" or "?" for a search
+	wild    *completion // Tab on the command line
 	regs    map[rune]Register
 	search  search
 	// lastFind is the last f/F/t/T and its character, for ; and ,.
@@ -95,8 +96,19 @@ type Controller struct {
 	// (":e file", ":bn", ":q" with several buffers); they get what follows
 	// the name.
 	ExCommands map[string]func(arg string) Result
+	// ExCompletions list what Tab may complete an ex command's argument to,
+	// by command name (":colorscheme d<Tab>": the themes).
+	ExCompletions map[string]func() []string
 
 	watched map[*editor.Editor]bool // editors whose changes are counted
+}
+
+// completion is Tab on the command line: the text before the word, its
+// matches and the one in place.
+type completion struct {
+	before string
+	items  []string
+	at     int
 }
 
 // New controls ed, starting in Normal mode.
@@ -637,12 +649,66 @@ func (c *Controller) commandKey(key string) Result {
 			return c.findPattern(cmd, prompt == "?", false, 1)
 		}
 		return c.execute(strings.TrimSpace(cmd))
+	case "tab", "shift+tab":
+		c.complete(key == "shift+tab")
 	default:
 		if isChar(key) {
 			c.cmdline += key
 		}
 	}
 	return Result{}
+}
+
+// complete is Tab (Shift-Tab backwards) on the ex command line: the first
+// press puts the first match for the argument in its place, the next ones
+// go through the others (see Completions).
+func (c *Controller) complete(back bool) {
+	step := 1
+	if back {
+		step = -1
+	}
+	if w := c.completing(); w != nil {
+		w.at = (w.at + step + len(w.items)) % len(w.items)
+		c.cmdline = w.before + w.items[w.at]
+		return
+	}
+	name, arg, ok := strings.Cut(strings.TrimLeft(c.cmdline, " "), " ")
+	list := c.ExCompletions[name]
+	if c.prompt != ":" || !ok || list == nil {
+		return
+	}
+	word := strings.TrimLeft(arg, " ")
+	w := &completion{before: c.cmdline[:len(c.cmdline)-len(word)]}
+	for _, item := range list() {
+		if strings.HasPrefix(item, word) {
+			w.items = append(w.items, item)
+		}
+	}
+	if len(w.items) == 0 {
+		return
+	}
+	if back {
+		w.at = len(w.items) - 1
+	}
+	c.wild, c.cmdline = w, w.before+w.items[w.at]
+}
+
+// completing is the Tab completion going on, while the command line still
+// shows its match (nil once something else is typed).
+func (c *Controller) completing() *completion {
+	if w := c.wild; w != nil && c.mode == Command && c.cmdline == w.before+w.items[w.at] {
+		return w
+	}
+	return nil
+}
+
+// Completions are the matches Tab goes through on the command line and the
+// one in place (none when not completing).
+func (c *Controller) Completions() ([]string, int) {
+	if w := c.completing(); w != nil {
+		return w.items, w.at
+	}
+	return nil, 0
 }
 
 // execute runs an ex command: w, q, q!, wq, x, noh, or one of the host's.
