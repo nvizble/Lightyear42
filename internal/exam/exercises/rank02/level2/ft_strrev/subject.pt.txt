@@ -1,0 +1,14 @@
+Nome do exercício : ft_strrev
+Arquivos esperados: ft_strrev.c
+Funções permitidas: nenhuma
+--------------------------------------------------------------------------------
+
+Escreva uma função que inverte uma string no próprio lugar (in-place).
+
+Ela deve retornar o seu parâmetro.
+
+Ela deve ter o seguinte protótipo:
+
+char	*ft_strrev(char *str);
+
+Entregue apenas a função, sem main.

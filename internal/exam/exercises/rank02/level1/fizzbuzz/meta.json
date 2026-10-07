@@ -1,0 +1,6 @@
+{
+  "files": ["fizzbuzz.c"],
+  "tests": [
+    []
+  ]
+}

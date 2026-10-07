@@ -1,0 +1,31 @@
+Nome do exercício : rot_13
+Arquivos esperados: rot_13.c
+Funções permitidas: write
+--------------------------------------------------------------------------------
+
+Escreva um programa que recebe uma string e a exibe com cada letra
+substituída pela letra 13 posições adiante no alfabeto, voltando ao início
+quando passar do fim.
+
+Assim, 'z' vira 'm' e 'Z' vira 'M'. As letras mantêm a caixa (maiúscula ou
+minúscula); caracteres que não são letras são exibidos sem alteração.
+
+A saída termina com uma quebra de linha.
+
+Se o número de argumentos for diferente de 1, o programa exibe apenas uma
+quebra de linha.
+
+Exemplos:
+
+$>./rot_13 "abc"
+nop
+$>./rot_13 "My horse is Amazing." | cat -e
+Zl ubefr vf Nznmvat.$
+$>./rot_13 "AkjhZ zLKIJz , 23y " | cat -e
+NxwuM mYXVWm , 23l $
+$>./rot_13 | cat -e
+$
+$>
+$>./rot_13 "" | cat -e
+$
+$>

@@ -1,0 +1,12 @@
+Assignment name  : ft_putstr
+Expected files   : ft_putstr.c
+Allowed functions: write
+--------------------------------------------------------------------------------
+
+Write a function that writes a string to the standard output.
+
+The function receives a pointer to the first character of the string.
+
+It must be prototyped as follows:
+
+void	ft_putstr(char *str);

@@ -1,0 +1,12 @@
+Assignment name  : ft_strcmp
+Expected files   : ft_strcmp.c
+Allowed functions: none
+--------------------------------------------------------------------------------
+
+Reproduce the behaviour of the strcmp function (man strcmp).
+
+It must be prototyped as follows:
+
+int	ft_strcmp(char *s1, char *s2);
+
+Turn in the function only, without a main.

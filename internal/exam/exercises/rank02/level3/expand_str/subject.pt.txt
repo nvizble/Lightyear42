@@ -1,0 +1,26 @@
+Nome do exercício : expand_str
+Arquivos esperados: expand_str.c
+Funções permitidas: write
+--------------------------------------------------------------------------------
+
+Escreva um programa que recebe uma string e a exibe com exatamente três
+espaços entre palavras consecutivas, sem espaços ou tabulações no início ou no
+fim, seguida de uma quebra de linha.
+
+Uma palavra é uma sequência de caracteres delimitada por espaços/tabulações,
+ou pelo início/fim da string.
+
+Se o número de argumentos for diferente de 1, ou se a string não tiver
+nenhuma palavra, exiba apenas uma quebra de linha.
+
+Exemplos:
+
+$> ./expand_str "See? It's easy to print the same thing" | cat -e
+See?   It's   easy   to   print   the   same   thing$
+$> ./expand_str " this        time it      will     be    more complex  " | cat -e
+this   time   it   will   be   more   complex$
+$> ./expand_str "No S*** Sherlock..." "nAw S*** ShErLaWQ..." | cat -e
+$
+$> ./expand_str "" | cat -e
+$
+$>

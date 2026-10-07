@@ -1,0 +1,30 @@
+Assignment name  : alpha_mirror
+Expected files   : alpha_mirror.c
+Allowed functions: write
+--------------------------------------------------------------------------------
+
+Write a program named alpha_mirror that takes a string and prints it with
+every letter swapped for its mirror in the alphabet, followed by a newline.
+
+The mirror of a letter is the one at the same distance from the other end
+of the alphabet:
+
+'a' becomes 'z', 'Z' becomes 'A'
+'d' becomes 'w', 'M' becomes 'N'
+
+and so on.
+
+The case of each letter is kept. Characters that are not letters are printed
+unchanged.
+
+If the number of arguments is not 1, print only a newline.
+
+Examples:
+
+$>./alpha_mirror "abc"
+zyx
+$>./alpha_mirror "My horse is Amazing." | cat -e
+Nb slihv rh Znzarmt.$
+$>./alpha_mirror | cat -e
+$
+$>

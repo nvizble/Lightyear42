@@ -1,0 +1,28 @@
+Nome do exercício : do_op
+Arquivos esperados: do_op.c
+Funções permitidas: atoi, printf, write
+--------------------------------------------------------------------------------
+
+Escreva um programa que recebe três strings:
+- A primeira e a terceira são inteiros com sinal em base 10 que cabem em
+  um int.
+- A segunda é um operador aritmético entre: + - * / %
+
+O programa exibe o resultado dessa operação, seguido de uma quebra de
+linha. Se o número de argumentos for diferente de 3, o programa exibe
+apenas uma quebra de linha.
+
+Você pode assumir que as strings estão bem formadas, sem caracteres
+estranhos. Um número negativo, na entrada ou na saída, tem exatamente um
+'-' no início. O resultado da operação cabe em um int.
+
+Exemplos:
+
+$> ./do_op "123" "*" 456 | cat -e
+56088$
+$> ./do_op "9828" "/" 234 | cat -e
+42$
+$> ./do_op "1" "+" "-43" | cat -e
+-42$
+$> ./do_op | cat -e
+$

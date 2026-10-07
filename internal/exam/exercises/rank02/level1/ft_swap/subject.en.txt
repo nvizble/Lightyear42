@@ -1,0 +1,11 @@
+Assignment name  : ft_swap
+Expected files   : ft_swap.c
+Allowed functions:
+--------------------------------------------------------------------------------
+
+Write a function that exchanges the values of two integers whose addresses
+are given as parameters.
+
+It must be prototyped as follows:
+
+void	ft_swap(int *a, int *b);

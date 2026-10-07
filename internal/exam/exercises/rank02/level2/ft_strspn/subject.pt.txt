@@ -1,0 +1,12 @@
+Nome do exercício : ft_strspn
+Arquivos esperados: ft_strspn.c
+Funções permitidas: nenhuma
+--------------------------------------------------------------------------------
+
+Reproduza exatamente o comportamento da função strspn (man strspn).
+
+Ela deve ter o seguinte protótipo:
+
+size_t	ft_strspn(const char *s, const char *accept);
+
+Entregue apenas a função, sem main.

@@ -1,0 +1,17 @@
+{
+  "files": ["wdmatch.c"],
+  "tests": [
+    ["faya", "fgvvfdxcacpolhyghbreda"],
+    ["faya", "fgvvfdxcacpolhyghbred"],
+    ["quarante deux", "qfqfsudf arzgsayns tsregfdgs sjytdekuoixq "],
+    ["error", "rrerrrfiiljdfxjyuifrrvcoojh"],
+    [],
+    ["abc"],
+    ["abc", "abc", "abc"],
+    ["abc", "cba"],
+    ["aab", "ab"],
+    ["abc", ""],
+    ["", "abc"],
+    ["z", "abcdefghijklmnopqrstuvwxyz"]
+  ]
+}

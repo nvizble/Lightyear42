@@ -1,0 +1,17 @@
+Assignment name  : sort_int_tab
+Expected files   : sort_int_tab.c
+Allowed functions: none
+--------------------------------------------------------------------------------
+
+Write the following function:
+
+void sort_int_tab(int *tab, unsigned int size);
+
+It must sort, in place and in ascending order, the int array 'tab', which
+holds exactly 'size' elements.
+
+Duplicate values must be kept.
+
+The input is always consistent.
+
+Turn in the function only, without a main.

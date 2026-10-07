@@ -1,0 +1,11 @@
+{
+  "files": ["ft_list_foreach.c", "ft_list.h"],
+  "tests": [
+    [],
+    ["single"],
+    ["one", "two"],
+    ["one", "two", "three"],
+    ["", "middle", ""],
+    ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j"]
+  ]
+}

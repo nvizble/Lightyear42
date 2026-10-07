@@ -1,0 +1,17 @@
+{
+  "files": ["hidenp.c"],
+  "tests": [
+    [],
+    ["abc"],
+    ["fgex.;", "tyf34gdgf;'ektufjhgdgex.;.;rtjynur6"],
+    ["abc", "2altrb53c.sse"],
+    ["abc", "btarc"],
+    ["", "anything"],
+    ["", ""],
+    ["a", ""],
+    ["abc", "abc"],
+    ["aab", "ab"],
+    ["abc", "ab"],
+    ["a", "b", "c"]
+  ]
+}

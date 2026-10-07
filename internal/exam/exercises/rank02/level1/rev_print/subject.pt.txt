@@ -1,0 +1,19 @@
+Nome do exercício : rev_print
+Arquivos esperados: rev_print.c
+Funções permitidas: write
+--------------------------------------------------------------------------------
+
+Escreva um programa que recebe uma string e a exibe de trás para frente,
+seguida de uma quebra de linha.
+
+Se o número de argumentos for diferente de 1, exiba apenas uma quebra de
+linha.
+
+Exemplos:
+
+$> ./a.out "zaz" | cat -e
+zaz$
+$> ./a.out "dub0 a POIL" | cat -e
+LIOP a 0bud$
+$> ./a.out | cat -e
+$

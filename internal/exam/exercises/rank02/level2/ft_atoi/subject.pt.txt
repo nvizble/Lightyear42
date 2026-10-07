@@ -1,0 +1,14 @@
+Nome do exercício : ft_atoi
+Arquivos esperados: ft_atoi.c
+Funções permitidas: nenhuma
+--------------------------------------------------------------------------------
+
+Escreva uma função que converte a string str em um int e o retorna.
+
+Ela se comporta como a função padrão atoi(const char *str) (veja man atoi).
+
+Ela deve ter o seguinte protótipo:
+
+int	ft_atoi(const char *str);
+
+Entregue apenas a função, sem main.

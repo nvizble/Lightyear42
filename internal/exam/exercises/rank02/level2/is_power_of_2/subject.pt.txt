@@ -1,0 +1,14 @@
+Nome do exercício : is_power_of_2
+Arquivos esperados: is_power_of_2.c
+Funções permitidas: nenhuma
+--------------------------------------------------------------------------------
+
+Escreva uma função que diz se um número é uma potência de 2.
+
+Ela retorna 1 quando o número é uma potência de 2, e 0 em qualquer outro caso.
+
+Ela deve ter o seguinte protótipo:
+
+int	    is_power_of_2(unsigned int n);
+
+Entregue apenas a função, sem main.

@@ -109,6 +109,9 @@ lightyear campus --friends # mapa filtrado pela sua lista de amigos
 lightyear friends add <l>  # gerencia a lista local de amigos (add/remove/list)
 lightyear friends online   # quais amigos estão online e em qual posto
 lightyear dashboard        # TUI: perfil, ocupação, avaliações, calendário de slots, amigos
+lightyear exam start       # simulador de prova (Exam Rank 02), cronometrado, offline
+lightyear exam practice <ex>  # treina um exercício específico, sem tempo
+lightyear exam grademe     # corrige o exercício atual (status / finish / list)
 lightyear cache clear      # limpa o cache local de respostas da API
 lightyear update           # atualiza o binário pelo GitHub Releases (--check / -y)
 lightyear version          # versão do binário
@@ -145,6 +148,33 @@ lightyear subject set-id push_swap 193464   # corrigir/atualizar um id
 Para regenerar o catálogo partilhado: use um scraper Playwright local
 (não versionado neste repo), depois abra um PR atualizando
 `internal/subjects/catalog.json` ou rode `lightyear subject import ./catalog.json`.
+
+### Simulador de provas
+
+Funciona offline e não precisa de login; só de um compilador C (`cc`).
+Os 56 exercícios do Exam Rank 02 (níveis 1–4) vêm embutidos no binário, com
+enunciado em inglês e português.
+
+```bash
+lightyear exam start              # nível 1, exercício sorteado, 3h (--time 90m)
+# leia ~/lightyear-exam/subjects/<ex>/subject.pt.txt
+# escreva em ~/lightyear-exam/rendu/<ex>/<ex>.c
+lightyear exam grademe            # compila com -Wall -Wextra -Werror e compara
+                                  # com a solução de referência
+lightyear exam status             # exercício, nota e tempo restante
+lightyear exam finish             # encerra (o código fica em rendu/ e history/)
+lightyear exam practice ft_split  # um exercício só, sem tempo
+lightyear exam list               # todos os exercícios por nível
+```
+
+Passou → próximo nível (25 pontos cada). Falhou → o trace com esperado ×
+recebido fica em `~/lightyear-exam/traces/`.
+
+Quer adicionar exercícios (outros ranks, outros níveis)? Cada um é uma pasta em
+`internal/exam/exercises/rank<NN>/level<N>/<nome>/` com `subject.en.txt`,
+`subject.pt.txt`, `meta.json` (arquivos + testes) e `ref/` (solução de
+referência) — veja os existentes e abra um PR. Créditos em
+[internal/exam/CREDITS.md](internal/exam/CREDITS.md).
 
 ## Configuração
 
@@ -216,7 +246,8 @@ os binários em [Releases](https://github.com/nvizble/Lightyear42/releases).
 4. **Comandos** (concluído) — `me`, `profile`, `search`, …
 5. **Dashboard** (concluído) — Bubble Tea em tempo real
 6. **Release** (concluído) — docs, GoReleaser, GitHub Releases
-7. **Self-update** — `lightyear update` via GitHub Releases
+7. **Self-update** (concluído) — `lightyear update` via GitHub Releases
+9. **Simulador de provas** — `lightyear exam` (Exam Rank 02); próximo: TUI examshell
 
 Chat/DM no terminal: parked (API sem DMs públicos; fórum ≠ chat).
 

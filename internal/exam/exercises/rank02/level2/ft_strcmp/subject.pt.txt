@@ -1,0 +1,12 @@
+Nome do exercício : ft_strcmp
+Arquivos esperados: ft_strcmp.c
+Funções permitidas: nenhuma
+--------------------------------------------------------------------------------
+
+Reproduza o comportamento da função strcmp (man strcmp).
+
+Ela deve ter o seguinte protótipo:
+
+int	ft_strcmp(char *s1, char *s2);
+
+Entregue apenas a função, sem main.

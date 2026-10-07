@@ -1,0 +1,26 @@
+Nome do exercício : pgcd
+Arquivos esperados: pgcd.c
+Funções permitidas: printf, atoi, malloc, free
+--------------------------------------------------------------------------------
+
+Escreva um programa que recebe duas strings, cada uma representando um inteiro
+estritamente positivo que cabe em um int.
+
+Exiba o máximo divisor comum deles seguido de uma quebra de linha (o resultado
+é sempre um inteiro estritamente positivo).
+
+Se o número de argumentos for diferente de 2, exiba apenas uma quebra de
+linha.
+
+Exemplos:
+
+$> ./pgcd 42 10 | cat -e
+2$
+$> ./pgcd 42 12 | cat -e
+6$
+$> ./pgcd 14 77 | cat -e
+7$
+$> ./pgcd 17 3 | cat -e
+1$
+$> ./pgcd | cat -e
+$

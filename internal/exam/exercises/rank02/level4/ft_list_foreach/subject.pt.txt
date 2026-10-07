@@ -1,0 +1,26 @@
+Nome do exercício : ft_list_foreach
+Arquivos esperados: ft_list_foreach.c, ft_list.h
+Funções permitidas: nenhuma
+--------------------------------------------------------------------------------
+
+Escreva uma função que recebe uma lista e um ponteiro para função, e aplica
+essa função a cada elemento da lista, em ordem.
+
+Ela deve ser declarada assim:
+
+void    ft_list_foreach(t_list *begin_list, void (*f)(void *));
+
+A função apontada por f deve ser chamada desta forma:
+
+(*f)(list_ptr->data);
+
+Você deve usar a estrutura abaixo e entregá-la em um arquivo chamado
+ft_list.h:
+
+typedef struct    s_list
+{
+    struct s_list *next;
+    void          *data;
+}                 t_list;
+
+Entregue apenas a função, sem main.

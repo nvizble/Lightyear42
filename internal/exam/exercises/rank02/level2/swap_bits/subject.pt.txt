@@ -1,0 +1,22 @@
+Nome do exercício : swap_bits
+Arquivos esperados: swap_bits.c
+Funções permitidas: nenhuma
+--------------------------------------------------------------------------------
+
+Escreva uma função que recebe um byte, troca as suas duas metades (os 4 bits
+de cima com os 4 bits de baixo, como mostrado abaixo) e retorna o resultado.
+
+Ela deve ter o seguinte protótipo:
+
+unsigned char	swap_bits(unsigned char octet);
+
+Exemplo:
+
+  1 byte
+_____________
+ 0100 | 0001
+     \ /
+     / \
+ 0001 | 0100
+
+Entregue apenas a função, sem main.

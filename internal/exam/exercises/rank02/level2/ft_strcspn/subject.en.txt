@@ -1,0 +1,12 @@
+Assignment name  : ft_strcspn
+Expected files   : ft_strcspn.c
+Allowed functions: none
+--------------------------------------------------------------------------------
+
+Reproduce exactly the behaviour of the strcspn function (man strcspn).
+
+It must be prototyped as follows:
+
+size_t	ft_strcspn(const char *s, const char *reject);
+
+Turn in the function only, without a main.

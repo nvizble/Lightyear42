@@ -1,0 +1,28 @@
+Nome do exercício : rev_wstr
+Arquivos esperados: rev_wstr.c
+Funções permitidas: write, malloc, free
+--------------------------------------------------------------------------------
+
+Escreva um programa que recebe uma string como parâmetro e exibe as palavras
+dessa string em ordem inversa.
+
+Uma "palavra" é uma parte da string delimitada por espaços e/ou tabulações,
+ou pelo início/fim da string.
+
+Se o número de parâmetros for diferente de 1, o programa exibe '\n'.
+
+As strings usadas nos testes não têm espaços "a mais": não há espaços no
+início nem no fim da string, e as palavras estão sempre separadas por
+exatamente um espaço.
+
+Exemplos:
+
+$> ./rev_wstr "You hate people! But I love gatherings. Isn't it ironic?" | cat -e
+ironic? it Isn't gatherings. love I But people! hate You$
+$>./rev_wstr "abcdefghijklm"
+abcdefghijklm
+$> ./rev_wstr "Wingardium Leviosa" | cat -e
+Leviosa Wingardium$
+$> ./rev_wstr | cat -e
+$
+$>

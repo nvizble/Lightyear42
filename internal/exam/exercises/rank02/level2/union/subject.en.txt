@@ -1,0 +1,25 @@
+Assignment name  : union
+Expected files   : union.c
+Allowed functions: write
+--------------------------------------------------------------------------------
+
+Write a program that takes two strings and displays every character that
+appears in at least one of them, each character only once.
+
+Characters are displayed in the order in which they first appear on the
+command line (the first string, then the second), followed by a newline.
+
+If the number of arguments is not 2, the program displays only a newline.
+
+Examples:
+
+$>./union zpadinton "paqefwtdjetyiytjneytjoeyjnejeyj" | cat -e
+zpadintoqefwjy$
+$>./union ddf6vewg64f gtwthgdwthdwfteewhrtag6h4ffdhsd | cat -e
+df6vewg4thras$
+$>./union "rien" "cette phrase ne cache rien" | cat -e
+rienct phas$
+$>./union | cat -e
+$
+$>./union "rien" | cat -e
+$

@@ -1,0 +1,12 @@
+Assignment name  : ft_strdup
+Expected files   : ft_strdup.c
+Allowed functions: malloc
+--------------------------------------------------------------------------------
+
+Reproduce the behaviour of the strdup function (man strdup).
+
+It must be prototyped as follows:
+
+char	*ft_strdup(char *src);
+
+Turn in the function only, without a main.

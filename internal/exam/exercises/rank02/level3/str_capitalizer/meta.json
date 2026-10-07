@@ -1,0 +1,14 @@
+{
+  "files": ["str_capitalizer.c"],
+  "tests": [
+    [],
+    ["a FiRSt LiTTlE TESt"],
+    ["__SecONd teST A LITtle BiT   Moar comPLEX", "   But... This iS not THAT COMPLEX", "     Okay, this is the last 1239809147801 but not    the least    t"],
+    ["a"],
+    [""],
+    ["\tHeLLo\tWORLD\t"],
+    ["@bc [BC `bc {BC zZ Aa"],
+    ["1ABC 9xyz -Word"],
+    ["one", "", "TWO three"]
+  ]
+}

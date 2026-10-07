@@ -1,0 +1,32 @@
+Nome do exercício : alpha_mirror
+Arquivos esperados: alpha_mirror.c
+Funções permitidas: write
+--------------------------------------------------------------------------------
+
+Escreva um programa chamado alpha_mirror que recebe uma string e a exibe
+com cada letra trocada pelo seu espelho no alfabeto, seguida de uma quebra
+de linha.
+
+O espelho de uma letra é a que está à mesma distância da outra ponta do
+alfabeto:
+
+'a' vira 'z', 'Z' vira 'A'
+'d' vira 'w', 'M' vira 'N'
+
+e assim por diante.
+
+A caixa (maiúscula/minúscula) de cada letra é mantida. Caracteres que não
+são letras são exibidos sem alteração.
+
+Se o número de argumentos for diferente de 1, exiba apenas uma quebra de
+linha.
+
+Exemplos:
+
+$>./alpha_mirror "abc"
+zyx
+$>./alpha_mirror "My horse is Amazing." | cat -e
+Nb slihv rh Znzarmt.$
+$>./alpha_mirror | cat -e
+$
+$>

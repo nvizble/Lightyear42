@@ -1,0 +1,13 @@
+{
+  "files": ["camel_to_snake.c"],
+  "tests": [
+    [],
+    ["hereIsACamelCaseWord"],
+    ["helloWorld"],
+    ["hello"],
+    ["x"],
+    ["aB"],
+    ["thisIsAZebraCrossingY"],
+    [""]
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "files": ["rev_print.c"],
+  "tests": [
+    [],
+    ["zaz"],
+    ["dub0 a POIL"],
+    ["  spaces at both ends  "],
+    [""],
+    ["x"],
+    ["a", "b"]
+  ]
+}

@@ -1,0 +1,29 @@
+Assignment name  : rotone
+Expected files   : rotone.c
+Allowed functions: write
+--------------------------------------------------------------------------------
+
+Write a program that takes a string and displays it with every letter
+replaced by the letter that follows it in the alphabet.
+
+'z' wraps around to 'a' and 'Z' wraps around to 'A'. Letters keep their case;
+characters that are not letters are displayed unchanged.
+
+The output ends with a \n.
+
+If the number of arguments is not 1, the program displays only a \n.
+
+Examples:
+
+$>./rotone "abc"
+bcd
+$>./rotone "Les stagiaires du staff ne sentent pas toujours tres bon." | cat -e
+Mft tubhjbjsft ev tubgg of tfoufou qbt upvkpvst usft cpo.$
+$>./rotone "AkjhZ zLKIJz , 23y " | cat -e
+BlkiA aMLJKa , 23z $
+$>./rotone | cat -e
+$
+$>
+$>./rotone "" | cat -e
+$
+$>

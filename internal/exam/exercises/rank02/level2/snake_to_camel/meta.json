@@ -1,0 +1,14 @@
+{
+  "files": ["snake_to_camel.c"],
+  "tests": [
+    [],
+    ["here_is_a_snake_case_word"],
+    ["hello_world"],
+    ["hello"],
+    [""],
+    ["a_b_c"],
+    ["x"],
+    ["the_quick_brown_fox_jumps_over_the_lazy_dog"],
+    ["zebra_apple_zoo"]
+  ]
+}

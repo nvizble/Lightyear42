@@ -1,0 +1,22 @@
+Nome do exercício : first_word
+Arquivos esperados: first_word.c
+Funções permitidas: write
+--------------------------------------------------------------------------------
+
+Escreva um programa que recebe uma string e exibe a primeira palavra dela,
+seguida de uma quebra de linha.
+
+Uma palavra é uma sequência de caracteres delimitada por espaços, tabulações
+ou pelo início/fim da string.
+
+Se o número de argumentos for diferente de 1, ou se não houver palavras,
+exiba apenas uma quebra de linha.
+
+Exemplos:
+
+$> ./a.out "FOR PONY" | cat -e
+FOR$
+$> ./a.out "   lorem,ipsum   " | cat -e
+lorem,ipsum$
+$> ./a.out | cat -e
+$

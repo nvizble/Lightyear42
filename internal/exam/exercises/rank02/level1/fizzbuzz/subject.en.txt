@@ -1,0 +1,38 @@
+Assignment name  : fizzbuzz
+Expected files   : fizzbuzz.c
+Allowed functions: write
+--------------------------------------------------------------------------------
+
+Write a program that writes every number from 1 to 100, one per line (each
+followed by a newline).
+
+Numbers that are multiples of 3 are written as 'fizz' instead.
+
+Numbers that are multiples of 5 are written as 'buzz' instead.
+
+Numbers that are multiples of both 3 and 5 are written as 'fizzbuzz' instead.
+
+Example:
+
+$>./fizzbuzz
+1
+2
+fizz
+4
+buzz
+fizz
+7
+8
+fizz
+buzz
+11
+fizz
+13
+14
+fizzbuzz
+[...]
+97
+98
+fizz
+buzz
+$>
