@@ -4,9 +4,11 @@ CLI moderna, open source, para a [42 Network](https://www.42network.org/), inspi
 
 > Binário/comando: **`lightyear`** (antes `42`).
 
-> Status: **Milestone 6 (release)** — GoReleaser + GitHub Releases. Binário/comando: **`lightyear`**.
+**Site:** [nvizble.github.io/Lightyear42](https://nvizble.github.io/Lightyear42/)
+
+> Status: **v1.2.0**: simulador de provas (`lightyear exam`), notificações no celular (`lightyear notify`) e `evaluations --open`.
 >
-> Nota: `lightyear exams` foi cortado — todos os endpoints de exames da API retornam 403 para tokens com scope `public`.
+> Nota: dados de exames da Intra seguem fora (a API retorna 403 com scope `public`); o `lightyear exam` é um simulador offline, sem API.
 
 ## Requisitos
 
@@ -23,7 +25,7 @@ CLI moderna, open source, para a [42 Network](https://www.42network.org/), inspi
 
 ```bash
 # amd64 (x86_64) — ajuste a versão/arch se necessário
-VER=1.0.2
+VER=1.2.0
 curl -sLO "https://github.com/nvizble/Lightyear42/releases/download/v${VER}/lightyear_${VER}_linux_amd64.deb"
 sudo apt install "./lightyear_${VER}_linux_amd64.deb"
 lightyear version
@@ -33,9 +35,9 @@ lightyear version
 Sem sudo
 ```bash
 # amd64 (x86_64) — ajuste a versão/arch se necessário
-VER=1.1.0
+VER=1.2.0
 mkdir -p ~/.local/bin
-curl -sL "https://github.com/nvizble/Lightyear42/releases/latest/download/lightyear_${VER}_Linux_x86_64.tar.gz" \
+curl -sL "https://github.com/nvizble/Lightyear42/releases/download/v${VER}/lightyear_${VER}_Linux_x86_64.tar.gz" \
   | tar -xz -C ~/.local/bin lightyear
 # garanta que ~/.local/bin está no PATH
 lightyear version
@@ -47,7 +49,8 @@ Baixe o release em [GitHub Releases](https://github.com/nvizble/Lightyear42/rele
 
 ```bash
 # exemplo macOS Apple Silicon
-curl -sL "https://github.com/nvizble/Lightyear42/releases/latest/download/lightyear_Darwin_arm64.tar.gz" \
+VER=1.2.0
+curl -sL "https://github.com/nvizble/Lightyear42/releases/download/v${VER}/lightyear_${VER}_Darwin_arm64.tar.gz" \
   | tar -xz lightyear
 sudo mv lightyear /usr/local/bin/
 lightyear version
