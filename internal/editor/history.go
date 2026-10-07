@@ -26,12 +26,21 @@ type edit struct {
 type history struct {
 	undo, redo []edit
 	sealed     bool
+	// grouping is set between BeginGroup and EndGroup: every edit after the
+	// group's first is chained to it, so the whole group undoes as one.
+	grouping, groupStarted bool
 }
 
 // record stores a new edit, merging it into the previous one when the user
 // is just continuing to type or erase.
 func (h *history) record(e edit) {
 	h.redo = nil
+	if h.grouping {
+		e.chained = e.chained || h.groupStarted
+		h.groupStarted = true
+		h.undo = append(h.undo, e)
+		return
+	}
 	if n := len(h.undo); n > 0 && !h.sealed && !e.chained && !strings.Contains(e.text, "\n") {
 		last := &h.undo[n-1]
 		switch {

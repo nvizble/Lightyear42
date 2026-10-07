@@ -10,10 +10,14 @@ import (
 // newEditCmd opens the embedded editor on a file. Hidden while the editor is
 // experimental (phase 1: plain editing; see internal/editor/DESIGN.md).
 func newEditCmd() *cobra.Command {
-	return &cobra.Command{
-		Use:    "edit <arquivo>",
-		Short:  "Editor embutido (experimental)",
-		Long:   "Abre o editor embutido do lightyear. Ctrl-S salva, Ctrl-Z/Ctrl-Y desfazem/refazem, Ctrl-Q sai.",
+	var plain bool
+	cmd := &cobra.Command{
+		Use:   "edit <arquivo>",
+		Short: "Editor embutido (experimental)",
+		Long: `Abre o editor embutido do lightyear, com edição modal estilo Vim:
+i/a/o entram no INSERT, esc volta ao NORMAL, hjkl movem, x e dd apagam,
+u e Ctrl-r desfazem/refazem, :w salva, :wq salva e sai, :q! sai sem salvar.
+Ctrl-S e Ctrl-Q também salvam e saem. Use --plain para o editor sem modos.`,
 		Hidden: true,
 		Args:   cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -21,9 +25,14 @@ func newEditCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			_, err = tea.NewProgram(editorview.New(ed),
-				tea.WithAltScreen(), tea.WithMouseCellMotion(), tea.WithContext(cmd.Context())).Run()
+			model := editorview.NewVim(ed)
+			if plain {
+				model = editorview.New(ed)
+			}
+			_, err = tea.NewProgram(model, tea.WithAltScreen(), tea.WithMouseCellMotion(), tea.WithContext(cmd.Context())).Run()
 			return err
 		},
 	}
+	cmd.Flags().BoolVar(&plain, "plain", false, "editor sem modos (sem os comandos estilo Vim)")
+	return cmd
 }

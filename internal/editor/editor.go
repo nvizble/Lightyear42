@@ -172,6 +172,28 @@ func (e *Editor) DeleteForward() {
 	}
 }
 
+// PlaceCursor moves the cursor to p (clamped) but keeps the column that
+// vertical moves aim for, so moving up or down later resumes from it (e.g.
+// a modal editor pulling the cursor back onto the last character).
+func (e *Editor) PlaceCursor(p Position) {
+	e.hist.seal()
+	e.cursor = e.buf.Clamp(p)
+	e.follow()
+}
+
+// BeginGroup starts a group of edits that undo and redo as one step (e.g. a
+// Vim insert session). Groups don't nest; EndGroup closes it.
+func (e *Editor) BeginGroup() {
+	e.hist.seal()
+	e.hist.grouping, e.hist.groupStarted = true, false
+}
+
+// EndGroup closes the group started by BeginGroup.
+func (e *Editor) EndGroup() {
+	e.hist.grouping = false
+	e.hist.seal()
+}
+
 // MoveCursor jumps to p (clamped). A jump ends the current undo step.
 func (e *Editor) MoveCursor(p Position) {
 	e.hist.seal()

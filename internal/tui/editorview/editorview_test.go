@@ -165,3 +165,85 @@ func TestProgramTypesSavesAndQuits(t *testing.T) {
 		t.Fatalf("arquivo salvo: %q", data)
 	}
 }
+
+func TestVimModeStatusAndCommands(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "main.c")
+	ed, err := editor.Open(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	next, _ := NewVim(ed).Update(tea.WindowSizeMsg{Width: 80, Height: 8})
+	m := next.(Model)
+	status := func() string { lines := strings.Split(ansi.Strip(m.View()), "\n"); return lines[len(lines)-1] }
+
+	if !strings.HasPrefix(strings.TrimSpace(status()), "NORMAL") {
+		t.Fatalf("deveria começar no NORMAL: %q", status())
+	}
+	m, _ = press(t, m, runes("i"))
+	if !strings.Contains(status(), "INSERT") {
+		t.Fatalf("i deveria entrar no INSERT: %q", status())
+	}
+	m, _ = press(t, m, runes("int x;"), tea.KeyMsg{Type: tea.KeyEsc}, runes("d"))
+	if !strings.Contains(status(), "NORMAL") || !strings.HasSuffix(strings.TrimSpace(status()), "d") {
+		t.Fatalf("esc volta ao NORMAL e o d pendente aparece: %q", status())
+	}
+	m, _ = press(t, m, tea.KeyMsg{Type: tea.KeyEsc}, runes(":wq"))
+	if got := strings.TrimSpace(status()); got != ":wq" {
+		t.Fatalf("a linha de comando deveria tomar a barra: %q", got)
+	}
+	m, cmd := press(t, m, tea.KeyMsg{Type: tea.KeyEnter})
+	if !m.Done() || cmd == nil {
+		t.Fatal(":wq deveria sair")
+	}
+	if data, _ := os.ReadFile(path); string(data) != "int x;" {
+		t.Fatalf(":wq deveria salvar: %q", data)
+	}
+}
+
+func TestVimClickRespectsNormalMode(t *testing.T) {
+	next, _ := NewVim(editor.New("ab")).Update(tea.WindowSizeMsg{Width: 60, Height: 8})
+	m := next.(Model)
+	m, _ = press(t, m, tea.MouseMsg{X: 40, Y: 0, Action: tea.MouseActionPress, Button: tea.MouseButtonLeft})
+	if got := m.Editor().Cursor(); got != (editor.Position{Line: 0, Column: 1}) {
+		t.Fatalf("no NORMAL o clique para no último caractere: %v", got)
+	}
+}
+
+// Real keyboard bytes through a running program, Vim style.
+func TestVimProgramWithRealKeys(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "first_word.c")
+	ed, err := editor.Open(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	in, keys, err := os.Pipe()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = in.Close() }()
+	p := tea.NewProgram(NewVim(ed), tea.WithInput(in), tea.WithOutput(io.Discard))
+	done := make(chan error, 1)
+	go func() { _, err := p.Run(); done <- err }()
+	p.Send(tea.WindowSizeMsg{Width: 80, Height: 24})
+
+	// Separate writes: an Esc glued to the next key would read as Alt+key.
+	for _, chunk := range []string{"iint main(void)\r{\r}", "\x1b", "ggOx", "\x1b", "dd:wq\r"} {
+		if _, err := keys.Write([]byte(chunk)); err != nil {
+			t.Fatal(err)
+		}
+		time.Sleep(60 * time.Millisecond)
+	}
+	select {
+	case err := <-done:
+		if err != nil {
+			t.Fatal(err)
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("o editor não saiu com :wq")
+	}
+	// gg isn't implemented yet (phase 3): "g g" are no-ops, so O opens above
+	// the last line and dd removes that new line again.
+	if data, _ := os.ReadFile(path); string(data) != "int main(void)\n{\n}" {
+		t.Fatalf("arquivo salvo: %q", data)
+	}
+}

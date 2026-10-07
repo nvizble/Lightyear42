@@ -232,3 +232,44 @@ func TestOpenSave(t *testing.T) {
 		t.Fatal("documento sem arquivo não deveria salvar")
 	}
 }
+
+func TestGroupUndoesAsOneStep(t *testing.T) {
+	e := New("x")
+	e.MoveCursor(Position{0, 1})
+	e.BeginGroup()
+	e.Insert("\n")
+	e.Insert("a")
+	e.Insert("b")
+	e.DeleteBackward()
+	e.EndGroup()
+	if e.Buffer().Text() != "x\na" {
+		t.Fatalf("grupo: %q", e.Buffer().Text())
+	}
+	e.Insert("!") // after the group: its own step
+	e.Undo()
+	if e.Buffer().Text() != "x\na" {
+		t.Fatalf("edição depois do grupo deveria ser outro passo: %q", e.Buffer().Text())
+	}
+	e.Undo()
+	if e.Buffer().Text() != "x" || e.Cursor() != (Position{0, 1}) {
+		t.Fatalf("o grupo inteiro deveria desfazer de uma vez: %q %v", e.Buffer().Text(), e.Cursor())
+	}
+	e.Redo()
+	if e.Buffer().Text() != "x\na" {
+		t.Fatalf("e refazer de uma vez: %q", e.Buffer().Text())
+	}
+}
+
+func TestPlaceCursorKeepsVerticalColumn(t *testing.T) {
+	e := New("abcdef\nab\nabcdef")
+	e.MoveCursor(Position{0, 5})
+	e.Move(MoveDown)              // short line: lands past "ab" (col 2)
+	e.PlaceCursor(Position{1, 1}) // a modal editor pulls it onto "b"
+	e.Move(MoveDown)              // resumes at the original column
+	if e.Cursor() != (Position{2, 5}) {
+		t.Fatalf("j deveria voltar à coluna 5: %v", e.Cursor())
+	}
+	if NewBuffer("\t  x").Indent(0) != "\t  " {
+		t.Fatal("Indent")
+	}
+}
