@@ -15,6 +15,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/x/ansi"
 	"github.com/nvizble/Lightyear42/internal/editor"
+	"github.com/nvizble/Lightyear42/internal/lsp"
 	"github.com/nvizble/Lightyear42/internal/syntax"
 	"github.com/nvizble/Lightyear42/internal/vim"
 )
@@ -64,6 +65,8 @@ type Model struct {
 	vim *vim.Controller
 	// syn colors the code (nil for files without a grammar).
 	syn *syntax.Highlighter
+	// lsp runs the language server (nil unless WithLSP found one).
+	lsp *lspState
 }
 
 // New wraps an editor as a plain (non-modal) editor.
@@ -82,8 +85,10 @@ func NewVim(ed *editor.Editor) Model {
 	return m
 }
 
-// Close frees the syntax highlighter; call it once the editor is closed.
+// Close stops the language server and frees the syntax highlighter; call
+// it once the editor is closed.
 func (m Model) Close() {
+	m.closeLSP()
 	if m.syn != nil {
 		m.syn.Close()
 	}
@@ -95,8 +100,8 @@ func (m Model) Editor() *editor.Editor { return m.ed }
 // Done reports that the user closed the editor.
 func (m Model) Done() bool { return m.done }
 
-// Init implements tea.Model.
-func (m Model) Init() tea.Cmd { return nil }
+// Init implements tea.Model: it starts the language server, if any.
+func (m Model) Init() tea.Cmd { return m.startLSP() }
 
 // Update implements tea.Model.
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -105,9 +110,13 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.width, m.height = msg.Width, msg.Height
 		m.ed.SetViewportSize(m.textWidth(), m.textHeight())
 	case tea.KeyMsg:
-		return m.key(msg)
+		next, cmd := m.key(msg)
+		next.(Model).syncLSP()
+		return next, cmd
 	case tea.MouseMsg:
 		m.mouse(msg)
+	case lspStartedMsg, lspEventMsg:
+		return m.lspMsg(msg)
 	}
 	return m, nil
 }
@@ -271,36 +280,53 @@ func (m Model) View() string {
 		if line == cur.Line {
 			gutter = styleGutterHere.Render(fmt.Sprintf("%*d", numWidth, line+1)) + styleGutter.Render(" │ ")
 		}
-		cursorCol := -1
+		if d := m.worst(line); d != nil {
+			gutter = severityStyles[d.Severity].Render(fmt.Sprintf("%*d ● ", numWidth, line+1))
+		}
+		look := lineLook{cursor: -1, selFrom: -1, selTo: -1, marks: m.marks(line, buf.LineLen(line))}
 		if line == cur.Line {
-			cursorCol = m.ed.VisualColumn(line, cur.Column)
+			look.cursor = m.ed.VisualColumn(line, cur.Column)
 		}
-		selFrom, selTo := -1, -1
 		if from, to, ok := m.ed.SelectedColumns(line); ok {
-			selFrom = m.ed.VisualColumn(line, from)
-			selTo = max(m.ed.VisualColumn(line, to), selFrom+1) // an empty line still shows a cell
+			look.selFrom = m.ed.VisualColumn(line, from)
+			look.selTo = max(m.ed.VisualColumn(line, to), look.selFrom+1) // an empty line still shows a cell
 		}
-		var lineClasses []syntax.Class
 		if r < len(classes) {
-			lineClasses = classes[r]
+			look.classes = classes[r]
 		}
-		rows = append(rows, gutter+renderLine(buf.Line(line), lineClasses, m.ed.TabSize(), v.Left, m.textWidth(), cursorCol, selFrom, selTo))
+		rows = append(rows, gutter+renderLine(buf.Line(line), m.ed.TabSize(), v.Left, m.textWidth(), look))
 	}
 	rows = append(rows, m.statusLine())
 	return strings.Join(rows, "\n")
 }
 
-// renderLine expands tabs, shows the visible slice [left, left+width),
-// colors the code by classes (one per rune, may be nil), draws the cursor
-// at screen column cursorCol (-1 for none) and highlights the selected
-// screen columns [selFrom, selTo).
-func renderLine(line string, classes []syntax.Class, tabSize, left, width, cursorCol, selFrom, selTo int) string {
+// lineLook is how to draw one line: the cursor and the selection in screen
+// columns (-1 for none), and by rune the syntax classes and the
+// diagnostics' severities (0 for none).
+type lineLook struct {
+	cursor, selFrom, selTo int
+	classes                []syntax.Class
+	marks                  []lsp.Severity
+}
+
+// renderLine expands tabs, shows the visible slice [left, left+width) and
+// draws it as look says: cursor, then selection, diagnostics and syntax.
+func renderLine(line string, tabSize, left, width int, look lineLook) string {
 	var cells []string
 	var cellClasses []syntax.Class
-	for i, r := range []rune(line) {
-		class := syntax.Plain
-		if i < len(classes) {
-			class = classes[i]
+	var cellMarks []lsp.Severity
+	runes := []rune(line)
+	// Marks may run past the end (a missing ";"): blank cells show them.
+	for i := 0; i < max(len(runes), len(look.marks)); i++ {
+		r, class, mark := ' ', syntax.Plain, lsp.Severity(0)
+		if i < len(runes) {
+			r = runes[i]
+		}
+		if i < len(look.classes) {
+			class = look.classes[i]
+		}
+		if i < len(look.marks) {
+			mark = look.marks[i]
 		}
 		cell, n := string(r), 1
 		if r == '\t' {
@@ -309,10 +335,11 @@ func renderLine(line string, classes []syntax.Class, tabSize, left, width, curso
 		for ; n > 0; n-- {
 			cells = append(cells, cell)
 			cellClasses = append(cellClasses, class)
+			cellMarks = append(cellMarks, mark)
 		}
 	}
 	// The cursor or the selection may sit past the end (Insert, empty lines).
-	for len(cells) < max(cursorCol+1, selTo) {
+	for len(cells) < max(look.cursor+1, look.selTo) {
 		cells = append(cells, " ")
 	}
 
@@ -330,10 +357,12 @@ func renderLine(line string, classes []syntax.Class, tabSize, left, width, curso
 	for x := left; x < min(len(cells), left+width); x++ {
 		var next *lipgloss.Style
 		switch {
-		case x == cursorCol:
+		case x == look.cursor:
 			next = &styleCursor
-		case x >= selFrom && x < selTo:
+		case x >= look.selFrom && x < look.selTo:
 			next = &styleSelection
+		case x < len(cellMarks) && cellMarks[x] != 0:
+			next = &markStyles[cellMarks[x]]
 		case x < len(cellClasses) && cellClasses[x] != syntax.Plain:
 			next = &syntaxStyles[cellClasses[x]]
 		}
@@ -374,12 +403,32 @@ func (m Model) statusLine() string {
 			mode = styleModeVisual.Render(m.vim.Mode().String())
 			right = styleStatus.Render("y copia · d apaga · c muda · p cola · o troca a ponta · esc cancela ")
 		}
+	}
+	// The diagnostic under the cursor replaces the hints.
+	if d := m.worst(cur.Line); d != nil && (m.vim == nil || m.vim.Mode() == vim.Normal) {
+		msg, _, _ := strings.Cut(d.Message, "\n")
+		right = severityStyles[d.Severity].Render(severityNames[d.Severity] + ": " + msg + " ")
+	}
+	if m.vim != nil {
 		if p := m.vim.Pending(); p != "" {
 			right = stylePending.Render(p + " ")
 		}
 	}
-	left := mode + styleStatus.Render(" │ ") + styleFile.Render(name) +
-		styleStatus.Render(fmt.Sprintf(" │ %s │ %d:%d ", language(m.ed.Path()), cur.Line+1, cur.Column+1))
+	lang := styleStatus.Render(" │ " + language(m.ed.Path()))
+	if m.lsp != nil && m.lsp.starting {
+		lang += styleStatus.Render(" · " + m.lsp.server.Name + "…")
+	}
+	if m.lsp != nil && m.lsp.client != nil {
+		lang += styleStatus.Render(" · " + m.lsp.server.Name)
+		if n := m.count(lsp.Error); n > 0 {
+			lang += severityStyles[lsp.Error].Render(fmt.Sprintf(" ✖ %d", n))
+		}
+		if n := m.count(lsp.Warning); n > 0 {
+			lang += severityStyles[lsp.Warning].Render(fmt.Sprintf(" ⚠ %d", n))
+		}
+	}
+	left := mode + styleStatus.Render(" │ ") + styleFile.Render(name) + lang +
+		styleStatus.Render(fmt.Sprintf(" │ %d:%d ", cur.Line+1, cur.Column+1))
 
 	if m.message != "" {
 		right = styleStatus.Render(m.message + " ")

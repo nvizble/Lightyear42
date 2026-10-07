@@ -121,17 +121,18 @@ func TestMouseClickPlacesCursor(t *testing.T) {
 }
 
 func TestRenderLine(t *testing.T) {
+	none := lineLook{cursor: -1, selFrom: -1, selTo: -1}
 	// Tabs expand to the next stop of 4; the cursor past the end draws a cell.
-	if got := ansi.Strip(renderLine("\tx", nil, 4, 0, 20, -1, -1, -1)); got != "    x" {
+	if got := ansi.Strip(renderLine("\tx", 4, 0, 20, none)); got != "    x" {
 		t.Fatalf("tab: %q", got)
 	}
-	if got := ansi.Strip(renderLine("ab\tc", nil, 4, 0, 20, -1, -1, -1)); got != "ab  c" {
+	if got := ansi.Strip(renderLine("ab\tc", 4, 0, 20, none)); got != "ab  c" {
 		t.Fatalf("tab no meio: %q", got)
 	}
-	if got := ansi.Strip(renderLine("abc", nil, 4, 0, 20, 5, -1, -1)); got != "abc   " {
+	if got := ansi.Strip(renderLine("abc", 4, 0, 20, lineLook{cursor: 5, selFrom: -1, selTo: -1})); got != "abc   " {
 		t.Fatalf("cursor depois do fim: %q", got)
 	}
-	if got := ansi.Strip(renderLine("abcdef", nil, 4, 2, 3, -1, -1, -1)); got != "cde" {
+	if got := ansi.Strip(renderLine("abcdef", 4, 2, 3, none)); got != "cde" {
 		t.Fatalf("rolagem horizontal: %q", got)
 	}
 
@@ -149,7 +150,7 @@ func TestRenderLine(t *testing.T) {
 		{"seleção cortada pela rolagem", "abcdef", 1, 3, -1, 0, 3, sel("bc") + "d"},
 	}
 	for _, tt := range tests {
-		if got := renderLine(tt.line, nil, 4, tt.left, tt.width, tt.cursor, tt.selFrom, tt.selTo); got != tt.want {
+		if got := renderLine(tt.line, 4, tt.left, tt.width, lineLook{cursor: tt.cursor, selFrom: tt.selFrom, selTo: tt.selTo}); got != tt.want {
 			t.Errorf("%s: %q, esperado %q", tt.name, got, tt.want)
 		}
 	}

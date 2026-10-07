@@ -3,9 +3,11 @@
 > **Status:** Fases 1 (Editor Core, `internal/editor`), 2 (edição modal,
 > `internal/vim`), 3 (command parser: contadores, operador × motion), 4
 > (Visual Mode), 5 (Registers) e 6 (Syntax Highlighting, `internal/syntax`)
-> implementadas, com o componente em `internal/tui/editorview` (comando
-> experimental escondido `lightyear edit <arquivo>`, modal por padrão;
-> `--plain` para o editor sem modos). Próxima: Fase 7 (LSP).
+> implementadas, e a Fase 7 (LSP, `internal/lsp`) em andamento: diagnostics
+> prontos; hover, completion e go-to-definition são a próxima entrega. O
+> componente fica em `internal/tui/editorview` (comando experimental
+> escondido `lightyear edit <arquivo>`, modal por padrão; `--plain` para o
+> editor sem modos).
 >
 > **Desvios desta implementação em relação ao texto abaixo:**
 > - o componente visual mora em `internal/tui/editorview` (a TUI do projeto
@@ -45,7 +47,18 @@
 >   baixo (a do Go foi reordenada para isso). O core avisa cada mudança
 >   (`Editor.OnChange`, que o LSP também vai usar) e o `syntax.Highlighter`
 >   aplica a edição na árvore e reparseia de forma incremental só quando a
->   tela pede as cores, consultando só as linhas visíveis.
+>   tela pede as cores, consultando só as linhas visíveis;
+> - Fase 7, primeira entrega: cliente LSP próprio (`internal/lsp`, só
+>   stdlib: JSON-RPC com Content-Length), um servidor por arquivo aberto,
+>   sync completo (`didChange` com o texto inteiro, como a seção 18 prevê
+>   para o início) e diagnostics: sublinhados no código, `●` colorido na
+>   margem, contagem e a mensagem da linha do cursor na statusline. O
+>   cliente negocia UTF-32 (`positionEncoding`) e converte de UTF-16 quando
+>   o servidor não aceita. O clangd recebe `-xc`/`-xc++ -std=c++98` além de
+>   `-Wall -Wextra -Werror` como `fallbackFlags`. No macOS, o primeiro
+>   clangd que um binário novo do lightyear abre pode levar ~15s (o
+>   sistema verifica); o servidor sobe em segundo plano e a statusline
+>   mostra "clangd…" até ficar pronto.
 
 ## 1. Visão Geral
 
@@ -266,7 +279,7 @@ Configuração própria (ex.: `editor.line_numbers`, `editor.relative_numbers`, 
 | 4 — Visual Mode | `v`, `V` e operações sobre seleções | **implementada** |
 | 5 — Registers | `yy`, `dd`, `p`, `P` com register padrão | **implementada** |
 | 6 — Syntax Highlighting | Tree-sitter, highlighting incremental | **implementada** |
-| 7 — LSP | cliente JSON-RPC; diagnostics, hover, completion, go-to-definition | próxima |
+| 7 — LSP | cliente JSON-RPC; diagnostics, hover, completion, go-to-definition | em andamento (diagnostics prontos) |
 | 8 — Avançados | `ciw diw daw`, busca, `f F t T`, `.`, macros, buffers, splits, code actions, rename, format, references | |
 
 ## 26. Princípios

@@ -7,6 +7,14 @@ Mudanças visíveis do lightyear, da mais nova para a mais antiga. O
 Versões `-canary.N` são pre-releases: `lightyear update --canary` entra no
 canal canary e `lightyear update --stable` volta para a estável.
 
+## [1.3.0-canary.15] — 2026-10-07
+
+- Editor: erros e avisos do language server — clangd (C/C++, com
+  `-Wall -Wextra -Werror` como no grader), gopls, pyright e rust-analyzer.
+  O trecho fica sublinhado, a margem ganha um `●` e a barra de status mostra
+  a mensagem da linha do cursor e a contagem (`✖ 2 ⚠ 1`). Sem o servidor
+  instalado, o editor avisa como instalar.
+
 ## [1.3.0-canary.14] — 2026-10-07
 
 - Editor: syntax highlighting com Tree-sitter para C, C++, Go, Python e
