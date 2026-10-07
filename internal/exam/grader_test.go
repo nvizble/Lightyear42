@@ -52,7 +52,6 @@ func TestReferenceSolutionsPass(t *testing.T) {
 	}
 	for _, ex := range exercises {
 		t.Run(ex.Name, func(t *testing.T) {
-			t.Parallel()
 			dir := t.TempDir()
 			for name, src := range ex.ref {
 				writeFile(t, dir, name, src)

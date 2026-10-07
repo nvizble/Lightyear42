@@ -21,9 +21,21 @@ func NewRootCmd() *cobra.Command {
 		Short: "CLI moderna para a 42 Network",
 		Long: `lightyear é uma CLI open source para interagir com a API oficial da 42 Network.
 
-Gerencie autenticação, perfil, projetos, campus e mais — direto do terminal.`,
+Gerencie autenticação, perfil, projetos, campus e mais — direto do terminal.
+
+Rode só "lightyear" para abrir o app em tela cheia (abas
+clicáveis, mouse e teclado); os subcomandos abaixo continuam iguais.`,
 		SilenceUsage:  true,
 		SilenceErrors: true,
+		Args:          cobra.NoArgs,
+		// No subcommand: open the full-screen app in a terminal; anywhere else
+		// (pipes, scripts) keep printing the help.
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			if !isInteractive() {
+				return cmd.Help()
+			}
+			return runApp(cmd.Context())
+		},
 		PersistentPreRunE: func(cmd *cobra.Command, _ []string) error {
 			// Skip config load for commands that do not need OAuth/config,
 			// including shell completion (__complete).
