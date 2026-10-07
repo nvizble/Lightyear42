@@ -116,7 +116,7 @@ func TestPutWithEmptyRegister(t *testing.T) {
 			t.Fatalf("%q sem nada copiado deveria avisar: %+v %q modo %v", seq, res, ed.Buffer().Text(), c.Mode())
 		}
 	}
-	// A pending operator is cancelled by D/C/Y, like any key that isn't
+	// A pending operator is canceled by D/C/Y, like any key that isn't
 	// a motion.
 	ed := editor.New("abc")
 	run(New(ed), "dD")
