@@ -15,9 +15,11 @@ func newEditCmd() *cobra.Command {
 		Use:   "edit <arquivo>",
 		Short: "Editor embutido (experimental)",
 		Long: `Abre o editor embutido do lightyear, com edição modal estilo Vim:
-i/a/o entram no INSERT, esc volta ao NORMAL, hjkl movem, x e dd apagam,
-u e Ctrl-r desfazem/refazem, :w salva, :wq salva e sai, :q! sai sem salvar.
-Ctrl-S e Ctrl-Q também salvam e saem. Use --plain para o editor sem modos.`,
+i/a/o/I/A/O entram no INSERT, esc volta ao NORMAL; movimentos hjkl, w b e,
+0 ^ $, gg G; operador d com qualquer movimento (dw, d$, dG, dd) e contadores
+(3j, 3dd, 2d3w); x apaga, u e Ctrl-r desfazem/refazem; :w salva, :wq salva
+e sai, :q! sai sem salvar. Ctrl-S e Ctrl-Q também salvam e saem.
+Use --plain para o editor sem modos.`,
 		Hidden: true,
 		Args:   cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {

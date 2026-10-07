@@ -43,10 +43,20 @@ type Result struct {
 	Err     bool
 }
 
-// CommandState holds a command still being typed (e.g. "d" waiting for
-// "d"). Counts and motions join it in the command-parser phase.
+// CommandState holds a Normal-mode command still being typed, e.g. "3d2"
+// waiting for a motion: count × operator × count × motion.
 type CommandState struct {
+	// Count is the number typed so far (0 when none): before the operator
+	// while none is pending, before the motion after it.
+	Count int
+	// Operator is the pending operator (opNone when none).
+	Operator Operator
+	// Pending lists the keys typed so far, shown in the status line.
 	Pending []string
+
+	opKey   string // the operator's key, so "dd" can be told apart
+	opCount int    // the count typed before the operator
+	g       bool   // "g" typed, waiting for the second key ("gg")
 }
 
 // Controller interprets keys for one editor.
@@ -109,25 +119,83 @@ func (c *Controller) HandleText(text string) Result {
 }
 
 func (c *Controller) normalKey(key string) Result {
-	if len(c.state.Pending) > 0 {
-		return c.pendingKey(key)
+	st := &c.state
+	if key == "esc" {
+		c.state = CommandState{}
+		return Result{}
 	}
+
+	// Counts: 1-9 start one; 0 continues it (alone, 0 is a motion).
+	if !st.g && len(key) == 1 && key[0] >= '0' && key[0] <= '9' && (key != "0" || st.Count > 0) {
+		st.Count = st.Count*10 + int(key[0]-'0')
+		st.Pending = append(st.Pending, key)
+		return Result{}
+	}
+
+	// "g" prefix: only "gg" for now.
+	switch {
+	case st.g:
+		st.g = false
+		if key != "g" {
+			c.state = CommandState{}
+			return Result{}
+		}
+		key = "gg"
+	case key == "g":
+		st.g = true
+		st.Pending = append(st.Pending, key)
+		return Result{}
+	}
+
+	if op, ok := operators[key]; ok {
+		if st.Operator == opNone {
+			st.Operator, st.opKey, st.opCount, st.Count = op, key, st.Count, 0
+			st.Pending = append(st.Pending, key)
+			return Result{}
+		}
+		// The operator twice (dd, 3dd, d3d) acts on count whole lines.
+		same := key == st.opKey
+		n := totalCount(st.opCount, st.Count)
+		c.state = CommandState{}
+		if same {
+			line := c.ed.Cursor().Line
+			last := min(line+times(n)-1, c.ed.Buffer().LineCount()-1)
+			c.apply(op, Target{Pos: editor.Position{Line: last}, Linewise: true})
+		}
+		return Result{}
+	}
+
+	if m, ok := motions[key]; ok {
+		op, n := st.Operator, st.Count
+		if op != opNone {
+			n = totalCount(st.opCount, st.Count)
+		}
+		c.state = CommandState{}
+		t := m(c.ed, n, op != opNone)
+		switch {
+		case t.Failed:
+		case op != opNone:
+			c.apply(op, t)
+		default:
+			c.moveTo(t)
+		}
+		return Result{}
+	}
+
+	// Anything else cancels a pending operator, like Vim.
+	if st.Operator != opNone {
+		c.state = CommandState{}
+		return Result{}
+	}
+	n := times(st.Count)
+	c.state = CommandState{}
+	return c.command(key, n)
+}
+
+// command runs the Normal-mode commands that aren't motions or operators.
+func (c *Controller) command(key string, n int) Result {
 	cur := c.ed.Cursor()
 	switch key {
-	case "h", "left":
-		if cur.Column > 0 {
-			c.ed.MoveCursor(editor.Position{Line: cur.Line, Column: cur.Column - 1})
-		}
-	case "l", "right":
-		if cur.Column < c.lastColumn(cur.Line) {
-			c.ed.MoveCursor(editor.Position{Line: cur.Line, Column: cur.Column + 1})
-		}
-	case "j", "down":
-		c.ed.Move(editor.MoveDown)
-		c.clampNormal()
-	case "k", "up":
-		c.ed.Move(editor.MoveUp)
-		c.clampNormal()
 	case "i":
 		c.enterInsert()
 	case "a":
@@ -136,7 +204,7 @@ func (c *Controller) normalKey(key string) Result {
 		}
 		c.enterInsert()
 	case "I":
-		c.ed.MoveCursor(editor.Position{Line: cur.Line, Column: len([]rune(c.ed.Buffer().Indent(cur.Line)))})
+		c.ed.MoveCursor(editor.Position{Line: cur.Line, Column: indentWidth(c.ed.Buffer(), cur.Line)})
 		c.enterInsert()
 	case "A":
 		c.ed.MoveCursor(editor.Position{Line: cur.Line, Column: c.ed.Buffer().LineLen(cur.Line)})
@@ -153,20 +221,28 @@ func (c *Controller) normalKey(key string) Result {
 		c.ed.Insert(indent + "\n")
 		c.ed.MoveCursor(editor.Position{Line: cur.Line, Column: len([]rune(indent))})
 	case "x", "delete":
-		if c.ed.Buffer().LineLen(cur.Line) > 0 {
-			c.ed.Delete(editor.Range{Start: cur, End: editor.Position{Line: cur.Line, Column: cur.Column + 1}})
-			c.clampNormal()
+		// x is "dl": count characters, never past the end of the line.
+		if t := right(c.ed, n, true); !t.Failed {
+			c.apply(opDelete, t)
 		}
-	case "d":
-		c.state.Pending = append(c.state.Pending, key)
 	case "u":
-		if !c.ed.Undo() {
-			return Result{Message: "nada para desfazer"}
+		for i := 0; i < n; i++ {
+			if !c.ed.Undo() {
+				if i == 0 {
+					return Result{Message: "nada para desfazer"}
+				}
+				break
+			}
 		}
 		c.clampNormal()
 	case "ctrl+r":
-		if !c.ed.Redo() {
-			return Result{Message: "nada para refazer"}
+		for i := 0; i < n; i++ {
+			if !c.ed.Redo() {
+				if i == 0 {
+					return Result{Message: "nada para refazer"}
+				}
+				break
+			}
 		}
 		c.clampNormal()
 	case ":":
@@ -175,36 +251,29 @@ func (c *Controller) normalKey(key string) Result {
 	return Result{}
 }
 
-// pendingKey completes a command waiting for more keys; anything that
-// doesn't complete it cancels it, like Vim.
-func (c *Controller) pendingKey(key string) Result {
-	pending := c.Pending()
-	c.state = CommandState{}
-	if pending == "d" && key == "d" {
-		c.deleteLine()
+// moveTo moves the cursor to a motion's target (Normal mode).
+func (c *Controller) moveTo(t Target) {
+	if t.Vertical != 0 {
+		step, n := editor.MoveDown, t.Vertical
+		if n < 0 {
+			step, n = editor.MoveUp, -n
+		}
+		for i := 0; i < n; i++ {
+			c.ed.Move(step)
+		}
+	} else {
+		c.ed.MoveCursor(t.Pos)
 	}
-	return Result{}
+	c.clampNormal()
 }
 
-// deleteLine removes the cursor's line (dd) and lands on the first
-// non-blank character of the line that takes its place.
-func (c *Controller) deleteLine() {
-	buf, line := c.ed.Buffer(), c.ed.Cursor().Line
-	r := editor.Range{Start: editor.Position{Line: line}, End: editor.Position{Line: line + 1}}
-	switch {
-	case line+1 < buf.LineCount():
-		// Remove the line and its newline.
-	case line > 0:
-		// Last line: take the newline before it instead.
-		r = editor.Range{Start: editor.Position{Line: line - 1, Column: buf.LineLen(line - 1)}, End: editor.Position{Line: line, Column: buf.LineLen(line)}}
-	default:
-		// The only line: empty it.
-		r.End = editor.Position{Line: 0, Column: buf.LineLen(0)}
+// totalCount multiplies the counts before the operator and the motion
+// ("2d3w" = 6); 0 when neither was typed.
+func totalCount(opCount, count int) int {
+	if opCount == 0 && count == 0 {
+		return 0
 	}
-	c.ed.Delete(r)
-	target := min(line, buf.LineCount()-1)
-	c.ed.MoveCursor(editor.Position{Line: target, Column: len([]rune(buf.Indent(target)))})
-	c.clampNormal()
+	return times(opCount) * times(count)
 }
 
 func (c *Controller) enterInsert() {

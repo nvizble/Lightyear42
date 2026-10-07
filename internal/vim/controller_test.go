@@ -58,7 +58,7 @@ func TestNormalAndInsert(t *testing.T) {
 		{"dd na última linha", "a\nb\nc", pos(2, 0), "dd", "a\nb", pos(1, 0), Normal},
 		{"dd na única linha", "only", pos(0, 2), "dd", "", editor.Position{}, Normal},
 		{"dd cai no primeiro não-branco", "x\n\ty", editor.Position{}, "dd", "\ty", pos(0, 1), Normal},
-		{"d seguido de outra tecla cancela", "abc", editor.Position{}, "dlx", "bc", editor.Position{}, Normal},
+		{"esc cancela o operador", "abc", editor.Position{}, "d<esc>x", "bc", editor.Position{}, Normal},
 		{"o mantém a indentação", "\tif (x)", pos(0, 1), "oy<esc>", "\tif (x)\n\ty", pos(1, 1), Normal},
 		{"O abre acima com indentação", "\tif (x)", pos(0, 3), "Oz<esc>", "\tz\n\tif (x)", pos(0, 1), Normal},
 		{"a insere depois do cursor", "abc", editor.Position{}, "ad<esc>", "adbc", pos(0, 1), Normal},

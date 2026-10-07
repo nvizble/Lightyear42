@@ -62,6 +62,15 @@ func (b *Buffer) Clamp(p Position) Position {
 	return p
 }
 
+// RuneAt returns the character at p; false at the end of a line (where
+// the newline is) or outside the document.
+func (b *Buffer) RuneAt(p Position) (rune, bool) {
+	if p.Line < 0 || p.Line >= len(b.lines) || p.Column < 0 || p.Column >= len(b.lines[p.Line]) {
+		return 0, false
+	}
+	return b.lines[p.Line][p.Column], true
+}
+
 // Indent is the leading whitespace (spaces and tabs) of line i.
 func (b *Buffer) Indent(i int) string {
 	line := b.Line(i)
