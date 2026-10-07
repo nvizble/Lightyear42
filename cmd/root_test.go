@@ -2,9 +2,10 @@ package cmd
 
 import (
 	"bytes"
-	"github.com/charmbracelet/x/ansi"
 	"strings"
 	"testing"
+
+	"github.com/charmbracelet/x/ansi"
 )
 
 func TestRootHelp(t *testing.T) {
