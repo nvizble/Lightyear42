@@ -1,12 +1,14 @@
 package tui
 
 import (
+	"context"
 	"strings"
 	"testing"
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/charmbracelet/x/ansi"
 	"github.com/nvizble/Lightyear42/internal/exam"
 	"github.com/nvizble/Lightyear42/internal/models"
 	"github.com/nvizble/Lightyear42/internal/services"
@@ -34,7 +36,13 @@ func TestRenderEvaluationRows(t *testing.T) {
 	}
 	// Columns line up: the project column starts at the same width on every row.
 	lines := strings.Split(out, "\n")[1:]
-	column := func(line, word string) int { return lipgloss.Width(line[:strings.Index(line, word)]) }
+	column := func(line, word string) int {
+		i := strings.Index(line, word)
+		if i < 0 {
+			t.Fatalf("%q não está em %q", word, line)
+		}
+		return lipgloss.Width(line[:i])
+	}
 	col := column(lines[0], "ft_printf")
 	if column(lines[1], "get_next_line") != col || column(lines[2], "born2beroot") != col {
 		t.Errorf("colunas desalinhadas:\n%s", out)
@@ -81,6 +89,32 @@ func TestRenderCampusSeats(t *testing.T) {
 	}
 	if !strings.Contains(out, "zeca @ lab-mac") {
 		t.Errorf("posto fora do padrão sumiu:\n%s", out)
+	}
+}
+
+func TestCampusSeatsHotspots(t *testing.T) {
+	since := time.Date(2026, 10, 7, 9, 12, 0, 0, time.Local)
+	locs := []models.Location{
+		{Host: "c1r1p1", User: models.UserSummary{Login: "marvin"}, BeginAt: &since},
+		{Host: "c1r2p4", User: models.UserSummary{Login: "tlima"}},
+	}
+	view := CampusSeatsView("SP", locs, map[int]ClusterGrid{1: {Rows: 2, Posts: 4}}, []string{"tlima"}, "marvin")
+	if len(view.Hotspots) != 2 {
+		t.Fatalf("esperava 2 hotspots (postos ocupados), veio %d", len(view.Hotspots))
+	}
+	lines := strings.Split(view.Content, "\n")
+	for _, h := range view.Hotspots {
+		cell := ansiCut(lines[h.Line], h.Col, h.Col+h.Width)
+		if cell != seatGlyph {
+			t.Errorf("hotspot %+v não cai num posto: %q", h, cell)
+		}
+	}
+	// Mirrored posts: p1 is the last column, p4 the first.
+	if h := view.Hotspots[0]; h.Info != "c1r1p1 · marvin (você) · online desde 09:12" || h.Col != 9 {
+		t.Errorf("hotspot do marvin errado: %+v", h)
+	}
+	if h := view.Hotspots[1]; h.Info != "c1r2p4 · tlima (amigo)" || h.Col != 0 {
+		t.Errorf("hotspot da tlima errado: %+v", h)
 	}
 }
 
@@ -144,5 +178,35 @@ func TestAppGradingSpinner(t *testing.T) {
 	next, _ = m.Update(appSpinMsg{})
 	if v := next.(AppModel).View(); !strings.Contains(v, "⠙ Corrigindo…") {
 		t.Fatalf("spinner não andou:\n%s", v)
+	}
+}
+
+// ansiCut returns the plain text of cells [left, right) of a styled line.
+func ansiCut(line string, left, right int) string {
+	return ansi.Strip(ansi.Cut(line, left, right))
+}
+
+func TestAppHoverShowsWhoSitsThere(t *testing.T) {
+	locs := []models.Location{{Host: "c1r1p1", User: models.UserSummary{Login: "tlima"}}}
+	tabs := []AppTab{{Title: "Campus", LoadView: func(context.Context) (AppView, error) {
+		return CampusSeatsView("SP", locs, map[int]ClusterGrid{1: {Rows: 1, Posts: 2}}, nil, ""), nil
+	}}}
+	m, _ := newTestApp(t, tabs)
+	m = run(t, m, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("r")})
+
+	h := m.hotspots[0][0]
+	x, y := h.Col+appPadLeft, h.Line+appPadTop+appBodyTop
+	m = run(t, m, tea.MouseMsg{X: x, Y: y, Action: tea.MouseActionMotion})
+	lines := strings.Split(m.View(), "\n")
+	if !strings.Contains(lines[len(lines)-1], "c1r1p1 · tlima") {
+		t.Fatalf("rodapé sem quem está no posto:\n%s", lines[len(lines)-1])
+	}
+	m = run(t, m, tea.MouseMsg{X: x + 10, Y: y, Action: tea.MouseActionMotion})
+	if m.hover != nil {
+		t.Fatal("sair do posto deveria limpar o destaque")
+	}
+	m = run(t, m, click(x+1, y))
+	if m.hover == nil || m.hover.Info != "c1r1p1 · tlima" {
+		t.Fatalf("clique no posto deveria selecionar: %+v", m.hover)
 	}
 }

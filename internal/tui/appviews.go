@@ -198,24 +198,52 @@ func actorLogins(actors models.ScaleTeamActors) string {
 	return strings.Join(logins, ", ")
 }
 
+// Hotspot is a region of a tab's content that reacts to the mouse: hovering
+// or clicking it highlights the region and shows Info in the footer.
+// Line and Col are 0-based display cells within the content.
+type Hotspot struct {
+	Line, Col, Width int
+	Info             string
+}
+
+// AppView is a tab's rendered content plus its interactive regions.
+type AppView struct {
+	Content  string
+	Hotspots []Hotspot
+}
+
 // RenderCampusSeats draws each cluster as a compact grid of seats: online,
 // friends and you in different colors, empty seats dimmed. Friends online
 // are listed with their seats right under the header.
 func RenderCampusSeats(campusName string, locations []models.Location, layout map[int]ClusterGrid, friends []string, me string) string {
+	return CampusSeatsView(campusName, locations, layout, friends, me).Content
+}
+
+// CampusSeatsView is RenderCampusSeats plus one hotspot per occupied seat,
+// telling who sits there.
+func CampusSeatsView(campusName string, locations []models.Location, layout map[int]ClusterGrid, friends []string, me string) AppView {
 	if len(locations) == 0 {
-		return styleLabel.Render("Ninguém online no campus agora.")
+		return AppView{Content: styleLabel.Render("Ninguém online no campus agora.")}
 	}
 
 	isFriend := make(map[string]bool, len(friends))
 	for _, f := range friends {
 		isFriend[strings.ToLower(f)] = true
 	}
+	since := make(map[string]*time.Time, len(locations))
+	for _, loc := range locations {
+		if st, ok := parseHost(loc.Host); ok {
+			since[seatHost(st.cluster, st.row, st.post)] = loc.BeginAt
+		}
+	}
 
-	var b strings.Builder
-	b.WriteString(styleTitle.Render(campusName) + styleLabel.Render(fmt.Sprintf(" — %d online", len(locations))))
-	b.WriteString("     " + styleSeatOn.Render(seatGlyph) + styleLabel.Render(" online   ") +
-		styleSeatFr.Render(seatGlyph) + styleLabel.Render(" amigos   ") +
-		styleSeatMe.Render(seatGlyph) + styleLabel.Render(" você"))
+	lines := []string{
+		styleTitle.Render(campusName) + styleLabel.Render(fmt.Sprintf(" — %d online", len(locations))) +
+			"     " + styleSeatOn.Render(seatGlyph) + styleLabel.Render(" online   ") +
+			styleSeatFr.Render(seatGlyph) + styleLabel.Render(" amigos   ") +
+			styleSeatMe.Render(seatGlyph) + styleLabel.Render(" você") +
+			styleLabel.Render("   ·   passe o mouse num posto para ver quem está lá"),
+	}
 
 	var online []models.Location
 	for _, loc := range locations {
@@ -225,40 +253,53 @@ func RenderCampusSeats(campusName string, locations []models.Location, layout ma
 	}
 	sort.Slice(online, func(i, j int) bool { return online[i].User.Login < online[j].User.Login })
 	if len(online) > 0 {
-		b.WriteString("\n" + styleLabel.Render("Amigos online  ") + friendSeats(online))
+		lines = append(lines, styleLabel.Render("Amigos online  ")+friendSeats(online))
 	}
 
+	var spots []Hotspot
 	clusters, unmapped := campusClusters(locations, layout)
 	for _, c := range clusters {
-		b.WriteString("\n\n" + styleTitle.Render(fmt.Sprintf("Cluster %d", c.cluster)) +
+		lines = append(lines, "", styleTitle.Render(fmt.Sprintf("Cluster %d", c.cluster))+
 			styleLabel.Render(fmt.Sprintf(" · %d online", c.online())))
 		order := c.postOrder()
 		for row := 1; row <= c.rows; row++ {
-			b.WriteString("\n")
+			var b strings.Builder
 			for i, post := range order {
 				if i > 0 {
 					b.WriteString(" ")
 				}
 				login, ok := c.occupants[row][post]
-				switch {
-				case !ok:
+				if !ok {
 					b.WriteString(styleSeatEmpty.Render(seatGlyph))
+					continue
+				}
+				host, tag := seatHost(c.cluster, row, post), ""
+				switch {
 				case me != "" && strings.EqualFold(login, me):
 					b.WriteString(styleSeatMe.Render(seatGlyph))
+					tag = " (você)"
 				case isFriend[strings.ToLower(login)]:
 					b.WriteString(styleSeatFr.Render(seatGlyph))
+					tag = " (amigo)"
 				default:
 					b.WriteString(styleSeatOn.Render(seatGlyph))
 				}
+				info := host + " · " + login + tag
+				if at := since[host]; at != nil {
+					info += " · online desde " + at.Local().Format("15:04")
+				}
+				spots = append(spots, Hotspot{Line: len(lines), Col: i * (lipgloss.Width(seatGlyph) + 1), Width: lipgloss.Width(seatGlyph), Info: info})
 			}
+			lines = append(lines, b.String())
 		}
 	}
-
 	if len(unmapped) > 0 {
-		b.WriteString("\n\n" + renderUnmapped(unmapped))
+		lines = append(lines, "", renderUnmapped(unmapped))
 	}
-	return b.String()
+	return AppView{Content: strings.Join(lines, "\n"), Hotspots: spots}
 }
+
+func seatHost(cluster, row, post int) string { return fmt.Sprintf("c%dr%dp%d", cluster, row, post) }
 
 // examCard draws the session card. The app shows the essentials; the
 // detailed version (CLI) adds attempts and the subject folder. hint, when

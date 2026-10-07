@@ -32,7 +32,20 @@ type AppTab struct {
 	// Load fetches the data and returns the rendered content. Nil means the
 	// tab is unavailable; the app then shows AppOptions.Unavailable.
 	Load func(ctx context.Context) (string, error)
+	// LoadView, when set, is used instead of Load and also returns hotspots
+	// (regions that react to the mouse).
+	LoadView func(ctx context.Context) (AppView, error)
 }
+
+// Layout of the app around the tab content, used to map mouse positions:
+// tab bar + rule on top, and the body padding.
+const (
+	appBodyTop = 2
+	appPadTop  = 1
+	appPadLeft = 2
+)
+
+var styleHover = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("15"))
 
 // ExamControl is what the Exam tab drives. Implemented by *services.ExamService.
 type ExamControl interface {
@@ -54,9 +67,10 @@ type AppOptions struct {
 }
 
 type appTabLoadedMsg struct {
-	tab     int
-	content string
-	err     error
+	tab      int
+	content  string
+	hotspots []Hotspot
+	err      error
 }
 
 type appGradedMsg struct {
@@ -84,14 +98,16 @@ type appEditedMsg struct{ err error }
 type AppModel struct {
 	opts AppOptions
 
-	active  int
-	scroll  int
-	width   int
-	height  int
-	now     time.Time
-	content map[int]string
-	errs    map[int]error
-	loading map[int]bool
+	active   int
+	scroll   int
+	width    int
+	height   int
+	now      time.Time
+	content  map[int]string
+	hotspots map[int][]Hotspot
+	hover    *Hotspot
+	errs     map[int]error
+	loading  map[int]bool
 
 	examSess      *exam.Session
 	examNotice    string
@@ -103,15 +119,16 @@ type AppModel struct {
 // NewApp builds the app model.
 func NewApp(opts AppOptions, now time.Time) AppModel {
 	m := AppModel{
-		opts:    opts,
-		now:     now,
-		content: map[int]string{},
-		errs:    map[int]error{},
-		loading: map[int]bool{},
+		opts:     opts,
+		now:      now,
+		content:  map[int]string{},
+		hotspots: map[int][]Hotspot{},
+		errs:     map[int]error{},
+		loading:  map[int]bool{},
 	}
 	m.reloadExam()
 	// Logged out: open on the Exam tab, the only one that works offline.
-	if len(opts.Tabs) > 0 && opts.Tabs[0].Load == nil {
+	if len(opts.Tabs) > 0 && !opts.Tabs[0].loadable() {
 		m.active = m.examTab()
 	}
 	return m
@@ -151,7 +168,10 @@ func (m AppModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.loading[msg.tab] = false
 		m.errs[msg.tab] = msg.err
 		if msg.err == nil {
-			m.content[msg.tab] = msg.content
+			m.content[msg.tab], m.hotspots[msg.tab] = msg.content, msg.hotspots
+			if msg.tab == m.active {
+				m.hover = nil
+			}
 		}
 		m.clampScroll()
 
@@ -293,6 +313,10 @@ func (m AppModel) mouse(msg tea.MouseMsg) (tea.Model, tea.Cmd) {
 		m.scrollBy(-3)
 		return m, nil
 	}
+	if msg.Action == tea.MouseActionMotion {
+		m.hover = m.hotspotAt(msg.X, msg.Y)
+		return m, nil
+	}
 	if msg.Action != tea.MouseActionPress || msg.Button != tea.MouseButtonLeft {
 		return m, nil
 	}
@@ -309,12 +333,30 @@ func (m AppModel) mouse(msg tea.MouseMsg) (tea.Model, tea.Cmd) {
 				return m.key(b.key)
 			}
 		}
+	default:
+		// Clicking also selects, for terminals that don't report motion.
+		m.hover = m.hotspotAt(msg.X, msg.Y)
 	}
 	return m, nil
 }
 
+// hotspotAt maps a screen position to a hotspot of the active tab.
+func (m AppModel) hotspotAt(x, y int) *Hotspot {
+	if y < appBodyTop || y >= appBodyTop+m.bodyHeight() {
+		return nil
+	}
+	line, col := y-appBodyTop+m.scroll-appPadTop, x-appPadLeft
+	spots := m.hotspots[m.active]
+	for i := range spots {
+		if h := &spots[i]; h.Line == line && col >= h.Col && col < h.Col+h.Width {
+			return h
+		}
+	}
+	return nil
+}
+
 func (m AppModel) selectTab(i int) (tea.Model, tea.Cmd) {
-	m.active, m.scroll, m.confirmFinish = i, 0, false
+	m.active, m.scroll, m.confirmFinish, m.hover = i, 0, false, nil
 	if i == m.examTab() {
 		m.reloadExam()
 		return m, nil
@@ -327,15 +369,19 @@ func (m AppModel) selectTab(i int) (tea.Model, tea.Cmd) {
 
 // load fetches a tab off the UI loop.
 func (m AppModel) load(i int) tea.Cmd {
-	if i >= len(m.opts.Tabs) || m.opts.Tabs[i].Load == nil || m.loading[i] {
+	if i >= len(m.opts.Tabs) || !m.opts.Tabs[i].loadable() || m.loading[i] {
 		return nil
 	}
 	m.loading[i] = true
-	loadFn := m.opts.Tabs[i].Load
+	tab := m.opts.Tabs[i]
 	return func() tea.Msg {
 		ctx, cancel := context.WithTimeout(context.Background(), appLoadTimeout)
 		defer cancel()
-		content, err := loadFn(ctx)
+		if tab.LoadView != nil {
+			view, err := tab.LoadView(ctx)
+			return appTabLoadedMsg{tab: i, content: view.Content, hotspots: view.Hotspots, err: err}
+		}
+		content, err := tab.Load(ctx)
 		return appTabLoadedMsg{tab: i, content: content, err: err}
 	}
 }
@@ -365,6 +411,14 @@ func (m AppModel) View() string {
 	for len(body) < m.bodyHeight() {
 		body = append(body, "")
 	}
+	if h := m.hover; h != nil {
+		// Highlight the hovered region: keep the line, restyle its cells.
+		if i := h.Line + appPadTop - m.scroll; i >= 0 && i < len(body) {
+			col, line := h.Col+appPadLeft, body[i]
+			body[i] = ansi.Cut(line, 0, col) + styleHover.Render(ansi.Strip(ansi.Cut(line, col, col+h.Width))) +
+				ansi.Cut(line, col+h.Width, lipgloss.Width(line))
+		}
+	}
 	for i, l := range body {
 		body[i] = ansi.Truncate(l, m.width, "…")
 	}
@@ -386,7 +440,7 @@ func (m AppModel) body() string {
 		return pad(m.examBody())
 	}
 	tab := m.opts.Tabs[m.active]
-	if tab.Load == nil {
+	if !tab.loadable() {
 		return pad(styleLabel.Render(m.opts.Unavailable))
 	}
 	content, ok := m.content[m.active]
@@ -437,8 +491,11 @@ func (m AppModel) gradingLine() string {
 
 func (m *AppModel) scrollBy(n int) {
 	m.scroll += n
+	m.hover = nil
 	m.clampScroll()
 }
+
+func (t AppTab) loadable() bool { return t.Load != nil || t.LoadView != nil }
 
 func (m *AppModel) clampScroll() {
 	maxScroll := max(len(m.bodyLines())-m.bodyHeight(), 0)
@@ -519,6 +576,9 @@ func (m AppModel) footer() string {
 		b.WriteString(styleAppButton.Render(styleAppKey.Render(btn.key)+" "+btn.label) + " ")
 	}
 	hint := styleLabel.Render("1-" + fmt.Sprint(len(m.titles())) + " / ←→ abas · ↑↓ rolar ")
+	if m.hover != nil {
+		hint = styleHover.Render(m.hover.Info + " ")
+	}
 	gap := m.width - lipgloss.Width(b.String()) - lipgloss.Width(hint)
 	if gap > 0 {
 		b.WriteString(strings.Repeat(" ", gap) + hint)

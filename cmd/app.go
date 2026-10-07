@@ -31,7 +31,7 @@ func runApp(ctx context.Context) error {
 	}
 
 	program := tea.NewProgram(tui.NewApp(opts, time.Now()),
-		tea.WithAltScreen(), tea.WithMouseCellMotion(), tea.WithContext(ctx))
+		tea.WithAltScreen(), tea.WithMouseAllMotion(), tea.WithContext(ctx))
 	_, err = program.Run()
 	return err
 }
@@ -74,24 +74,24 @@ func appTabs(deps *appDeps) []tui.AppTab {
 		}
 		return tui.RenderProjects(projects), nil
 	}
-	tabs[3].Load = func(ctx context.Context) (string, error) {
+	tabs[3].LoadView = func(ctx context.Context) (tui.AppView, error) {
 		me, err := deps.Users.Me(ctx)
 		if err != nil {
-			return "", err
+			return tui.AppView{}, err
 		}
 		id, name, err := primaryCampusID(ctx, deps)
 		if err != nil {
-			return "", err
+			return tui.AppView{}, err
 		}
 		locations, err := deps.Campus.Online(ctx, id)
 		if err != nil {
-			return "", err
+			return tui.AppView{}, err
 		}
 		friends, err := newFriendsService().List()
 		if err != nil {
-			return "", err
+			return tui.AppView{}, err
 		}
-		return tui.RenderCampusSeats(name, locations, layout, friends, me.Login), nil
+		return tui.CampusSeatsView(name, locations, layout, friends, me.Login), nil
 	}
 	tabs[4].Load = func(ctx context.Context) (string, error) {
 		slots, err := deps.Slots.List(ctx)
