@@ -114,19 +114,29 @@ func (m DashboardModel) View() string {
 		return styleLabel.Render("Carregando dashboard…")
 	}
 
-	sections := []string{
-		m.header(),
-		renderOccupancy(m.snap.Locations, m.opts.Layout),
-		RenderEvaluations(m.snap.Evaluations, m.snap.Me.Login, maxEvaluationsShown),
-		RenderSlotsCalendar(m.snap.Slots, m.snap.SlotsErr, m.snap.TakenAt),
-		m.friendsSection(),
-	}
+	sections := []string{renderSnapshot(m.snap, m.opts.Layout, m.loading)}
 	if m.err != nil {
 		sections = append(sections, styleFail.Render("Falha ao atualizar: "+m.err.Error()+" (mostrando dados anteriores)"))
 	}
 	sections = append(sections, m.footer())
 
 	return lipgloss.JoinVertical(lipgloss.Left, sections...)
+}
+
+// RenderDashboard renders one dashboard snapshot: profile header, cluster
+// occupancy, evaluations, slots calendar and friends online.
+func RenderDashboard(snap *services.DashboardSnapshot, layout map[int]ClusterGrid) string {
+	return renderSnapshot(snap, layout, false)
+}
+
+func renderSnapshot(snap *services.DashboardSnapshot, layout map[int]ClusterGrid, loading bool) string {
+	return lipgloss.JoinVertical(lipgloss.Left,
+		snapshotHeader(snap, loading),
+		renderOccupancy(snap.Locations, layout),
+		RenderEvaluations(snap.Evaluations, snap.Me.Login, maxEvaluationsShown),
+		RenderSlotsCalendar(snap.Slots, snap.SlotsErr, snap.TakenAt),
+		friendsSection(snap),
+	)
 }
 
 // fetch runs one snapshot refresh off the UI loop.
@@ -145,9 +155,8 @@ func (m DashboardModel) tick() tea.Cmd {
 	return tea.Tick(m.opts.Interval, func(t time.Time) tea.Msg { return tickMsg(t) })
 }
 
-// header shows who you are, the campus and when data was last refreshed.
-func (m DashboardModel) header() string {
-	snap := m.snap
+// snapshotHeader shows who you are, the campus and when data was last refreshed.
+func snapshotHeader(snap *services.DashboardSnapshot, loading bool) string {
 	var b strings.Builder
 
 	b.WriteString(styleTitle.Render(snap.CampusName))
@@ -163,7 +172,7 @@ func (m DashboardModel) header() string {
 	b.WriteString("\n")
 
 	status := "atualizado às " + snap.TakenAt.Local().Format("15:04:05")
-	if m.loading {
+	if loading {
 		status += "  ·  atualizando…"
 	}
 	b.WriteString(styleLabel.Render(status))
@@ -172,11 +181,11 @@ func (m DashboardModel) header() string {
 }
 
 // friendsSection renders friends online, or a short hint when the list is empty.
-func (m DashboardModel) friendsSection() string {
-	if len(m.snap.Friends) == 0 {
+func friendsSection(snap *services.DashboardSnapshot) string {
+	if len(snap.Friends) == 0 {
 		return styleLabel.Render("Sem amigos na lista. Adicione com `lightyear friends add <login>`.")
 	}
-	return RenderFriendsOnline(m.snap.FriendsOnline, len(m.snap.Friends))
+	return RenderFriendsOnline(snap.FriendsOnline, len(snap.Friends))
 }
 
 // maxEvaluationsShown caps the evaluations panel in the live dashboard.

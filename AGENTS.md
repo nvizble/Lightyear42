@@ -86,6 +86,7 @@ Só então escreva o código. Nunca faça grandes alterações sem explicar.
 ## CLI (alvo)
 
 ```
+lightyear             # sem argumentos: app TUI em tela cheia (abas clicáveis, mouse)
 lightyear setup
 lightyear login
 lightyear logout
@@ -135,6 +136,7 @@ UX: progresso, tabelas, cores, loading — sem poluição visual.
 | 7 | Self-update | `lightyear update` via GitHub Releases (**concluído**) |
 | 8 | Notificações | Push via ntfy quando surge avaliação nova (**concluído**) |
 | 9 | Simulador de provas | `lightyear exam`: Exam Rank 02 completo, grader local com `cc` + solução de referência, sessão persistida, modo prática (**passos 1–2 concluídos**; próximo: TUI examshell, histórico/pontos fracos) |
+| 10 | App TUI | `lightyear` sozinho abre o app em tela cheia: abas clicáveis reaproveitando services e renderers dos comandos (**canary v1.3.0-canary.1**) |
 
 Chat (DM/fórum/relay): **parked** — sem DM na API pública; fórum ≠ chat; relay próprio fora de escopo.
 

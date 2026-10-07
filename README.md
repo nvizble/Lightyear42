@@ -90,7 +90,14 @@ Instalações via `.deb` em `/usr/bin` pedem `sudo` ou reinstale o `.deb` novo.
 
 ## Uso
 
+Rode só `lightyear` para abrir o **app em tela cheia** (canary, a partir da v1.3.0-canary.1):
+abas clicáveis (Início, Avaliações, Projetos, Campus, Slots, Exam), rolagem com
+o mouse e ações no rodapé. Teclado: `1`–`6`/`←→` trocam de aba, `↑↓`/`PgUp`/`PgDn`
+rolam, `r` atualiza, `q` sai; na aba Exam, `s` começa, `g` corrige e `f` encerra.
+Fora de um terminal (pipes, scripts) o `lightyear` sozinho continua mostrando o help.
+
 ```bash
+lightyear                  # app em tela cheia (TUI clicável)
 lightyear setup            # guia OAuth na Intra + grava UID/Secret
 lightyear login            # autentica via OAuth2 (abre o navegador)
 lightyear logout           # remove o token do keyring
