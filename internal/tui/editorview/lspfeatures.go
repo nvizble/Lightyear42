@@ -342,17 +342,20 @@ func wordStart(ed *editor.Editor) editor.Position {
 // below the cursor (above when there's no room).
 func (m Model) popups(rows []string, win rect) {
 	st := m.lsp
-	if st == nil || (st.hover == nil && st.comp == nil) {
+	if m.ses.pick == nil && (st == nil || (st.hover == nil && st.comp == nil)) {
 		return
 	}
 	v, cur := m.ed.Viewport(), m.ed.Cursor()
 	row := win.y + cur.Line - v.Top
 	col := win.x + m.gutterWidth() + m.ed.VisualColumn(cur.Line, cur.Column) - v.Left
 	var box []string
-	if st.comp != nil {
+	switch {
+	case m.ses.pick != nil:
+		box = m.pickerBox()
+	case st.comp != nil:
 		box = m.completionBox()
 		col = win.x + m.gutterWidth() + m.ed.VisualColumn(st.comp.start.Line, st.comp.start.Column) - v.Left
-	} else {
+	default:
 		box = strings.Split(styleHover.Render(strings.Join(st.hover, "\n")), "\n")
 	}
 	top := row + 1

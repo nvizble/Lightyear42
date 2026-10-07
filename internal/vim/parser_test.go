@@ -148,3 +148,27 @@ func TestHostCommands(t *testing.T) {
 		t.Fatalf("gg continua funcionando: %q", ed.Buffer().Text())
 	}
 }
+
+func TestLongerHostCommands(t *testing.T) {
+	ed := editor.New("abc")
+	c := New(ed)
+	var got []string
+	c.Commands = map[string]func(int) Result{
+		"grn": func(int) Result { c.OpenCommandLine("Rename "); return Result{} },
+		"grr": func(int) Result { got = append(got, "grr"); return Result{} },
+	}
+	run(c, "gr")
+	if c.Pending() != "gr" {
+		t.Fatalf("gr espera a terceira tecla: %q", c.Pending())
+	}
+	run(c, "r")
+	run(c, "grx") // not a command: canceled
+	run(c, "grn")
+	if c.Mode() != Command || c.CommandLine() != "Rename " || c.Prompt() != ":" || len(got) != 1 {
+		t.Fatalf("grn abre :Rename: %v %q %v", c.Mode(), c.CommandLine(), got)
+	}
+	run(c, "<esc>ggx")
+	if ed.Buffer().Text() != "bc" {
+		t.Fatalf("gg continua: %q", ed.Buffer().Text())
+	}
+}

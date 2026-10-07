@@ -4,9 +4,8 @@
 > `internal/vim`), 3 (command parser: contadores, operador × motion), 4
 > (Visual Mode), 5 (Registers) e 6 (Syntax Highlighting, `internal/syntax`)
 > implementadas, e a Fase 7 (LSP, `internal/lsp`) também: diagnostics,
-> hover, go-to-definition e completion. A Fase 8 (avançados) está em
-> andamento: text objects, `f F t T`, busca, `.`, macros, buffers e splits
-> prontos; faltam os extras de LSP. O
+> hover, go-to-definition e completion. A Fase 8 (avançados) também está
+> implementada, com os limites registrados abaixo. O
 > componente fica em `internal/tui/editorview` (comando experimental
 > escondido `lightyear edit <arquivo>`, modal por padrão; `--plain` para o
 > editor sem modos).
@@ -109,7 +108,20 @@
 >   (ativa em destaque); o clique foca a janela e a roda rola a que está
 >   sob o mouse. Limites desta versão: todas as janelas na mesma orientação
 >   (misturar `:sp` e `:vsp` avisa) e duas janelas no mesmo arquivo
->   compartilham o cursor e a rolagem, que moram no editor.
+>   compartilham o cursor e a rolagem, que moram no editor;
+> - Fase 8, quinta parte: extras de LSP. `grn` abre `:Rename ` (rename no
+>   projeto inteiro), `grr` lista as referências (uma só pula direto;
+>   duplicatas do mesmo arquivo por caminhos diferentes, como
+>   `/var` e `/private/var` no macOS, aparecem uma vez), `gra` lista as code
+>   actions (os fix-its do clangd entram pelos diagnostics da linha; ações
+>   com comando rodam no servidor, que devolve as edições por
+>   `workspace/applyEdit`), e `:Format` formata. As edições abrem os outros
+>   arquivos em buffers modificados (um passo de undo por arquivo; `:wa`
+>   salva) e o buffer e o cursor atuais ficam onde estavam. **Formatação de
+>   C/C++ só com `.clang-format` no projeto**: o estilo padrão do clangd
+>   quebra a norminette, então sem ele o editor avisa e não formata (Go,
+>   Python e Rust usam o formatador do servidor). Os prefixos de comandos
+>   do host podem ter mais de duas teclas (`gr` espera o `n`/`r`/`a`).
 
 ## 1. Visão Geral
 
@@ -331,7 +343,7 @@ Configuração própria (ex.: `editor.line_numbers`, `editor.relative_numbers`, 
 | 5 — Registers | `yy`, `dd`, `p`, `P` com register padrão | **implementada** |
 | 6 — Syntax Highlighting | Tree-sitter, highlighting incremental | **implementada** |
 | 7 — LSP | cliente JSON-RPC; diagnostics, hover, completion, go-to-definition | **implementada** |
-| 8 — Avançados | `ciw diw daw`, busca, `f F t T`, `.`, macros, buffers, splits, code actions, rename, format, references | em andamento (text objects, `f t`, busca, `.`, macros, buffers, splits) |
+| 8 — Avançados | `ciw diw daw`, busca, `f F t T`, `.`, macros, buffers, splits, code actions, rename, format, references | **implementada** |
 
 ## 26. Princípios
 

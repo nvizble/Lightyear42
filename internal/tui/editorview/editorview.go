@@ -147,6 +147,8 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m.lspMsg(msg)
 	case hoverMsg, definitionMsg, completionMsg:
 		return m.lspReply(msg), nil
+	case renameMsg, referencesMsg, actionsMsg, formatMsg, ranMsg:
+		return m.editReply(msg)
 	}
 	return m, nil
 }
@@ -157,6 +159,9 @@ func (m Model) key(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.quitArmed = false
 	}
 	m.message, m.isError = "", false
+	if m.ses.pick != nil {
+		return m.pickKey(k)
+	}
 	if st := m.lsp; st != nil {
 		st.hover = nil // any key closes the hover
 		if st.comp != nil && m.typing() && m.completionKey(k) {
