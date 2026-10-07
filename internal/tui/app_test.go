@@ -362,3 +362,38 @@ func TestAppEditRunsEditorProcess(t *testing.T) {
 		t.Fatal("o app não voltou do editor")
 	}
 }
+
+func TestAppNotifyWatch(t *testing.T) {
+	checks := 0
+	replies := []error{nil, fmt.Errorf("sem rede")}
+	notifyCheck := func(context.Context) (string, error) {
+		checks++
+		if err := replies[checks-1]; err != nil {
+			return "", err
+		}
+		return "avisado no celular: 08/10 14:30 — ft_printf", nil
+	}
+	m := NewApp(AppOptions{Tabs: []AppTab{{Title: "Início"}}, Exam: &fakeExam{}, Notify: notifyCheck, NotifyEvery: time.Minute}, appNow)
+	next, _ := m.Update(tea.WindowSizeMsg{Width: 120, Height: 30})
+	m = next.(AppModel)
+	if !strings.Contains(m.tabBar(), "notify ligado") {
+		t.Fatalf("com o notify configurado, a barra diz que está ligado:\n%s", m.tabBar())
+	}
+
+	// The first check runs at once; each answer schedules the next one.
+	next, cmd := m.Update(m.notifyAfter(0)())
+	m = next.(AppModel)
+	if checks != 1 || cmd == nil || !strings.Contains(m.View(), "avisado no celular: 08/10 14:30 — ft_printf") {
+		t.Fatalf("o aviso enviado vai para o rodapé e a próxima checagem fica agendada (%d checagens):\n%s", checks, m.View())
+	}
+	next, cmd = m.Update(m.notifyAfter(0)())
+	m = next.(AppModel)
+	if cmd == nil || !strings.Contains(m.View(), "notify: sem rede") {
+		t.Fatalf("uma falha aparece e a checagem continua:\n%s", m.View())
+	}
+
+	plain, _ := newTestApp(t, nil)
+	if plain.notifyAfter(0) != nil || strings.Contains(plain.tabBar(), "notify") {
+		t.Fatal("sem notify configurado, nada de checagem")
+	}
+}

@@ -7,6 +7,13 @@ Mudanças visíveis do lightyear, da mais nova para a mais antiga. O
 Versões `-canary.N` são pre-releases: `lightyear update --canary` entra no
 canal canary e `lightyear update --stable` volta para a estável.
 
+## [1.3.0-canary.28] — 2026-10-07
+
+- App: com o `lightyear notify` configurado, o app vigia a agenda enquanto
+  estiver aberto, como o `notify watch`. Ele checa a cada 2 minutos e manda
+  as avaliações novas para o celular. A barra de abas mostra "notify ligado"
+  e o rodapé diz o que foi avisado.
+
 ## [1.3.0-canary.27] — 2026-10-07
 
 - Editor: Tab completa o nome do tema — `:colorscheme d` e Tab vira

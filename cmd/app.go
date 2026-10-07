@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -39,12 +40,33 @@ func runApp(ctx context.Context) error {
 	} else {
 		defer cleanup()
 		opts.Tabs = appTabs(deps)
+		// With notify set up, the open app watches the schedule like
+		// `lightyear notify watch`.
+		if svc, err := notifyServiceFor(deps); err == nil {
+			opts.Notify, opts.NotifyEvery = appNotify(svc), defaultWatchInterval
+		}
 	}
 
 	program := tea.NewProgram(tui.NewApp(opts, time.Now()),
 		tea.WithAltScreen(), tea.WithMouseAllMotion(), tea.WithContext(ctx))
 	_, err = program.Run()
 	return err
+}
+
+// appNotify is one notify check for the app, phrased for its footer: what
+// was pushed to the phone ("" when nothing).
+func appNotify(svc *services.NotifyService) func(ctx context.Context) (string, error) {
+	return func(ctx context.Context) (string, error) {
+		report, err := svc.Check(ctx, time.Now())
+		if len(report.Notified) == 0 {
+			return "", err
+		}
+		sent := make([]string, len(report.Notified))
+		for i, st := range report.Notified {
+			sent[i] = notifiedLine(st)
+		}
+		return "avisado no celular: " + strings.Join(sent, " · "), err
+	}
 }
 
 // appTabs builds the API-backed tabs; with nil deps they are listed but

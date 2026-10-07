@@ -180,6 +180,10 @@ tópico mostrado pelo `setup`.
 Na primeira checagem nada é enviado: a agenda atual vira a linha de base, para
 você não receber uma rajada de avisos sobre avaliações que já conhecia.
 
+Com o notify configurado, o app (`lightyear` sem argumentos) também vigia a
+agenda enquanto estiver aberto, como o `watch`: checa a cada 2 minutos, mostra
+"notify ligado" na barra de abas e o que foi avisado no rodapé.
+
 Para rodar sem deixar um terminal aberto, agende o `check` (que checa uma vez e
 sai):
 

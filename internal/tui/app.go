@@ -89,6 +89,17 @@ type AppOptions struct {
 	// keeps the one :colorscheme picks (both optional).
 	EditorScheme     func() string
 	SaveEditorScheme func(name string)
+	// Notify, when set, runs every NotifyEvery while the app is open (like
+	// `lightyear notify watch`): it pushes new evaluations to the phone and
+	// says what it sent, for the footer ("" when nothing).
+	Notify      func(ctx context.Context) (string, error)
+	NotifyEvery time.Duration
+}
+
+// appNotifiedMsg carries the outcome of a Notify check.
+type appNotifiedMsg struct {
+	status string
+	err    error
 }
 
 type appTabLoadedMsg struct {
@@ -174,9 +185,23 @@ func NewApp(opts AppOptions, now time.Time) AppModel {
 	return m
 }
 
-// Init loads the first tab and starts the clock.
+// Init loads the first tab, starts the clock and the notify checks.
 func (m AppModel) Init() tea.Cmd {
-	return tea.Batch(m.load(m.active), appTick())
+	return tea.Batch(m.load(m.active), appTick(), m.notifyAfter(0))
+}
+
+// notifyAfter runs the Notify check after wait (none without Notify).
+func (m AppModel) notifyAfter(wait time.Duration) tea.Cmd {
+	check := m.opts.Notify
+	if check == nil {
+		return nil
+	}
+	return tea.Tick(wait, func(time.Time) tea.Msg {
+		ctx, cancel := context.WithTimeout(context.Background(), appLoadTimeout)
+		defer cancel()
+		status, err := check(ctx)
+		return appNotifiedMsg{status: status, err: err}
+	})
 }
 
 func appTick() tea.Cmd {
@@ -242,6 +267,15 @@ func (m AppModel) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		}
 		m.clampScroll()
+
+	case appNotifiedMsg:
+		switch {
+		case msg.err != nil:
+			m.status = styleFail.Render("notify: " + msg.err.Error())
+		case msg.status != "":
+			m.status = msg.status
+		}
+		return m, m.notifyAfter(m.opts.NotifyEvery)
 
 	case appActivatedMsg:
 		m.activating = false
@@ -865,6 +899,13 @@ func (m AppModel) tabBar() string {
 			style = styleAppTabActive
 		}
 		b.WriteString(style.Render(tabLabel(i, t)) + " ")
+	}
+	if m.opts.Notify != nil {
+		// The schedule is being watched for the phone (notify).
+		on := styleLabel.Render("notify ligado ")
+		if gap := m.width - lipgloss.Width(b.String()) - lipgloss.Width(on); gap > 0 {
+			b.WriteString(strings.Repeat(" ", gap) + on)
+		}
 	}
 	return b.String()
 }
