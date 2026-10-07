@@ -122,7 +122,13 @@
 >   C/C++ só com `.clang-format` no projeto**: o estilo padrão do clangd
 >   quebra a norminette, então sem ele o editor avisa e não formata (Go,
 >   Python e Rust usam o formatador do servidor). Os prefixos de comandos
->   do host podem ter mais de duas teclas (`gr` espera o `n`/`r`/`a`).
+>   do host podem ter mais de duas teclas (`gr` espera o `n`/`r`/`a`);
+> - Diagnostics sob demanda: com o mouse parado sobre o trecho sublinhado
+>   (inclusive a célula depois do fim da linha, onde fica o `;` que falta)
+>   aparece uma caixa com as mensagens inteiras, notas incluídas; sobre a
+>   margem, todos os da linha. O `K` mostra os da linha do cursor acima do
+>   hover do servidor. O `lightyear edit` passou a pedir todo movimento do
+>   mouse ao terminal (o app já pedia).
 
 ## 1. Visão Geral
 

@@ -36,6 +36,7 @@ type session struct {
 	starts   []tea.Cmd             // servers to start, for Update to return
 	jumps    []jump                // where gd jumped from, for Ctrl-o
 	pick     *picker               // an open list to choose from (lspedits.go)
+	tip      *tip                  // the diagnostics under the mouse (diagtip.go)
 }
 
 type jump struct {
