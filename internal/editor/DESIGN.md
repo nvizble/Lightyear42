@@ -3,8 +3,8 @@
 > **Status:** Fases 1 (Editor Core, `internal/editor`), 2 (edição modal,
 > `internal/vim`), 3 (command parser: contadores, operador × motion), 4
 > (Visual Mode), 5 (Registers) e 6 (Syntax Highlighting, `internal/syntax`)
-> implementadas, e a Fase 7 (LSP, `internal/lsp`) em andamento: diagnostics
-> prontos; hover, completion e go-to-definition são a próxima entrega. O
+> implementadas, e a Fase 7 (LSP, `internal/lsp`) também: diagnostics,
+> hover, go-to-definition e completion. Próxima: Fase 8 (avançados). O
 > componente fica em `internal/tui/editorview` (comando experimental
 > escondido `lightyear edit <arquivo>`, modal por padrão; `--plain` para o
 > editor sem modos).
@@ -58,7 +58,18 @@
 >   `-Wall -Wextra -Werror` como `fallbackFlags`. No macOS, o primeiro
 >   clangd que um binário novo do lightyear abre pode levar ~15s (o
 >   sistema verifica); o servidor sobe em segundo plano e a statusline
->   mostra "clangd…" até ficar pronto.
+>   mostra "clangd…" até ficar pronto;
+> - Fase 7, segunda entrega: `K` (hover numa caixa abaixo do cursor;
+>   qualquer tecla fecha), `gd` (no mesmo arquivo move o cursor; em outro,
+>   avisa onde está — abrir outros arquivos vem com os buffers da Fase 8),
+>   `]d`/`[d` (próximo/anterior diagnostic, dando a volta) e completion no
+>   INSERT: abre sozinha na primeira letra de uma palavra e depois de `.`,
+>   `->` e `::` (ou com `Ctrl-n`/`Ctrl-Space`), filtra pelo prefixo enquanto
+>   se digita, `Ctrl-n`/`Ctrl-p` (ou setas) escolhem, `Tab`/`Enter` aceitam
+>   e `Esc` fecha e sai do INSERT. Respostas atrasadas são descartadas. O
+>   Vim Controller continua sem conhecer LSP: o host registra comandos
+>   (`Controller.Commands`) e os prefixos de duas teclas (`g`, `[`, `]`)
+>   passaram a ser genéricos.
 
 ## 1. Visão Geral
 
@@ -279,8 +290,8 @@ Configuração própria (ex.: `editor.line_numbers`, `editor.relative_numbers`, 
 | 4 — Visual Mode | `v`, `V` e operações sobre seleções | **implementada** |
 | 5 — Registers | `yy`, `dd`, `p`, `P` com register padrão | **implementada** |
 | 6 — Syntax Highlighting | Tree-sitter, highlighting incremental | **implementada** |
-| 7 — LSP | cliente JSON-RPC; diagnostics, hover, completion, go-to-definition | em andamento (diagnostics prontos) |
-| 8 — Avançados | `ciw diw daw`, busca, `f F t T`, `.`, macros, buffers, splits, code actions, rename, format, references | |
+| 7 — LSP | cliente JSON-RPC; diagnostics, hover, completion, go-to-definition | **implementada** |
+| 8 — Avançados | `ciw diw daw`, busca, `f F t T`, `.`, macros, buffers, splits, code actions, rename, format, references | próxima |
 
 ## 26. Princípios
 

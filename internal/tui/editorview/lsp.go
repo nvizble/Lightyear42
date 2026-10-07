@@ -11,7 +11,8 @@ import (
 
 // The language server side of the editor (internal/lsp): the server starts
 // with the editor, gets the text after every change, and its diagnostics
-// are drawn on the code, in the gutter and in the status line.
+// are drawn on the code, in the gutter and in the status line. Hover,
+// definition and completion are in lspfeatures.go.
 
 var (
 	colorWarn = lipgloss.AdaptiveColor{Light: "130", Dark: "214"}
@@ -40,6 +41,11 @@ type lspState struct {
 	stop     chan struct{} // closed by Close
 	dirty    bool          // the text changed since the server last got it
 	diags    []lsp.Diagnostic
+
+	pending tea.Cmd     // a request a key started, for Update to return
+	hover   []string    // the hover popup's lines (nil when closed)
+	comp    *completion // the completion list (nil when closed)
+	seq     int         // completion requests; answers to older ones are dropped
 }
 
 type lspStartedMsg struct {
@@ -60,6 +66,9 @@ func (m Model) WithLSP() Model {
 	st := &lspState{server: s, starting: true, stop: make(chan struct{})}
 	m.ed.OnChange(func(editor.Change) { st.dirty = true })
 	m.lsp = st
+	if m.vim != nil {
+		m.vim.Commands = m.lspCommands()
+	}
 	return m
 }
 

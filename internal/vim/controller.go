@@ -62,7 +62,7 @@ type CommandState struct {
 
 	opKey   string // the operator's key, so "dd" can be told apart
 	opCount int    // the count typed before the operator
-	g       bool   // "g" typed, waiting for the second key ("gg")
+	lead    string // a prefix ("g", "[", "]") waiting for its second key
 }
 
 // Controller interprets keys for one editor.
@@ -72,6 +72,11 @@ type Controller struct {
 	state   CommandState
 	cmdline string
 	regs    map[rune]Register
+
+	// Commands are extra Normal-mode commands the host provides, by key
+	// ("K", "gd", "]d": a language server's hover, definition...). They get
+	// the count (1 when none); the controller only dispatches them.
+	Commands map[string]func(count int) Result
 }
 
 // New controls ed, starting in Normal mode.
@@ -196,29 +201,34 @@ func (c *Controller) normalKey(key string) Result {
 	}
 	n := times(st.Count)
 	c.state = CommandState{}
+	if f, ok := c.Commands[key]; ok {
+		return f(n)
+	}
 	return c.command(key, n)
 }
 
 // prefix consumes counts (1-9 start one; 0 continues it, alone it is a
-// motion) and the "g" prefix. It returns the key to interpret ("gg" after
-// two "g"s), or ok=false when the key was consumed.
+// motion) and the two-key prefixes "g", "[" and "]". It returns the key to
+// interpret ("gg", "gd" once complete), or ok=false when the key was
+// consumed.
 func (c *Controller) prefix(key string) (string, bool) {
 	st := &c.state
-	if !st.g && len(key) == 1 && key[0] >= '0' && key[0] <= '9' && (key != "0" || st.Count > 0) {
+	if st.lead == "" && len(key) == 1 && key[0] >= '0' && key[0] <= '9' && (key != "0" || st.Count > 0) {
 		st.Count = st.Count*10 + int(key[0]-'0')
 		st.Pending = append(st.Pending, key)
 		return "", false
 	}
 	switch {
-	case st.g:
-		st.g = false
-		if key != "g" {
-			c.state = CommandState{}
-			return "", false
+	case st.lead != "":
+		key, st.lead = st.lead+key, ""
+		_, motion := motions[key]
+		if _, command := c.Commands[key]; motion || command {
+			return key, true
 		}
-		return "gg", true
-	case key == "g":
-		st.g = true
+		c.state = CommandState{}
+		return "", false
+	case key == "g" || key == "[" || key == "]":
+		st.lead = key
 		st.Pending = append(st.Pending, key)
 		return "", false
 	}

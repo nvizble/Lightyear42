@@ -65,6 +65,10 @@ func fakeServer() {
 		}
 		_ = json.Unmarshal(body, &m)
 		var p struct {
+			Position struct {
+				Line      int `json:"line"`
+				Character int `json:"character"`
+			} `json:"position"`
 			TextDocument struct {
 				URI  string `json:"uri"`
 				Text string `json:"text"`
@@ -92,6 +96,26 @@ func fakeServer() {
 			publish(p.TextDocument.Text)
 		case "textDocument/didChange":
 			publish(p.ContentChanges[0].Text)
+		case "textDocument/hover":
+			write(map[string]any{"jsonrpc": "2.0", "id": *m.ID, "result": map[string]any{
+				"contents": map[string]string{"kind": "plaintext", "value": fmt.Sprintf("hover %d:%d", p.Position.Line, p.Position.Character)},
+			}})
+		case "textDocument/definition":
+			pos := func(l, c int) map[string]any {
+				return map[string]any{"start": map[string]int{"line": l, "character": c}, "end": map[string]int{"line": l, "character": c}}
+			}
+			write(map[string]any{"jsonrpc": "2.0", "id": *m.ID, "result": []any{
+				map[string]any{"uri": uri, "range": pos(2, 2)}, // after 😀: rune column 1
+				map[string]any{"targetUri": "file:///tmp/outro%20arquivo.c", "targetSelectionRange": pos(3, 4)},
+			}})
+		case "textDocument/completion":
+			l, c := p.Position.Line, p.Position.Character
+			write(map[string]any{"jsonrpc": "2.0", "id": *m.ID, "result": map[string]any{"isIncomplete": false, "items": []any{
+				map[string]any{"label": " • strlen(const char *s)", "detail": "size_t", "sortText": "2",
+					"textEdit": map[string]any{"newText": "strlen", "range": map[string]any{
+						"start": map[string]int{"line": l, "character": c - 2}, "end": map[string]int{"line": l, "character": c}}}},
+				map[string]any{"label": "printf", "insertText": "printf(${1:fmt})$0", "insertTextFormat": 2, "sortText": "1"},
+			}}})
 		case "shutdown":
 			write(map[string]any{"jsonrpc": "2.0", "id": *m.ID, "result": nil})
 		case "exit":
@@ -144,6 +168,47 @@ func TestDiagnosticsInRuneColumns(t *testing.T) {
 	c.DidChange("tudo certo")
 	if ev := next(t, c); ev.Err != nil || len(ev.Diagnostics) != 0 {
 		t.Fatalf("sem erros deveria limpar: %+v", ev)
+	}
+}
+
+func TestHoverDefinitionCompletion(t *testing.T) {
+	c, err := Start(context.Background(), fake(t, "ok"), filepath.Join(t.TempDir(), "main.c"), "a\nb\n😀st")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer c.Close()
+	ctx := context.Background()
+	// Rune column 3 is after "😀st": 4 UTF-16 units.
+	if h, err := c.Hover(ctx, Pos{2, 3}); err != nil || h != "hover 2:4" {
+		t.Fatalf("hover: %q %v", h, err)
+	}
+	locs, err := c.Definition(ctx, Pos{2, 3})
+	want := []Location{{Path: c.uri[len("file://"):], Pos: Pos{2, 1}}, {Path: "/tmp/outro arquivo.c", Pos: Pos{3, 4}}}
+	if err != nil || fmt.Sprint(locs) != fmt.Sprint(want) {
+		t.Fatalf("definition: %v %v", locs, err)
+	}
+	items, err := c.Completion(ctx, Pos{2, 3})
+	if err != nil || len(items) != 2 {
+		t.Fatalf("completion: %+v %v", items, err)
+	}
+	// Sorted by sortText; snippets become plain text; "•" and spaces go.
+	if items[0].Label != "printf" || items[0].Text != "printf(fmt)" || items[0].HasStart {
+		t.Fatalf("1º item: %+v", items[0])
+	}
+	if it := items[1]; it.Label != "strlen(const char *s)" || it.Text != "strlen" || it.Detail != "size_t" || !it.HasStart || it.Start != (Pos{2, 1}) {
+		t.Fatalf("2º item: %+v", it)
+	}
+}
+
+func TestHoverText(t *testing.T) {
+	for raw, want := range map[string]string{
+		`{"kind":"markdown","value":"` + "```c\\nint x\\n```\\ndoc" + `"}`: "int x\ndoc",
+		`"texto"`:                             "texto",
+		`["a", {"language":"c","value":"b"}]`: "a\n\nb",
+	} {
+		if got := hoverText([]byte(raw)); got != want {
+			t.Errorf("%s: %q, esperado %q", raw, got, want)
+		}
 	}
 }
 
@@ -214,6 +279,40 @@ func TestFindRootAndURI(t *testing.T) {
 	if got := fileURI("/tmp/meu projeto/a.c"); got != "file:///tmp/meu%20projeto/a.c" {
 		t.Fatalf("uri: %s", got)
 	}
+}
+
+// The real clangd: hover, definition and completion on a small program.
+func TestClangdFeatures(t *testing.T) {
+	if _, err := exec.LookPath("clangd"); err != nil {
+		t.Skip("clangd não instalado")
+	}
+	path := filepath.Join(t.TempDir(), "main.c")
+	text := "int\tadd(int a, int b)\n{\n\treturn (a + b);\n}\n\nint\tcounter;\n\nint\tmain(void)\n{\n\treturn (add(1, cou));\n}\n"
+	s, _ := ServerFor(path)
+	c, err := Start(context.Background(), s, path, text)
+	if err != nil {
+		t.Skipf("clangd não iniciou aqui: %v", err)
+	}
+	defer c.Close()
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	// Line 9 is "\treturn (add(1, cou));": "add" starts at rune 9.
+	if h, err := c.Hover(ctx, Pos{9, 10}); err != nil || !strings.Contains(h, "int add(int a, int b)") {
+		t.Fatalf("hover: %q %v", h, err)
+	}
+	if locs, err := c.Definition(ctx, Pos{9, 10}); err != nil || len(locs) != 1 || locs[0].Pos.Line != 0 {
+		t.Fatalf("definition: %+v %v", locs, err)
+	}
+	items, err := c.Completion(ctx, Pos{9, 19})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, it := range items {
+		if it.Text == "counter" {
+			return
+		}
+	}
+	t.Fatalf("completion sem counter: %+v", items)
 }
 
 // The real clangd, when installed: the 42 flags turn an unused variable

@@ -1,6 +1,7 @@
 // Package lsp is a small Language Server Protocol client for the embedded
-// editor: it starts the server for a file, keeps that document in sync and
-// reports the server's diagnostics. It knows nothing about the TUI.
+// editor: it starts the server for a file, keeps that document in sync,
+// reports the server's diagnostics and asks it for hover text,
+// definitions and completions. It knows nothing about the TUI.
 //
 // Positions are lines and rune columns, like the editor's; the client
 // converts them to the server's unit (UTF-32 when the server accepts it,
@@ -128,6 +129,11 @@ func Start(ctx context.Context, s Server, path, text string) (*Client, error) {
 			"general": map[string]any{"positionEncodings": []string{"utf-32", "utf-16"}},
 			"textDocument": map[string]any{
 				"publishDiagnostics": map[string]any{},
+				"hover":              map[string]any{"contentFormat": []string{"plaintext"}},
+				"definition":         map[string]any{},
+				"completion": map[string]any{
+					"completionItem": map[string]any{"snippetSupport": false},
+				},
 			},
 		},
 	}
