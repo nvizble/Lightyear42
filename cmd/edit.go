@@ -16,7 +16,8 @@ func newEditCmd() *cobra.Command {
 		Short: "Editor embutido (experimental)",
 		Long: `Abre o editor embutido do lightyear, com edição modal estilo Vim e
 cores (Tree-sitter) e erros do language server (clangd, gopls, pyright,
-rust-analyzer) para C, C++, Go, Python e Rust — K mostra a assinatura, gd
+rust-analyzer) para C, C++, Go, Python e Rust — o mouse sobre um erro mostra
+a mensagem, K mostra a assinatura (e os erros da linha), gd
 vai à definição, ]d e [d andam entre os erros e o INSERT completa enquanto
 você digita (ou com Ctrl-n), Tab aceita. Text objects (diw, ci", da(, yi{),
 f/F/t/T com ; e ,, busca com / ? n N * (:noh apaga os destaques), . repete
@@ -53,7 +54,7 @@ Use --plain para o editor sem modos.`,
 			}
 			model = model.WithLSP()
 			defer model.Close()
-			_, err = tea.NewProgram(model, tea.WithAltScreen(), tea.WithMouseCellMotion(), tea.WithContext(cmd.Context())).Run()
+			_, err = tea.NewProgram(model, tea.WithAltScreen(), tea.WithMouseAllMotion(), tea.WithContext(cmd.Context())).Run()
 			return err
 		},
 	}

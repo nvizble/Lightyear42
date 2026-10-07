@@ -158,7 +158,7 @@ func (m Model) key(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	if k != "ctrl+q" {
 		m.quitArmed = false
 	}
-	m.message, m.isError = "", false
+	m.message, m.isError, m.ses.tip = "", false, nil
 	if m.ses.pick != nil {
 		return m.pickKey(k)
 	}
@@ -263,6 +263,12 @@ func (m Model) indentation() string {
 
 func (m *Model) mouse(msg tea.MouseMsg) {
 	i, r := m.windowAt(msg.X, msg.Y)
+	m.ses.tip = nil
+	if i >= 0 && msg.Action == tea.MouseActionMotion && msg.Button == tea.MouseButtonNone {
+		// Resting on a diagnostic shows it.
+		m.ses.tip = m.tipAt(i, r, msg.X, msg.Y)
+		return
+	}
 	if i < 0 {
 		return
 	}
@@ -317,6 +323,9 @@ func (m Model) View() string {
 	}
 	rows := m.screen()
 	m.popups(rows, m.rects()[m.ses.win])
+	if t := m.ses.tip; t != nil {
+		m.place(rows, t.lines, t.y, t.x)
+	}
 	rows = append(rows, m.statusLine())
 	return strings.Join(rows, "\n")
 }

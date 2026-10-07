@@ -147,16 +147,25 @@ func (m Model) lspReply(msg tea.Msg) Model {
 	st := m.lsp
 	switch msg := msg.(type) {
 	case hoverMsg:
+		// The errors on the cursor's line come first, then the server's text.
+		lines := diagnosticLines(diagnosticsOn(st.diags, m.ed.Cursor().Line))
+		if msg.text != "" {
+			text := strings.Split(ansi.Wrap(msg.text, 70, ""), "\n")
+			if len(text) > 12 {
+				text = append(text[:11], "…")
+			}
+			if len(lines) > 0 {
+				lines = append(lines, "")
+			}
+			lines = append(lines, text...)
+		}
 		switch {
+		case len(lines) > 0:
+			st.hover = lines
 		case msg.err != nil:
 			m.message, m.isError = msg.err.Error(), true
-		case msg.text == "":
-			m.message = "nada para mostrar aqui"
 		default:
-			st.hover = strings.Split(ansi.Wrap(msg.text, 70, ""), "\n")
-			if len(st.hover) > 12 {
-				st.hover = append(st.hover[:11], "…")
-			}
+			m.message = "nada para mostrar aqui"
 		}
 	case definitionMsg:
 		switch {
@@ -358,20 +367,7 @@ func (m Model) popups(rows []string, win rect) {
 	default:
 		box = strings.Split(styleHover.Render(strings.Join(st.hover, "\n")), "\n")
 	}
-	top := row + 1
-	if top+len(box) > len(rows) && row-len(box) >= 0 {
-		top = row - len(box)
-	}
-	w := 0
-	for _, line := range box {
-		w = max(w, ansi.StringWidth(line))
-	}
-	col = max(min(col, m.width-w), 0)
-	for i, line := range box {
-		if r := top + i; r >= 0 && r < len(rows) {
-			rows[r] = overlay(rows[r], col, line, m.width)
-		}
-	}
+	m.place(rows, box, row, col)
 }
 
 // completionBox renders the visible part of the completion list.
