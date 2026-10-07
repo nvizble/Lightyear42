@@ -45,6 +45,9 @@ Fluxo típico:
   lightyear notify test     # confirma que chega no celular
   lightyear notify watch    # deixa rodando; avisa a cada avaliação nova
 
+O app (só "lightyear", sem subcomando) também vigia a agenda enquanto estiver
+aberto, como o watch.
+
 Para rodar sem deixar terminal aberto, agende "lightyear notify check"
 no cron (ou systemd timer) — ele checa uma vez e sai.`,
 	}
@@ -246,22 +249,33 @@ func notifyStatePath() (string, error) {
 // newNotifyService wires the notification service and returns the cleanup of
 // the underlying API dependencies.
 func newNotifyService(ctx context.Context) (*services.NotifyService, func(), error) {
-	sender, err := newNotifySender()
-	if err != nil {
-		return nil, nil, err
+	if _, err := newNotifySender(); err != nil {
+		return nil, nil, err // not set up: say so before any login error
 	}
-
-	statePath, err := notifyStatePath()
-	if err != nil {
-		return nil, nil, err
-	}
-
 	deps, cleanup, err := newDeps(ctx)
 	if err != nil {
 		return nil, nil, err
 	}
+	svc, err := notifyServiceFor(deps)
+	if err != nil {
+		cleanup()
+		return nil, nil, err
+	}
+	return svc, cleanup, nil
+}
 
-	return services.NewNotifyService(deps.Users, sender, notify.NewFileStore(statePath)), cleanup, nil
+// notifyServiceFor wires the notification service on existing API
+// dependencies; it fails when notify isn't set up (notify.ErrNoTopic).
+func notifyServiceFor(deps *appDeps) (*services.NotifyService, error) {
+	sender, err := newNotifySender()
+	if err != nil {
+		return nil, err
+	}
+	statePath, err := notifyStatePath()
+	if err != nil {
+		return nil, err
+	}
+	return services.NewNotifyService(deps.Users, sender, notify.NewFileStore(statePath)), nil
 }
 
 // printNotifyReport writes a one-line summary of a check.
