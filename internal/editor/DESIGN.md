@@ -136,7 +136,12 @@
 >   espaço vem da janela vizinha, com mínimo de 12 colunas ou 2 linhas. O
 >   `:vsp` divide a janela atual ao meio e fechar uma janela devolve o
 >   espaço à vizinha. Na aba Exam o app guarda os pesos (`Shares`) e reabre
->   o editor igual (`WithShares`).
+>   o editor igual (`WithShares`);
+> - Correção com um clique: a caixa do mouse sobre um diagnostic com
+>   correção ("fix available") mostra "▸ clique aqui para corrigir" e fica
+>   enquanto o mouse estiver nela; o clique pede as code actions com os
+>   diagnostics da caixa (a partir da linha deles) e aplica direto quando há
+>   uma só — várias abrem a lista, como o `gra`.
 
 ## 1. Visão Geral
 

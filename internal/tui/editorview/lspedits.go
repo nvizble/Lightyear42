@@ -43,6 +43,7 @@ type actionsMsg struct {
 	actions []lsp.Action
 	client  *lsp.Client
 	err     error
+	apply   bool // a single action is applied right away (a click on a fix)
 }
 
 type formatMsg struct {
@@ -79,7 +80,7 @@ func (m Model) editCommands() map[string]func(int) vim.Result {
 			}
 			return m.askCursor(func(ctx context.Context, c *lsp.Client, path string, p lsp.Pos) tea.Msg {
 				actions, err := c.CodeActions(ctx, path, p, diags)
-				return actionsMsg{actions, c, err}
+				return actionsMsg{actions: actions, client: c, err: err}
 			})
 		},
 	}
@@ -168,7 +169,7 @@ func (m Model) editReply(msg tea.Msg) (Model, tea.Cmd) {
 				items[i] = a.Title
 			}
 			actions, c := msg.actions, msg.client
-			m.ses.pick = &picker{title: "ações", items: items, choose: func(m Model, i int) (Model, tea.Cmd) {
+			run := func(m Model, i int) (Model, tea.Cmd) {
 				a := actions[i]
 				if len(a.Edits) > 0 {
 					m = m.applyEdits(a.Edits, a.Title)
@@ -179,7 +180,11 @@ func (m Model) editReply(msg tea.Msg) (Model, tea.Cmd) {
 					defer cancel()
 					return ranMsg{c.Run(ctx, a)}
 				}
-			}}
+			}
+			if msg.apply && len(actions) == 1 {
+				return run(m, 0)
+			}
+			m.ses.pick = &picker{title: "ações", items: items, choose: run}
 		}
 	case formatMsg:
 		switch {

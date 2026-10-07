@@ -7,6 +7,13 @@ Mudanças visíveis do lightyear, da mais nova para a mais antiga. O
 Versões `-canary.N` são pre-releases: `lightyear update --canary` entra no
 canal canary e `lightyear update --stable` volta para a estável.
 
+## [1.3.0-canary.25] — 2026-10-07
+
+- Editor: aceite o "fix available" com o mouse — passe o mouse no erro e
+  clique na caixa (▸ clique aqui para corrigir); com uma correção só, ela é
+  aplicada na hora, com várias aparece a lista. Pelo teclado, `gra` na
+  linha do erro.
+
 ## [1.3.0-canary.24] — 2026-10-07
 
 - Editor: janelas redimensionáveis — arraste a borda `│` entre o subject e

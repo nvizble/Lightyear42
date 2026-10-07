@@ -1,21 +1,32 @@
 package editorview
 
 import (
+	"context"
 	"slices"
 	"strings"
 
+	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/x/ansi"
+	"github.com/nvizble/Lightyear42/internal/editor"
 	"github.com/nvizble/Lightyear42/internal/lsp"
 )
 
 // Diagnostics on demand: resting the mouse on underlined code (or on the
-// ● in the gutter) shows the full messages in a box; K shows the ones on
-// the cursor's line above the server's hover text.
+// ● in the gutter) shows the full messages in a box — and when the server
+// has a fix, a click on the box applies it (listing them when there are
+// several); K shows the ones on the cursor's line above the server's hover
+// text.
+
+var styleFixButton = lipgloss.NewStyle().Foreground(colorGood).Bold(true)
 
 // tip is the box shown where the mouse rests.
 type tip struct {
 	x, y  int // the screen cell under the mouse
 	lines []string
+	win   int              // the window it is about
+	diags []lsp.Diagnostic // what it shows
+	fix   bool             // the server has a fix: a click applies it
 }
 
 // tipAt is the box for the diagnostics under screen cell (x, y) of window
@@ -51,7 +62,40 @@ func (m Model) tipAt(i int, r rect, x, y int) *tip {
 	if len(found) == 0 {
 		return nil
 	}
-	return &tip{x: x, y: y, lines: strings.Split(styleHover.Render(strings.Join(diagnosticLines(found), "\n")), "\n")}
+	lines, fix := diagnosticLines(found)
+	if fix {
+		lines = append(lines, styleFixButton.Render("▸ clique aqui para corrigir"))
+	}
+	box := strings.Split(styleHover.Render(strings.Join(lines, "\n")), "\n")
+	return &tip{x: x, y: y, lines: box, win: i, diags: found, fix: fix}
+}
+
+// onTip reports screen cell (x, y) inside the tip's box.
+func (m Model) onTip(t *tip, x, y int) bool {
+	top, left := m.placement(max(m.height-1, 1), t.lines, t.y, t.x)
+	w := 0
+	for _, line := range t.lines {
+		w = max(w, ansi.StringWidth(line))
+	}
+	return x >= left && x < left+w && y >= top && y < top+len(t.lines)
+}
+
+// applyFix asks the server for the code actions of the tip's diagnostics
+// (from their line, which gets the cursor) and applies the fix when it is
+// the only one; several open the list (see editReply).
+func (m *Model) applyFix(t *tip) {
+	m.focus(t.win)
+	*m = m.synced()
+	d := t.diags[0]
+	m.moveCursor(editor.Position{Line: d.Start.Line, Column: d.Start.Col})
+	diags := t.diags
+	res := m.askCursor(func(ctx context.Context, c *lsp.Client, path string, p lsp.Pos) tea.Msg {
+		actions, err := c.CodeActions(ctx, path, p, diags)
+		return actionsMsg{actions: actions, client: c, err: err, apply: true}
+	})
+	if res.Message != "" {
+		m.message, m.isError = res.Message, res.Err
+	}
 }
 
 // covers reports d spanning (line, col); an empty range covers its start
@@ -76,13 +120,12 @@ func diagnosticsOn(diags []lsp.Diagnostic, line int) []lsp.Diagnostic {
 }
 
 // diagnosticLines are the messages, worst first: "erro: expected ';'…",
-// wrapped, with the server's extra lines (notes) below each, and how to
-// apply the fix when the server has one ("(fix available)", from clangd).
-func diagnosticLines(diags []lsp.Diagnostic) []string {
+// wrapped, with the server's extra lines (notes) below each; fix reports
+// that the server has a fix for one of them ("(fix available)", from
+// clangd).
+func diagnosticLines(diags []lsp.Diagnostic) (lines []string, fix bool) {
 	diags = slices.Clone(diags)
 	slices.SortStableFunc(diags, func(a, b lsp.Diagnostic) int { return int(a.Severity) - int(b.Severity) })
-	var lines []string
-	fix := false
 	for _, d := range diags {
 		fix = fix || strings.Contains(d.Message, "fix available")
 		label := severityStyles[d.Severity].Render(severityNames[d.Severity] + ":")
@@ -95,27 +138,30 @@ func diagnosticLines(diags []lsp.Diagnostic) []string {
 	if len(lines) > 14 {
 		lines = append(lines[:13], "…")
 	}
-	if fix {
-		lines = append(lines, styleStatus.Render("com o cursor nesta linha, gra aplica a correção"))
-	}
-	return lines
+	return lines, fix
 }
 
 // place draws box over rows below screen row (above when there's no
 // room), from column col.
 func (m Model) place(rows, box []string, row, col int) {
-	top := row + 1
-	if top+len(box) > len(rows) && row-len(box) >= 0 {
+	top, left := m.placement(len(rows), box, row, col)
+	for i, line := range box {
+		if r := top + i; r >= 0 && r < len(rows) {
+			rows[r] = overlay(rows[r], left, line, m.width)
+		}
+	}
+}
+
+// placement is where place puts box over n rows: its top row and left
+// column.
+func (m Model) placement(n int, box []string, row, col int) (top, left int) {
+	top = row + 1
+	if top+len(box) > n && row-len(box) >= 0 {
 		top = row - len(box)
 	}
 	w := 0
 	for _, line := range box {
 		w = max(w, ansi.StringWidth(line))
 	}
-	col = max(min(col, m.width-w), 0)
-	for i, line := range box {
-		if r := top + i; r >= 0 && r < len(rows) {
-			rows[r] = overlay(rows[r], col, line, m.width)
-		}
-	}
+	return top, max(min(col, m.width-w), 0)
 }

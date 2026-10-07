@@ -148,7 +148,10 @@ func (m Model) lspReply(msg tea.Msg) Model {
 	switch msg := msg.(type) {
 	case hoverMsg:
 		// The errors on the cursor's line come first, then the server's text.
-		lines := diagnosticLines(diagnosticsOn(st.diags, m.ed.Cursor().Line))
+		lines, fix := diagnosticLines(diagnosticsOn(st.diags, m.ed.Cursor().Line))
+		if fix {
+			lines = append(lines, styleFixButton.Render("gra aplica a correção"))
+		}
 		if msg.text != "" {
 			text := strings.Split(ansi.Wrap(msg.text, 70, ""), "\n")
 			if len(text) > 12 {
