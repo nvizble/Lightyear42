@@ -1,6 +1,8 @@
 package vim
 
 import (
+	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/nvizble/Lightyear42/internal/editor"
@@ -119,5 +121,30 @@ func TestCountsOnUndoRedoAndPending(t *testing.T) {
 	run(c, "<esc>")
 	if c.Pending() != "" || ed.Buffer().Text() != "ab" {
 		t.Fatalf("esc cancela tudo: pendente %q texto %q", c.Pending(), ed.Buffer().Text())
+	}
+}
+
+func TestHostCommands(t *testing.T) {
+	ed := editor.New("abc")
+	c := New(ed)
+	var calls []string
+	c.Commands = map[string]func(int) Result{}
+	for _, key := range []string{"K", "gd", "]d", "[d"} {
+		c.Commands[key] = func(n int) Result {
+			calls = append(calls, fmt.Sprintf("%s×%d", key, n))
+			return Result{Message: key}
+		}
+	}
+	if res := run(c, "K"); res.Message != "K" {
+		t.Fatalf("K: %+v", res)
+	}
+	run(c, "gd3]d[d")
+	run(c, "dK")  // an operator pending cancels
+	run(c, "gxK") // "gx" isn't anything: cancelled, then K runs
+	if got := strings.Join(calls, " "); got != "K×1 gd×1 ]d×3 [d×1 K×1" {
+		t.Fatalf("chamadas: %s", got)
+	}
+	if run(c, "ggx"); ed.Buffer().Text() != "bc" {
+		t.Fatalf("gg continua funcionando: %q", ed.Buffer().Text())
 	}
 }

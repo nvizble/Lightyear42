@@ -111,12 +111,19 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.ed.SetViewportSize(m.textWidth(), m.textHeight())
 	case tea.KeyMsg:
 		next, cmd := m.key(msg)
-		next.(Model).syncLSP()
-		return next, cmd
+		m = next.(Model)
+		m.syncLSP()
+		if st := m.lsp; st != nil {
+			cmd = tea.Batch(cmd, st.pending, m.afterKey(msg))
+			st.pending = nil
+		}
+		return m, cmd
 	case tea.MouseMsg:
 		m.mouse(msg)
 	case lspStartedMsg, lspEventMsg:
 		return m.lspMsg(msg)
+	case hoverMsg, definitionMsg, completionMsg:
+		return m.lspReply(msg), nil
 	}
 	return m, nil
 }
@@ -127,6 +134,12 @@ func (m Model) key(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.quitArmed = false
 	}
 	m.message, m.isError = "", false
+	if st := m.lsp; st != nil {
+		st.hover = nil // any key closes the hover
+		if st.comp != nil && m.typing() && m.completionKey(k) {
+			return m, nil
+		}
+	}
 
 	if m.vim != nil && k != "ctrl+s" && k != "ctrl+q" {
 		var res vim.Result
@@ -296,6 +309,7 @@ func (m Model) View() string {
 		}
 		rows = append(rows, gutter+renderLine(buf.Line(line), m.ed.TabSize(), v.Left, m.textWidth(), look))
 	}
+	m.popups(rows)
 	rows = append(rows, m.statusLine())
 	return strings.Join(rows, "\n")
 }
@@ -395,10 +409,16 @@ func (m Model) statusLine() string {
 	if m.vim != nil {
 		mode = styleModeNormal.Render(m.vim.Mode().String())
 		right = styleStatus.Render("i insere · v seleciona · yy copia · p cola · :wq salva e sai ")
+		if m.lsp != nil && m.lsp.client != nil {
+			right = styleStatus.Render("K info · gd definição · ]d próximo erro · :wq salva e sai ")
+		}
 		switch m.vim.Mode() {
 		case vim.Insert:
 			mode = styleMode.Render(m.vim.Mode().String())
 			right = styleStatus.Render("esc volta ao normal ")
+			if m.lsp != nil && m.lsp.client != nil {
+				right = styleStatus.Render("ctrl+n completa · esc volta ao normal ")
+			}
 		case vim.Visual, vim.VisualLine:
 			mode = styleModeVisual.Render(m.vim.Mode().String())
 			right = styleStatus.Render("y copia · d apaga · c muda · p cola · o troca a ponta · esc cancela ")

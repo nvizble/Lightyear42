@@ -16,7 +16,9 @@ func newEditCmd() *cobra.Command {
 		Short: "Editor embutido (experimental)",
 		Long: `Abre o editor embutido do lightyear, com edição modal estilo Vim e
 cores (Tree-sitter) e erros do language server (clangd, gopls, pyright,
-rust-analyzer) para C, C++, Go, Python e Rust:
+rust-analyzer) para C, C++, Go, Python e Rust — K mostra a assinatura, gd
+vai à definição, ]d e [d andam entre os erros e o INSERT completa enquanto
+você digita (ou com Ctrl-n), Tab aceita:
 i/a/o/I/A/O entram no INSERT, esc volta ao NORMAL; movimentos hjkl, w b e,
 0 ^ $, gg G; operador d com qualquer movimento (dw, d$, dG, dd) e contadores
 (3j, 3dd, 2d3w); y copia (yy, yw, Y), c muda (cw, cc, C) e p/P colam o
