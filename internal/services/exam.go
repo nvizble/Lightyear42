@@ -59,6 +59,25 @@ func (s *ExamService) Exercises() []exam.Exercise {
 	return s.catalog
 }
 
+// EditTargets returns the files an editor should open for the session's
+// exercise: the subject (Portuguese when available, else English) and the
+// files to turn in under rendu/.
+func (s *ExamService) EditTargets(sess exam.Session) (subject string, files []string, err error) {
+	ex, ok := s.find(sess.Rank, sess.Exercise)
+	if !ok {
+		return "", nil, fmt.Errorf("exercício %q da sessão não existe mais no catálogo", sess.Exercise)
+	}
+	lang := "pt"
+	if _, ok := ex.Subjects[lang]; !ok {
+		lang = "en"
+	}
+	subject = filepath.Join(sess.Workspace, "subjects", ex.Name, "subject."+lang+".txt")
+	for _, name := range ex.Files {
+		files = append(files, filepath.Join(sess.Workspace, "rendu", ex.Name, name))
+	}
+	return subject, files, nil
+}
+
 // Start begins a timed exam of the given rank at its first level.
 func (s *ExamService) Start(now time.Time, rank string, duration time.Duration) (exam.Session, error) {
 	levels := s.levels(rank)

@@ -4,6 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
+	"os/exec"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -38,6 +41,7 @@ type ExamControl interface {
 	Grade(ctx context.Context, now time.Time) (services.GradeReport, error)
 	Finish() (exam.Session, error)
 	Exercises() []exam.Exercise
+	EditTargets(sess exam.Session) (subject string, files []string, err error)
 }
 
 // AppOptions configures the full-screen app.
@@ -61,6 +65,9 @@ type appGradedMsg struct {
 }
 
 type appTickMsg time.Time
+
+// appEditedMsg arrives when the editor opened with `e` exits.
+type appEditedMsg struct{ err error }
 
 // AppModel is the full-screen lightyear app: clickable tabs on top, a
 // scrollable body and clickable actions in the footer.
@@ -146,6 +153,14 @@ func (m AppModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		m.reloadExam()
 
+	case appEditedMsg:
+		if msg.err != nil {
+			m.examNotice = styleFail.Render("Editor: " + msg.err.Error())
+		} else {
+			m.examNotice = styleLabel.Render("De volta do editor. Aperte g para corrigir.")
+		}
+		m.reloadExam()
+
 	case tea.MouseMsg:
 		return m.mouse(msg)
 
@@ -190,8 +205,8 @@ func (m AppModel) key(k string) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-// examKey handles the Exam tab actions: s starts, g grades, f finishes
-// (asking for confirmation first).
+// examKey handles the Exam tab actions: s starts, e opens the editor, g
+// grades, f finishes (asking for confirmation first).
 func (m AppModel) examKey(k string) (tea.Model, tea.Cmd) {
 	if k != "f" {
 		m.confirmFinish = false
@@ -208,6 +223,18 @@ func (m AppModel) examKey(k string) (tea.Model, tea.Cmd) {
 			m.examNotice = styleGood.Render("Prova começou. Boa sorte!")
 		}
 		m.reloadExam()
+	case "e":
+		if m.examSess == nil {
+			return m, nil
+		}
+		subject, files, err := m.opts.Exam.EditTargets(*m.examSess)
+		if err != nil {
+			m.examNotice = styleFail.Render(err.Error())
+			return m, nil
+		}
+		return m, tea.ExecProcess(editorCommand(subject, files), func(err error) tea.Msg {
+			return appEditedMsg{err: err}
+		})
 	case "g":
 		if m.examSess == nil || m.grading {
 			return m, nil
@@ -363,7 +390,8 @@ func (m AppModel) examBody() string {
 		parts = append(parts, m.examNotice)
 	}
 	if m.examSess != nil {
-		parts = append(parts, RenderExamSession(*m.examSess, m.now))
+		parts = append(parts, RenderExamSession(*m.examSess, m.now),
+			styleLabel.Render("Aperte e para abrir o subject e a sua entrega lado a lado no vim;\nao sair (:wq), aperte g para corrigir."))
 	} else {
 		parts = append(parts,
 			styleTitle.Render("Simulador de provas")+"\n"+
@@ -435,7 +463,7 @@ func (m AppModel) buttons() []appButton {
 		if m.examSess == nil {
 			defs = append(defs, [2]string{"s", "começar prova"})
 		} else {
-			defs = append(defs, [2]string{"g", "grademe"}, [2]string{"f", "encerrar"})
+			defs = append(defs, [2]string{"e", "editar no vim"}, [2]string{"g", "grademe"}, [2]string{"f", "encerrar"})
 		}
 	}
 	defs = append(defs, [2]string{"r", "atualizar"}, [2]string{"q", "sair"})
@@ -462,4 +490,27 @@ func (m AppModel) footer() string {
 		b.WriteString(strings.Repeat(" ", gap) + hint)
 	}
 	return b.String()
+}
+
+// editorCommand opens the subject next to the files to turn in, using
+// $VISUAL or $EDITOR (vim by default). Vim-family editors get a vertical
+// split (-O): subject on the left, code on the right.
+func editorCommand(subject string, files []string) *exec.Cmd {
+	editor := os.Getenv("VISUAL")
+	if editor == "" {
+		editor = os.Getenv("EDITOR")
+	}
+	fields := strings.Fields(editor)
+	if len(fields) == 0 {
+		fields = []string{"vim"}
+	}
+
+	args := fields[1:]
+	switch filepath.Base(fields[0]) {
+	case "vim", "nvim", "vi", "mvim", "gvim":
+		args = append(args, "-O")
+	}
+	args = append(args, subject)
+	args = append(args, files...)
+	return exec.Command(fields[0], args...)
 }

@@ -149,6 +149,33 @@ func TestExamPractice(t *testing.T) {
 	}
 }
 
+func TestExamEditTargets(t *testing.T) {
+	svc, _, _ := newTestExamService(t)
+	svc.catalog[0].Files = []string{"union.c"}
+	svc.catalog[1].Files = []string{"first_word.c"}
+
+	sess, err := svc.Practice(examNow, "union")
+	if err != nil {
+		t.Fatal(err)
+	}
+	subject, files, err := svc.EditTargets(sess)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if want := filepath.Join(sess.Workspace, "subjects", "union", "subject.pt.txt"); subject != want {
+		t.Fatalf("subject = %s, esperado %s", subject, want)
+	}
+	if len(files) != 1 || files[0] != filepath.Join(sess.Workspace, "rendu", "union", "union.c") {
+		t.Fatalf("arquivos de entrega errados: %v", files)
+	}
+
+	// Without a Portuguese subject, fall back to English.
+	subject, _, _ = svc.EditTargets(exam.Session{Rank: "02", Exercise: "first_word", Workspace: sess.Workspace})
+	if filepath.Base(subject) != "subject.en.txt" {
+		t.Fatalf("deveria cair para o inglês: %s", subject)
+	}
+}
+
 func TestExamStartArchivesPreviousRendu(t *testing.T) {
 	svc, _, _ := newTestExamService(t)
 	old := filepath.Join(svc.workspace, "rendu", "first_word", "first_word.c")
