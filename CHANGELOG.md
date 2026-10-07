@@ -7,6 +7,15 @@ Mudanças visíveis do lightyear, da mais nova para a mais antiga. O
 Versões `-canary.N` são pre-releases: `lightyear update --canary` entra no
 canal canary e `lightyear update --stable` volta para a estável.
 
+## [1.3.0-canary.21] — 2026-10-07
+
+- Editor: `grn` renomeia no projeto inteiro (`:Rename nome`), `grr` lista
+  as referências, `gra` mostra as correções do language server (o `;` que
+  falta, o `#include`…) e `:Format` formata. Arquivos alterados abrem em
+  buffers para conferir e salvar com `:wa`.
+- Formatar C/C++ exige um `.clang-format` no projeto: o estilo padrão
+  quebraria a norminette.
+
 ## [1.3.0-canary.20] — 2026-10-07
 
 - Editor: janelas — `:vsp ft.h` (ou `Ctrl-w v`) põe dois arquivos lado a

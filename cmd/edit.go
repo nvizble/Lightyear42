@@ -23,7 +23,9 @@ f/F/t/T com ; e ,, busca com / ? n N * (:noh apaga os destaques), . repete
 a última mudança e macros com qa…q e @a. Vários arquivos viram buffers
 (:e abre outro, :bn/:bp/:b N trocam, :ls lista, :bd fecha, :wa salva todos;
 gd em outro arquivo abre e Ctrl-o volta) e janelas (:sp, :vsp, Ctrl-w w
-troca, :close, :only):
+troca, :close, :only). Com o language server: grn renomeia (:Rename), grr
+lista as referências, gra as correções e :Format formata (C só com
+.clang-format no projeto, para não quebrar a norminette):
 i/a/o/I/A/O entram no INSERT, esc volta ao NORMAL; movimentos hjkl, w b e,
 0 ^ $, gg G; operador d com qualquer movimento (dw, d$, dG, dd) e contadores
 (3j, 3dd, 2d3w); y copia (yy, yw, Y), c muda (cw, cc, C) e p/P colam o

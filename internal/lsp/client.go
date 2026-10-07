@@ -43,13 +43,16 @@ type Diagnostic struct {
 	Start, End Pos
 	Severity   Severity
 	Message    string
+	raw        json.RawMessage // as the server sent it, for code actions
 }
 
 // Event is news from the server: the diagnostics of the document at Path,
-// or Err when the server stopped.
+// edits it wants applied (Edits, after a code action's command), or Err
+// when the server stopped.
 type Event struct {
 	Path        string
 	Diagnostics []Diagnostic
+	Edits       []FileEdit
 	Err         error
 }
 
@@ -115,7 +118,7 @@ func Start(ctx context.Context, s Server, root string) (*Client, error) {
 
 	c.conn = newConn(stdin)
 	c.conn.onNotify = c.notification
-	c.conn.onRequest = serverRequest
+	c.conn.onRequest = c.serverRequest
 	go c.conn.read(stdout)
 
 	// Generous: on macOS the first launch of clangd by a new lightyear
@@ -143,7 +146,16 @@ func Start(ctx context.Context, s Server, root string) (*Client, error) {
 				"completion": map[string]any{
 					"completionItem": map[string]any{"snippetSupport": false},
 				},
+				"rename":     map[string]any{},
+				"references": map[string]any{},
+				"formatting": map[string]any{},
+				"codeAction": map[string]any{
+					"codeActionLiteralSupport": map[string]any{
+						"codeActionKind": map[string]any{"valueSet": []string{"", "quickfix", "refactor", "source"}},
+					},
+				},
 			},
+			"workspace": map[string]any{"applyEdit": true, "workspaceEdit": map[string]any{"documentChanges": true}},
 		},
 	}
 	if s.Options != nil {
@@ -279,12 +291,8 @@ func (c *Client) notification(method string, params json.RawMessage) {
 		return
 	}
 	var p struct {
-		URI         string `json:"uri"`
-		Diagnostics []struct {
-			Range    lspRange `json:"range"`
-			Severity int      `json:"severity"`
-			Message  string   `json:"message"`
-		} `json:"diagnostics"`
+		URI         string            `json:"uri"`
+		Diagnostics []json.RawMessage `json:"diagnostics"`
 	}
 	if json.Unmarshal(params, &p) != nil {
 		return
@@ -296,19 +304,37 @@ func (c *Client) notification(method string, params json.RawMessage) {
 		return
 	}
 	ds := make([]Diagnostic, 0, len(p.Diagnostics))
-	for _, d := range p.Diagnostics {
+	for _, raw := range p.Diagnostics {
+		var d struct {
+			Range    lspRange `json:"range"`
+			Severity int      `json:"severity"`
+			Message  string   `json:"message"`
+		}
+		if json.Unmarshal(raw, &d) != nil {
+			continue
+		}
 		sev := Severity(d.Severity)
 		if sev < Error || sev > Hint {
 			sev = Error
 		}
-		ds = append(ds, Diagnostic{Start: c.fromLSP(p.URI, d.Range.Start), End: c.fromLSP(p.URI, d.Range.End), Severity: sev, Message: d.Message})
+		ds = append(ds, Diagnostic{Start: c.fromLSP(p.URI, d.Range.Start), End: c.fromLSP(p.URI, d.Range.End), Severity: sev, Message: d.Message, raw: raw})
 	}
 	c.emit(Event{Path: uriPath(p.URI), Diagnostics: ds})
 }
 
-// serverRequest answers what servers commonly ask the client.
-func serverRequest(method string, params json.RawMessage) (any, error) {
+// serverRequest answers what servers commonly ask the client; edits it
+// wants applied go to the editor as an Event.
+func (c *Client) serverRequest(method string, params json.RawMessage) (any, error) {
 	switch method {
+	case "workspace/applyEdit":
+		var p struct {
+			Edit workspaceEdit `json:"edit"`
+		}
+		if err := json.Unmarshal(params, &p); err != nil {
+			return nil, err
+		}
+		c.emit(Event{Edits: c.fileEdits(p.Edit)})
+		return map[string]bool{"applied": true}, nil
 	case "workspace/configuration":
 		var p struct {
 			Items []json.RawMessage `json:"items"`

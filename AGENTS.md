@@ -145,7 +145,7 @@ UX: progresso, tabelas, cores, loading — sem poluição visual.
 | 8 | Notificações | Push via ntfy quando surge avaliação nova (**concluído**) |
 | 9 | Simulador de provas | `lightyear exam`: Exam Rank 02 completo, grader local com `cc` + solução de referência, sessão persistida, modo prática (**passos 1–2 concluídos**; próximo: TUI examshell, histórico/pontos fracos) |
 | 10 | App TUI | `lightyear` sozinho abre o app em tela cheia: abas clicáveis reaproveitando services e renderers dos comandos (**canary v1.3.0-canary.1**) |
-| 11 | Editor embutido | Editor modal estilo Vim dentro do app, em 8 fases (`internal/editor/DESIGN.md`). **Fases 1 (core), 2 (edição modal), 3 (contadores, operador × motion), 4 (Visual Mode), 5 (registers, `y`/`p`/`c`), 6 (syntax highlighting com Tree-sitter) e 7 (LSP: diagnostics, hover, definition, completion) concluídas**; Fase 8 (avançados) em andamento: text objects, `f`/`t`, busca, `.`, macros, buffers e splits prontos; faltam os extras de LSP. LSP (Fase 7): C/C++, Go, Python, Rust |
+| 11 | Editor embutido | Editor modal estilo Vim dentro do app, em 8 fases (`internal/editor/DESIGN.md`). **As 8 fases estão concluídas** (core, edição modal, contadores × motions, Visual, registers, syntax com Tree-sitter, LSP, avançados: text objects, `f`/`t`, busca, `.`, macros, buffers, janelas, rename/references/code actions/format). Próximo passo natural: levar o editor para a aba Exam do app. LSP: C/C++, Go, Python, Rust |
 
 Chat (DM/fórum/relay): **parked** — sem DM na API pública; fórum ≠ chat; relay próprio fora de escopo.
 

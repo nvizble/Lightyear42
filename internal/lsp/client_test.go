@@ -29,6 +29,14 @@ func TestMain(m *testing.M) {
 	}
 }
 
+func rng(l1, c1, l2, c2 int) map[string]any {
+	return map[string]any{"start": map[string]int{"line": l1, "character": c1}, "end": map[string]int{"line": l2, "character": c2}}
+}
+
+func edit(l1, c1, l2, c2 int, text string) map[string]any {
+	return map[string]any{"range": rng(l1, c1, l2, c2), "newText": text}
+}
+
 func fakeServer() {
 	in := bufio.NewReader(os.Stdin)
 	write := func(v any) {
@@ -117,6 +125,45 @@ func fakeServer() {
 						"start": map[string]int{"line": l, "character": c - 2}, "end": map[string]int{"line": l, "character": c}}}},
 				map[string]any{"label": "printf", "insertText": "printf(${1:fmt})$0", "insertTextFormat": 2, "sortText": "1"},
 			}}})
+		case "textDocument/rename":
+			var q struct {
+				NewName string `json:"newName"`
+			}
+			_ = json.Unmarshal(m.Params, &q)
+			write(map[string]any{"jsonrpc": "2.0", "id": *m.ID, "result": map[string]any{"changes": map[string]any{
+				p.TextDocument.URI: []any{edit(0, 0, 0, 1, q.NewName)},
+			}}})
+		case "textDocument/references":
+			write(map[string]any{"jsonrpc": "2.0", "id": *m.ID, "result": []any{
+				map[string]any{"uri": p.TextDocument.URI, "range": rng(1, 2, 1, 3)},
+			}})
+		case "textDocument/codeAction":
+			var q struct {
+				Context struct {
+					Diagnostics []json.RawMessage `json:"diagnostics"`
+				} `json:"context"`
+			}
+			_ = json.Unmarshal(m.Params, &q)
+			write(map[string]any{"jsonrpc": "2.0", "id": *m.ID, "result": []any{
+				map[string]any{"title": fmt.Sprintf("corrigir (%d diagnósticos)", len(q.Context.Diagnostics)), "kind": "quickfix",
+					"edit": map[string]any{"changes": map[string]any{p.TextDocument.URI: []any{edit(0, 0, 0, 0, ";")}}}},
+				map[string]any{"title": "rodar comando", "command": "fake.apply", "arguments": []any{p.TextDocument.URI}},
+				map[string]any{"title": "desligada", "disabled": map[string]string{"reason": "não"}},
+			}})
+		case "workspace/executeCommand":
+			var q struct {
+				Arguments []string `json:"arguments"`
+			}
+			_ = json.Unmarshal(m.Params, &q)
+			write(map[string]any{"jsonrpc": "2.0", "id": 50, "method": "workspace/applyEdit", "params": map[string]any{
+				"edit": map[string]any{"documentChanges": []any{map[string]any{
+					"textDocument": map[string]any{"uri": q.Arguments[0], "version": 1},
+					"edits":        []any{edit(0, 0, 0, 0, "/* cmd */")},
+				}}},
+			}})
+			write(map[string]any{"jsonrpc": "2.0", "id": *m.ID, "result": nil})
+		case "textDocument/formatting":
+			write(map[string]any{"jsonrpc": "2.0", "id": *m.ID, "result": []any{edit(0, 0, 0, 0, "// fmt\n")}})
 		case "shutdown":
 			write(map[string]any{"jsonrpc": "2.0", "id": *m.ID, "result": nil})
 		case "exit":
@@ -168,6 +215,9 @@ func TestDiagnosticsInRuneColumns(t *testing.T) {
 		{Start: Pos{1, 3}, End: Pos{1, 6}, Severity: Warning, Message: "erro aqui"},
 		{Start: Pos{2, 1}, End: Pos{2, 4}, Severity: Warning, Message: "erro aqui"}, // 😀 is 2 UTF-16 units, 1 rune
 	}
+	for i := range ev.Diagnostics {
+		ev.Diagnostics[i].raw = nil // compared on its own below
+	}
 	if fmt.Sprint(ev.Diagnostics) != fmt.Sprint(want) {
 		t.Fatalf("diagnostics: %v, esperado %v", ev.Diagnostics, want)
 	}
@@ -209,6 +259,44 @@ func TestHoverDefinitionCompletion(t *testing.T) {
 	}
 	if it := items[1]; it.Label != "strlen(const char *s)" || it.Text != "strlen" || it.Detail != "size_t" || !it.HasStart || it.Start != (Pos{2, 1}) {
 		t.Fatalf("2º item: %+v", it)
+	}
+}
+
+func TestEditsFromTheServer(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "main.c")
+	c, err := open(fake(t, "ok"), path, "😀x ERR\nyyyy")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer c.Close()
+	ev := next(t, c) // the diagnostic, for the code action
+	ctx := context.Background()
+
+	edits, err := c.Rename(ctx, path, Pos{0, 1}, "novo")
+	if err != nil || len(edits) != 1 || edits[0].Path != path || fmt.Sprint(edits[0].Edits) != fmt.Sprint([]TextEdit{{Start: Pos{0, 0}, End: Pos{0, 1}, Text: "novo"}}) {
+		t.Fatalf("rename: %+v %v", edits, err)
+	}
+	refs, err := c.References(ctx, path, Pos{0, 1})
+	if err != nil || len(refs) != 1 || refs[0].Pos != (Pos{1, 2}) {
+		t.Fatalf("references: %+v %v", refs, err)
+	}
+	actions, err := c.CodeActions(ctx, path, Pos{0, 3}, ev.Diagnostics)
+	if err != nil || len(actions) != 2 || actions[0].Title != "corrigir (1 diagnósticos)" || len(actions[0].Edits) != 1 || actions[1].command == nil {
+		t.Fatalf("code actions (a desligada some; o diagnóstico vai junto): %+v %v", actions, err)
+	}
+	// A command's edits come back from the server as an Event.
+	if err := c.Run(ctx, actions[1]); err != nil {
+		t.Fatal(err)
+	}
+	for {
+		ev := next(t, c)
+		if len(ev.Edits) == 1 && ev.Edits[0].Edits[0].Text == "/* cmd */" {
+			break
+		}
+	}
+	fmtEdits, err := c.Format(ctx, path, 4)
+	if err != nil || len(fmtEdits) != 1 || fmtEdits[0].Text != "// fmt\n" {
+		t.Fatalf("format: %+v %v", fmtEdits, err)
 	}
 }
 
@@ -380,5 +468,63 @@ func TestClangd(t *testing.T) {
 				return
 			}
 		}
+	}
+}
+
+// The real clangd: rename, references, the fix-it for a missing ";" as a
+// code action, and formatting with the project's .clang-format.
+func TestClangdEdits(t *testing.T) {
+	if _, err := exec.LookPath("clangd"); err != nil {
+		t.Skip("clangd não instalado")
+	}
+	dir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(dir, ".clang-format"), []byte("BasedOnStyle: LLVM\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	path := filepath.Join(dir, "main.c")
+	text := "int\tadd(int a, int b)\n{\n\treturn (a + b);\n}\n\nint\tmain(void)\n{\n\tint\tx;\n\n\tx = add(1, 2)\n\treturn (x);\n}\n"
+	s, _ := ServerFor(path)
+	c, err := open(s, path, text)
+	if err != nil {
+		t.Skipf("clangd não iniciou aqui: %v", err)
+	}
+	defer c.Close()
+	var diags []Diagnostic
+	for diags == nil {
+		ev := next(t, c)
+		for _, d := range ev.Diagnostics {
+			if strings.Contains(strings.ToLower(d.Message), "expected ';'") {
+				diags = append(diags, d)
+			}
+		}
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	edits, err := c.Rename(ctx, path, Pos{0, 5}, "soma")
+	if err != nil || len(edits) != 1 || len(edits[0].Edits) != 2 {
+		t.Fatalf("rename: %+v %v", edits, err)
+	}
+	refs, err := c.References(ctx, path, Pos{0, 5})
+	if err != nil || len(refs) != 2 {
+		t.Fatalf("references: %+v %v", refs, err)
+	}
+	actions, err := c.CodeActions(ctx, path, diags[0].Start, diags)
+	if err != nil {
+		t.Fatal(err)
+	}
+	fixed := false
+	for _, a := range actions {
+		for _, f := range a.Edits {
+			for _, e := range f.Edits {
+				fixed = fixed || e.Text == ";"
+			}
+		}
+	}
+	if !fixed {
+		t.Fatalf("o fix-it do ';' como ação: %+v", actions)
+	}
+	if f, err := c.Format(ctx, path, 4); err != nil || len(f) == 0 {
+		t.Fatalf("format com .clang-format: %+v %v", f, err)
 	}
 }

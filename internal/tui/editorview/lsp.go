@@ -81,6 +81,12 @@ func (m Model) WithLSP() Model {
 		for key, f := range m.lspCommands() {
 			m.vim.Commands[key] = f
 		}
+		for key, f := range m.editCommands() {
+			m.vim.Commands[key] = f
+		}
+		for name, f := range m.editExCommands() {
+			m.vim.ExCommands[name] = f
+		}
 	}
 	return m.synced()
 }
@@ -162,6 +168,10 @@ func (m Model) lspMsg(msg tea.Msg) (Model, tea.Cmd) {
 			}
 			m.message, m.isError = msg.ev.Err.Error(), true
 			return m, nil
+		}
+		if len(msg.ev.Edits) > 0 { // after a code action's command
+			m = m.applyEdits(msg.ev.Edits, "ação")
+			return m, waitLSP(srv)
 		}
 		for _, b := range m.ses.bufs {
 			if b.lsp != nil && b.lsp.srv == srv && sameFile(b.lsp.path, msg.ev.Path) {

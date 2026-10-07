@@ -303,8 +303,14 @@ func (c *Controller) prefix(key string) (string, bool) {
 		_, motion := motions[key]
 		_, command := c.Commands[key]
 		_, _, object := lookupObject(key)
-		if motion || command || object {
+		switch {
+		case motion || command || object:
 			return key, true
+		case c.commandPrefix(key):
+			// Part of a longer host command ("gr" of "grn"): keep waiting.
+			st.lead = key
+			st.Pending = append(st.Pending, key[len(key)-1:])
+			return "", false
 		}
 		c.state = CommandState{}
 		return "", false
@@ -320,6 +326,25 @@ func (c *Controller) prefix(key string) (string, bool) {
 		return "", false
 	}
 	return key, true
+}
+
+// commandPrefix reports a host command longer than s that starts with it.
+func (c *Controller) commandPrefix(s string) bool {
+	for k := range c.Commands {
+		if len(k) > len(s) && strings.HasPrefix(k, s) {
+			return true
+		}
+	}
+	return false
+}
+
+// OpenCommandLine starts typing an ex command with text already there (a
+// host command like grn opening ":Rename ").
+func (c *Controller) OpenCommandLine(text string) {
+	if c.visual() {
+		c.exitVisual()
+	}
+	c.mode, c.cmdline, c.prompt, c.state = Command, text, ":", CommandState{}
 }
 
 // motion finds the motion for key: the fixed ones, f/F/t/T with their
