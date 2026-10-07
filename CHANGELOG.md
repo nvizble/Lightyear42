@@ -7,6 +7,12 @@ Mudanças visíveis do lightyear, da mais nova para a mais antiga. O
 Versões `-canary.N` são pre-releases: `lightyear update --canary` entra no
 canal canary e `lightyear update --stable` volta para a estável.
 
+## [1.3.0-canary.20] — 2026-10-07
+
+- Editor: janelas — `:vsp ft.h` (ou `Ctrl-w v`) põe dois arquivos lado a
+  lado, `:sp` empilha; `Ctrl-w w`/`h`/`j`/`k`/`l` trocam de janela (o
+  clique também), `:close` e `:only` fecham, e `:q` fecha a janela.
+
 ## [1.3.0-canary.19] — 2026-10-07
 
 - Editor: vários arquivos — `lightyear edit a.c b.c`, `:e arquivo`,

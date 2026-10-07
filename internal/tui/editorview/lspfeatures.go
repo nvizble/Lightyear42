@@ -340,18 +340,18 @@ func wordStart(ed *editor.Editor) editor.Position {
 
 // popups draws the hover box or the completion list over the text rows,
 // below the cursor (above when there's no room).
-func (m Model) popups(rows []string) {
+func (m Model) popups(rows []string, win rect) {
 	st := m.lsp
 	if st == nil || (st.hover == nil && st.comp == nil) {
 		return
 	}
 	v, cur := m.ed.Viewport(), m.ed.Cursor()
-	row := cur.Line - v.Top
-	col := m.gutterWidth() + m.ed.VisualColumn(cur.Line, cur.Column) - v.Left
+	row := win.y + cur.Line - v.Top
+	col := win.x + m.gutterWidth() + m.ed.VisualColumn(cur.Line, cur.Column) - v.Left
 	var box []string
 	if st.comp != nil {
 		box = m.completionBox()
-		col = m.gutterWidth() + m.ed.VisualColumn(st.comp.start.Line, st.comp.start.Column) - v.Left
+		col = win.x + m.gutterWidth() + m.ed.VisualColumn(st.comp.start.Line, st.comp.start.Column) - v.Left
 	} else {
 		box = strings.Split(styleHover.Render(strings.Join(st.hover, "\n")), "\n")
 	}

@@ -194,12 +194,12 @@ func (m Model) closeLSP() {
 // marks are the diagnostics' severities on line (length runes long), by
 // rune; 0 where there is none, and the most severe wins. Empty ranges
 // still mark one cell.
-func (m Model) marks(line, length int) []lsp.Severity {
-	if m.lsp == nil {
+func (st *lspState) marks(line, length int) []lsp.Severity {
+	if st == nil {
 		return nil
 	}
 	var out []lsp.Severity
-	for _, d := range m.lsp.diags {
+	for _, d := range st.diags {
 		if line < d.Start.Line || line > d.End.Line {
 			continue
 		}
@@ -235,15 +235,18 @@ func (m Model) count(sev lsp.Severity) int {
 }
 
 // worst is the most severe diagnostic on line, or nil.
-func (m Model) worst(line int) *lsp.Diagnostic {
-	if m.lsp == nil {
+func (st *lspState) worst(line int) *lsp.Diagnostic {
+	if st == nil {
 		return nil
 	}
 	var w *lsp.Diagnostic
-	for i, d := range m.lsp.diags {
+	for i, d := range st.diags {
 		if d.Start.Line <= line && line <= d.End.Line && (w == nil || d.Severity < w.Severity) {
-			w = &m.lsp.diags[i]
+			w = &st.diags[i]
 		}
 	}
 	return w
 }
+
+// worst is the current buffer's (see lspState.worst).
+func (m Model) worst(line int) *lsp.Diagnostic { return m.lsp.worst(line) }

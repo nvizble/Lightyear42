@@ -25,12 +25,15 @@ type buffer struct {
 
 // session is what the model's copies share.
 type session struct {
-	bufs    []*buffer
-	cur     int
-	lsp     bool                  // WithLSP: buffers get language servers
-	servers map[string]*lspServer // by server name and project root
-	starts  []tea.Cmd             // servers to start, for Update to return
-	jumps   []jump                // where gd jumped from, for Ctrl-o
+	bufs     []*buffer
+	cur      int
+	lsp      bool                  // WithLSP: buffers get language servers
+	servers  map[string]*lspServer // by server name and project root
+	wins     []*window             // see windows.go
+	win      int                   // the current window
+	vertical bool                  // windows side by side (:vsp), not stacked
+	starts   []tea.Cmd             // servers to start, for Update to return
+	jumps    []jump                // where gd jumped from, for Ctrl-o
 }
 
 type jump struct {
@@ -55,9 +58,10 @@ func (m Model) synced() Model {
 	return m
 }
 
-// show makes buffer i the current one.
+// show makes buffer i the current one, in the current window.
 func (m Model) show(i int) {
 	m.ses.cur = i
+	m.ses.wins[m.ses.win].buf = m.ses.bufs[i]
 	if m.vim != nil {
 		m.vim.SetEditor(m.ses.bufs[i].ed)
 	}
@@ -193,6 +197,12 @@ func (m Model) exCommands() map[string]func(string) vim.Result {
 				b.syn.Close()
 			}
 			ses.bufs = append(ses.bufs[:ses.cur], ses.bufs[ses.cur+1:]...)
+			next := ses.bufs[min(ses.cur, len(ses.bufs)-1)]
+			for _, w := range ses.wins {
+				if w.buf == b {
+					w.buf = next
+				}
+			}
 			m.show(min(ses.cur, len(ses.bufs)-1))
 			return vim.Result{}
 		}
@@ -213,6 +223,10 @@ func (m Model) exCommands() map[string]func(string) vim.Result {
 				if err := cur.Save(); err != nil {
 					return vim.Result{Message: err.Error(), Err: true}
 				}
+			}
+			// With several windows, :q closes this one (the buffer stays).
+			if len(ses.wins) > 1 {
+				return m.closeWindow()
 			}
 			if cur.Dirty() {
 				return vim.Result{Message: "E37: alterações não salvas (:wq salva e sai, :q! sai sem salvar)", Err: true}
@@ -255,5 +269,14 @@ func (m Model) exCommands() map[string]func(string) vim.Result {
 		"qa": quitAll, "qall": quitAll,
 		"q!": force, "quit!": force, "qa!": force, "qall!": force,
 		"wa": saveAll, "wall": saveAll,
+		"sp":     func(arg string) vim.Result { return m.split(false, arg) },
+		"split":  func(arg string) vim.Result { return m.split(false, arg) },
+		"vs":     func(arg string) vim.Result { return m.split(true, arg) },
+		"vsp":    func(arg string) vim.Result { return m.split(true, arg) },
+		"vsplit": func(arg string) vim.Result { return m.split(true, arg) },
+		"clo":    func(string) vim.Result { return m.closeWindow() },
+		"close":  func(string) vim.Result { return m.closeWindow() },
+		"on":     func(string) vim.Result { return m.only() },
+		"only":   func(string) vim.Result { return m.only() },
 	}
 }
