@@ -1,0 +1,127 @@
+# Changelog
+
+Mudanças visíveis do lightyear, da mais nova para a mais antiga. O
+`lightyear --version` mostra a seção da versão instalada (e
+`lightyear version --changelog`, este arquivo inteiro).
+
+Versões `-canary.N` são pre-releases: `lightyear update --canary` entra no
+canal canary e `lightyear update --stable` volta para a estável.
+
+## [1.3.0-canary.11] — 2026-10-07
+
+- `lightyear --version` (e `lightyear version`) mostra as novidades da
+  versão instalada; `lightyear version --changelog` mostra o histórico
+  inteiro. O changelog vai embutido no binário, funciona offline.
+
+## [1.3.0-canary.10] — 2026-10-07
+
+- Editor (`lightyear edit`, experimental): contadores e operador × motion,
+  como no Vim — `3j`, `5k`, `10l`, `dw`, `3dw`, `2d3w`, `de`, `db`, `d$`,
+  `d0`, `d^`, `dj`, `dG`, `dgg`, `3dd`, `3x`, `2u`.
+- Novos movimentos: `w b e` (palavras), `0 ^ $` (linha), `gg G` (com
+  contador, vão à linha N).
+
+## [1.3.0-canary.9] — 2026-10-07
+
+- Editor: edição modal estilo Vim — NORMAL e INSERT, `hjkl`, `i a o I A O`,
+  `x`, `dd`, `u`, `Ctrl-r` e `:w`, `:q`, `:q!`, `:wq`, `:x`. Uma sessão
+  inteira de INSERT desfaz com um `u`. `--plain` abre o editor sem modos.
+
+## [1.3.0-canary.8] — 2026-10-07
+
+- Editor embutido (fase 1), experimental: `lightyear edit <arquivo>`, com
+  números de linha, Ctrl-S/Ctrl-Z/Ctrl-Y, clique para posicionar o cursor
+  e Ctrl-Q com confirmação quando há alterações não salvas.
+
+## [1.3.0-canary.7] — 2026-10-07
+
+- App: nova aba **Subjects** — seus projetos no topo e os 241 do catálogo;
+  `/` busca, e o clique (ou a sugestão escolhida) baixa e abre o PDF.
+
+## [1.3.0-canary.6] — 2026-10-07
+
+- App, aba Campus: `/` busca uma pessoa, com sugestões enquanto você digita;
+  o posto dela fica em destaque e a tela rola até ele.
+- Corrigido: em terminais estreitos, todas as linhas das abas ganhavam
+  "…" no fim.
+
+## [1.3.0-canary.5] — 2026-10-07
+
+- App com o visual do showreel: Início enxuto, avaliações em linhas
+  ("hoje 14:30 · você avalia · em 1h18"), campus em grade de postos
+  coloridos e grademe com spinner, checklist dos testes, banner
+  SUCCESS/FAILURE e os níveis.
+- Campus: passe o mouse (ou clique) num posto para ver quem está lá.
+- Corrigido: o cartão da prova aparecia duplicado depois do grademe.
+
+## [1.3.0-canary.4] — 2026-10-06
+
+- App, aba Exam: o vim abre com o cursor no código e o subject só leitura
+  (`Ctrl-w w` alterna entre os dois).
+
+## [1.2.1] — 2026-10-06
+
+- `lightyear update --canary` e `--stable`: escolha o canal de versões.
+- Corrigido: no macOS, o primeiro teste do `lightyear exam grademe` podia
+  reprovar com "timeout" falso.
+
+## [1.3.0-canary.3] — 2026-10-06
+
+- `lightyear update --canary` e `--stable`; quem está na canary continua
+  recebendo canaries.
+
+## [1.3.0-canary.2] — 2026-10-06
+
+- App, aba Exam: `e` abre o subject e a sua entrega lado a lado no vim.
+
+## [1.3.0-canary.1] — 2026-10-06
+
+- `lightyear` sozinho abre o app em tela cheia: abas clicáveis (Início,
+  Avaliações, Projetos, Campus, Slots, Exam), mouse e atalhos.
+- Corrigido: no macOS, o primeiro teste do grademe podia dar timeout falso.
+
+## [1.2.0] — 2026-10-06
+
+- `lightyear exam`: simulador de provas offline com os 56 exercícios do
+  Exam Rank 02, enunciados em português e inglês, correção com
+  `cc -Wall -Wextra -Werror` e modo prática.
+- `lightyear notify`: push no celular quando surge uma avaliação nova.
+- `lightyear evaluations --open`: abre a avaliação na Intra.
+
+## [1.1.3] — 2026-07-20
+
+- Campus: o mapa desenha os postos espelhados (pN … p1) em todos os
+  clusters; `natural_posts: true` volta para p1 … pN.
+
+## [1.1.2] — 2026-07-20
+
+- Corrigido: mapa do campus em clusters com numeração física invertida.
+
+## [1.1.1] — 2026-07-18
+
+- O `lightyear setup` instala o autocomplete do shell, e o
+  `lightyear subject <TAB>` completa os projetos.
+
+## [1.1.0] — 2026-07-18
+
+- `lightyear update`: atualiza o binário pelo GitHub Releases.
+- `lightyear subject`: baixa e abre o PDF do subject (catálogo embutido,
+  `set-id` e `import`).
+
+## [1.0.2] — 2026-07-17
+
+- Pacote `.deb` para Ubuntu/Debian.
+
+## [1.0.1] — 2026-07-17
+
+- `go install` gera o binário `lightyear`.
+
+## [1.0.0] — 2026-07-17
+
+- `lightyear setup`: guia para criar a aplicação OAuth na Intra.
+
+## [0.1.0] — 2026-07-17
+
+- Primeira versão: login/logout (OAuth2, token no keyring), `me`,
+  `profile`, `search`, `projects`, `evaluations`, `slots`, `campus`,
+  `friends` e o `dashboard` em tempo real.

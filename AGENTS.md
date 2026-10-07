@@ -82,6 +82,9 @@ Só então escreva o código. Nunca faça grandes alterações sem explicar.
 - Documentar funções públicas
 - Nomes idiomáticos Go
 - `gofmt` / `golangci-lint`
+- Mudança visível ao usuário → entrada no `CHANGELOG.md`, na seção da versão
+  que vai sair (a próxima canary ou estável). O `lightyear --version` mostra
+  essa seção; o teste do changelog embutido quebra se o arquivo sair do formato.
 
 ---
 

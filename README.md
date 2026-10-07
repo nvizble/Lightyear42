@@ -142,7 +142,8 @@ lightyear exam practice <ex>  # treina um exercício específico, sem tempo
 lightyear exam grademe     # corrige o exercício atual (status / finish / list)
 lightyear cache clear      # limpa o cache local de respostas da API
 lightyear update           # atualiza o binário pelo GitHub Releases (--check / -y)
-lightyear version          # versão do binário
+lightyear version          # versão e novidades dela (ou lightyear --version)
+lightyear version --changelog  # histórico completo (CHANGELOG.md)
 lightyear config path      # caminho do config.yaml
 lightyear config show      # configuração efetiva (secret mascarado)
 ```
