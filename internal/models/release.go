@@ -2,8 +2,11 @@ package models
 
 // Release is a GitHub Release used for self-update.
 type Release struct {
-	TagName string         `json:"tag_name"`
-	Assets  []ReleaseAsset `json:"assets"`
+	TagName string `json:"tag_name"`
+	// Prerelease marks canary builds (tags like v1.3.0-canary.1).
+	Prerelease bool           `json:"prerelease"`
+	Draft      bool           `json:"draft"`
+	Assets     []ReleaseAsset `json:"assets"`
 }
 
 // ReleaseAsset is a downloadable file attached to a GitHub Release.
