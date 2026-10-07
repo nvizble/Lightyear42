@@ -7,8 +7,10 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
+	"unicode"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -45,7 +47,10 @@ const (
 	appPadLeft = 2
 )
 
-var styleHover = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("15"))
+var (
+	styleHover  = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("15"))
+	styleSearch = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.AdaptiveColor{Light: "162", Dark: "213"})
+)
 
 // ExamControl is what the Exam tab drives. Implemented by *services.ExamService.
 type ExamControl interface {
@@ -106,8 +111,16 @@ type AppModel struct {
 	content  map[int]string
 	hotspots map[int][]Hotspot
 	hover    *Hotspot
-	errs     map[int]error
-	loading  map[int]bool
+	// "/" search over the active tab's hotspots: searching while typing,
+	// query kept after Enter to keep the matches highlighted.
+	searching bool
+	query     string
+	// exact is set when a suggestion was picked: match that login only.
+	exact bool
+	// sel is the highlighted suggestion while searching.
+	sel     int
+	errs    map[int]error
+	loading map[int]bool
 
 	examSess      *exam.Session
 	examNotice    string
@@ -210,7 +223,18 @@ func (m AppModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m AppModel) key(k string) (tea.Model, tea.Cmd) {
+	if m.searching {
+		return m.searchKey(k)
+	}
 	switch k {
+	case "/":
+		if len(m.hotspots[m.active]) > 0 {
+			m.searching, m.query, m.exact, m.sel, m.hover = true, "", false, 0, nil
+		}
+		return m, nil
+	case "esc":
+		m.query, m.exact = "", false
+		return m, nil
 	case "q", "ctrl+c":
 		return m, tea.Quit
 	case "right", "tab", "l":
@@ -313,6 +337,18 @@ func (m AppModel) mouse(msg tea.MouseMsg) (tea.Model, tea.Cmd) {
 		m.scrollBy(-3)
 		return m, nil
 	}
+	// Suggestions while searching: hovering highlights, clicking picks.
+	if box, first := m.suggestionBox(); len(box) > 0 && msg.X >= appPadLeft && msg.X < appPadLeft+lipgloss.Width(box[0]) {
+		if i := msg.Y - first; i >= 0 && i < len(box)-2 {
+			if msg.Action == tea.MouseActionMotion {
+				m.sel = i
+				return m, nil
+			}
+			if msg.Action == tea.MouseActionPress && msg.Button == tea.MouseButtonLeft {
+				return m.pickSuggestion(m.suggestions()[i]), nil
+			}
+		}
+	}
 	if msg.Action == tea.MouseActionMotion {
 		m.hover = m.hotspotAt(msg.X, msg.Y)
 		return m, nil
@@ -340,6 +376,163 @@ func (m AppModel) mouse(msg tea.MouseMsg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
+// searchKey edits the search query: typing filters live and suggests
+// people, ↑↓ choose a suggestion, Enter/Tab pick it, Esc clears the search.
+func (m AppModel) searchKey(k string) (tea.Model, tea.Cmd) {
+	switch k {
+	case "ctrl+c":
+		return m, tea.Quit
+	case "esc":
+		m.searching, m.query, m.exact = false, "", false
+		return m, nil
+	case "up", "ctrl+p":
+		if n := len(m.suggestions()); n > 0 {
+			m.sel = (m.sel + n - 1) % n
+		}
+		return m, nil
+	case "down", "ctrl+n":
+		if n := len(m.suggestions()); n > 0 {
+			m.sel = (m.sel + 1) % n
+		}
+		return m, nil
+	case "enter", "tab":
+		if sugs := m.suggestions(); len(sugs) > 0 {
+			return m.pickSuggestion(sugs[min(m.sel, len(sugs)-1)]), nil
+		}
+		m.searching = false
+		return m, nil
+	case "backspace":
+		if r := []rune(m.query); len(r) > 0 {
+			m.query = string(r[:len(r)-1])
+		}
+	case "space":
+		m.query += " "
+	default:
+		for _, r := range k {
+			if !unicode.IsPrint(r) {
+				return m, nil
+			}
+		}
+		m.query += k
+	}
+	m.exact, m.sel = false, 0
+	if found := m.matches(); len(found) > 0 {
+		m.scrollTo(found[0].Line)
+	}
+	return m, nil
+}
+
+// maxSuggestions caps the suggestion box while searching.
+const maxSuggestions = 6
+
+// suggestions lists the people matching the query while typing, one per
+// login: those whose login starts with it first, then alphabetically.
+func (m AppModel) suggestions() []*Hotspot {
+	if !m.searching {
+		return nil
+	}
+	q := strings.ToLower(strings.TrimSpace(m.query))
+	if q == "" {
+		return nil
+	}
+	seen := map[string]bool{}
+	var out []*Hotspot
+	spots := m.hotspots[m.active]
+	for i := range spots {
+		login := strings.ToLower(spots[i].Search)
+		if login == "" || seen[login] || !strings.Contains(login, q) {
+			continue
+		}
+		seen[login] = true
+		out = append(out, &spots[i])
+	}
+	sort.SliceStable(out, func(i, j int) bool {
+		a, b := strings.ToLower(out[i].Search), strings.ToLower(out[j].Search)
+		if pa, pb := strings.HasPrefix(a, q), strings.HasPrefix(b, q); pa != pb {
+			return pa
+		}
+		return a < b
+	})
+	if len(out) > maxSuggestions {
+		out = out[:maxSuggestions]
+	}
+	return out
+}
+
+// pickSuggestion searches for exactly that person and closes the box.
+func (m AppModel) pickSuggestion(h *Hotspot) AppModel {
+	m.query, m.exact, m.searching = h.Search, true, false
+	m.scrollTo(h.Line)
+	return m
+}
+
+// suggestionBox renders the suggestion list and the screen row of its
+// first entry (the box sits at the bottom of the body, over the content).
+func (m AppModel) suggestionBox() (lines []string, firstRow int) {
+	sugs := m.suggestions()
+	if len(sugs) == 0 {
+		return nil, 0
+	}
+	width := 0
+	for _, h := range sugs {
+		width = max(width, lipgloss.Width(h.Search))
+	}
+	rows := make([]string, 0, len(sugs))
+	for i, h := range sugs {
+		rest := strings.Replace(h.Info, " · "+h.Search, "", 1)
+		login := h.Search + strings.Repeat(" ", width-lipgloss.Width(h.Search))
+		if i == min(m.sel, len(sugs)-1) {
+			rows = append(rows, styleSearch.Render("▸ "+login)+"  "+styleValue.Render(rest))
+		} else {
+			rows = append(rows, "  "+styleValue.Render(login)+"  "+styleLabel.Render(rest))
+		}
+	}
+	box := lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).BorderForeground(colorMuted).Padding(0, 1).
+		Render(strings.Join(rows, "\n"))
+	lines = strings.Split(box, "\n")
+	return lines, appBodyTop + m.bodyHeight() - len(lines) + 1
+}
+
+// matches lists the active tab's hotspots matching the search query
+// (case-insensitive substring of Search, or Info when Search is empty).
+func (m AppModel) matches() []*Hotspot {
+	q := strings.ToLower(strings.TrimSpace(m.query))
+	if q == "" {
+		return nil
+	}
+	if m.exact {
+		var found []*Hotspot
+		spots := m.hotspots[m.active]
+		for i := range spots {
+			if strings.EqualFold(spots[i].Search, m.query) {
+				found = append(found, &spots[i])
+			}
+		}
+		return found
+	}
+	var found []*Hotspot
+	spots := m.hotspots[m.active]
+	for i := range spots {
+		text := spots[i].Search
+		if text == "" {
+			text = spots[i].Info
+		}
+		if strings.Contains(strings.ToLower(text), q) {
+			found = append(found, &spots[i])
+		}
+	}
+	return found
+}
+
+// scrollTo brings a content line into view, centered when it was off screen.
+func (m *AppModel) scrollTo(line int) {
+	if line+appPadTop >= m.scroll && line+appPadTop < m.scroll+m.bodyHeight() {
+		return
+	}
+	m.scroll = line + appPadTop - m.bodyHeight()/2
+	m.clampScroll()
+}
+
 // hotspotAt maps a screen position to a hotspot of the active tab.
 func (m AppModel) hotspotAt(x, y int) *Hotspot {
 	if y < appBodyTop || y >= appBodyTop+m.bodyHeight() {
@@ -357,6 +550,7 @@ func (m AppModel) hotspotAt(x, y int) *Hotspot {
 
 func (m AppModel) selectTab(i int) (tea.Model, tea.Cmd) {
 	m.active, m.scroll, m.confirmFinish, m.hover = i, 0, false, nil
+	m.searching, m.query, m.exact = false, "", false
 	if i == m.examTab() {
 		m.reloadExam()
 		return m, nil
@@ -411,12 +605,29 @@ func (m AppModel) View() string {
 	for len(body) < m.bodyHeight() {
 		body = append(body, "")
 	}
-	if h := m.hover; h != nil {
-		// Highlight the hovered region: keep the line, restyle its cells.
+	// Highlight search matches, then the hovered region on top: keep the
+	// line, restyle the cells.
+	highlight := func(h *Hotspot, style lipgloss.Style) {
 		if i := h.Line + appPadTop - m.scroll; i >= 0 && i < len(body) {
 			col, line := h.Col+appPadLeft, body[i]
-			body[i] = ansi.Cut(line, 0, col) + styleHover.Render(ansi.Strip(ansi.Cut(line, col, col+h.Width))) +
+			body[i] = ansi.Cut(line, 0, col) + style.Render(ansi.Strip(ansi.Cut(line, col, col+h.Width))) +
 				ansi.Cut(line, col+h.Width, lipgloss.Width(line))
+		}
+	}
+	for _, h := range m.matches() {
+		highlight(h, styleSearch)
+	}
+	if m.hover != nil {
+		highlight(m.hover, styleHover)
+	}
+	// Suggestions float over the bottom of the body while typing.
+	if box, _ := m.suggestionBox(); len(box) > 0 {
+		start := len(body) - len(box)
+		for i, row := range box {
+			if j := start + i; j >= 0 {
+				line := body[j]
+				body[j] = ansi.Cut(line, 0, appPadLeft) + row + ansi.Cut(line, appPadLeft+lipgloss.Width(row), lipgloss.Width(line))
+			}
 		}
 	}
 	for i, l := range body {
@@ -435,7 +646,15 @@ func (m AppModel) bodyLines() []string {
 }
 
 func (m AppModel) body() string {
-	pad := func(s string) string { return lipgloss.NewStyle().Padding(1, 2).Render(s) }
+	// Indent only (no right padding): a single long line must not widen,
+	// and so truncate, every other line of the tab.
+	pad := func(s string) string {
+		lines := strings.Split(s, "\n")
+		for i, l := range lines {
+			lines[i] = strings.Repeat(" ", appPadLeft) + l
+		}
+		return strings.Repeat("\n", appPadTop) + strings.Join(lines, "\n")
+	}
 	if m.active == m.examTab() {
 		return pad(m.examBody())
 	}
@@ -557,6 +776,9 @@ func (m AppModel) buttons() []appButton {
 			defs = append(defs, [2]string{"e", "editar no vim"}, [2]string{"g", "grademe"}, [2]string{"f", "encerrar"})
 		}
 	}
+	if len(m.hotspots[m.active]) > 0 {
+		defs = append(defs, [2]string{"/", "buscar"})
+	}
 	defs = append(defs, [2]string{"r", "atualizar"}, [2]string{"q", "sair"})
 
 	x := 1
@@ -572,12 +794,28 @@ func (m AppModel) buttons() []appButton {
 func (m AppModel) footer() string {
 	var b strings.Builder
 	b.WriteString(" ")
-	for _, btn := range m.buttons() {
-		b.WriteString(styleAppButton.Render(styleAppKey.Render(btn.key)+" "+btn.label) + " ")
+	if m.searching {
+		b.WriteString(styleAppKey.Render(" buscar: ") + styleSearch.Render(m.query) + styleValue.Render("▌") +
+			styleLabel.Render("   ↑↓ escolhe · enter seleciona · esc cancela "))
+	} else {
+		for _, btn := range m.buttons() {
+			b.WriteString(styleAppButton.Render(styleAppKey.Render(btn.key)+" "+btn.label) + " ")
+		}
 	}
 	hint := styleLabel.Render("1-" + fmt.Sprint(len(m.titles())) + " / ←→ abas · ↑↓ rolar ")
-	if m.hover != nil {
+	switch found := m.matches(); {
+	case m.hover != nil:
 		hint = styleHover.Render(m.hover.Info + " ")
+	case strings.TrimSpace(m.query) == "":
+	case len(found) == 0:
+		hint = styleFail.Render(fmt.Sprintf("ninguém online com %q ", strings.TrimSpace(m.query)))
+	case m.searching:
+		// While typing, the suggestion box has the details.
+		hint = styleSearch.Render(fmt.Sprintf("%d encontrados ", len(found)))
+	case len(found) == 1:
+		hint = styleSearch.Render(found[0].Info + " ")
+	default:
+		hint = styleSearch.Render(fmt.Sprintf("%d encontrados · %s ", len(found), found[0].Info))
 	}
 	gap := m.width - lipgloss.Width(b.String()) - lipgloss.Width(hint)
 	if gap > 0 {
