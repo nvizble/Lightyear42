@@ -98,12 +98,15 @@ Instalações via `.deb` em `/usr/bin` pedem `sudo` ou reinstale o `.deb` novo.
 ## Uso
 
 Rode só `lightyear` para abrir o **app em tela cheia** (canary, a partir da v1.3.0-canary.1):
-abas clicáveis (Início, Avaliações, Projetos, Campus, Slots, Exam), rolagem com
-o mouse e ações no rodapé. Teclado: `1`–`6`/`←→` trocam de aba, `↑↓`/`PgUp`/`PgDn`
+abas clicáveis (Início, Avaliações, Projetos, Subjects, Campus, Slots, Exam),
+rolagem com o mouse e ações no rodapé. Teclado: `1`–`7`/`←→` trocam de aba, `↑↓`/`PgUp`/`PgDn`
 rolam, `r` atualiza, `q` sai; na aba Exam, `s` começa, `e` abre o subject e a
 sua entrega lado a lado no vim (ou no `$EDITOR`), `g` corrige e `f` encerra.
 No vim, o cursor já começa no código e o subject fica só leitura; `Ctrl-w w`
 alterna entre as duas janelas e `:wq` salva e volta para o app.
+Na aba Campus, passe o mouse num posto para ver quem está lá; `/` busca uma
+pessoa (com sugestões) e destaca o posto. Na aba Subjects, `/` busca um projeto
+e o clique (ou a sugestão escolhida) baixa e abre o PDF do subject.
 Fora de um terminal (pipes, scripts) o `lightyear` sozinho continua mostrando o help.
 
 ```bash

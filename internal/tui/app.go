@@ -37,6 +37,18 @@ type AppTab struct {
 	// LoadView, when set, is used instead of Load and also returns hotspots
 	// (regions that react to the mouse).
 	LoadView func(ctx context.Context) (AppView, error)
+	// Activate, when set, runs when a hotspot is clicked or picked in the
+	// search (e.g. open a subject); the returned text goes to the footer.
+	Activate func(ctx context.Context, h Hotspot) (string, error)
+}
+
+// appActivateTimeout bounds a hotspot action (e.g. downloading a PDF).
+const appActivateTimeout = 3 * time.Minute
+
+// appActivatedMsg carries the outcome of a tab's Activate.
+type appActivatedMsg struct {
+	status string
+	err    error
 }
 
 // Layout of the app around the tab content, used to map mouse positions:
@@ -115,8 +127,11 @@ type AppModel struct {
 	// query kept after Enter to keep the matches highlighted.
 	searching bool
 	query     string
-	// exact is set when a suggestion was picked: match that login only.
-	exact bool
+	// exactID is set when a suggestion was picked: match that hotspot only.
+	exactID string
+	// status is the footer message of the last hotspot action.
+	status     string
+	activating bool
 	// sel is the highlighted suggestion while searching.
 	sel     int
 	errs    map[int]error
@@ -188,6 +203,13 @@ func (m AppModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		m.clampScroll()
 
+	case appActivatedMsg:
+		m.activating = false
+		m.status = msg.status
+		if msg.err != nil {
+			m.status = styleFail.Render(msg.err.Error())
+		}
+
 	case appSpinMsg:
 		if !m.grading {
 			return m, nil
@@ -229,11 +251,17 @@ func (m AppModel) key(k string) (tea.Model, tea.Cmd) {
 	switch k {
 	case "/":
 		if len(m.hotspots[m.active]) > 0 {
-			m.searching, m.query, m.exact, m.sel, m.hover = true, "", false, 0, nil
+			m.searching, m.query, m.exactID, m.sel, m.hover = true, "", "", 0, nil
 		}
 		return m, nil
 	case "esc":
-		m.query, m.exact = "", false
+		m.query, m.exactID = "", ""
+		return m, nil
+	case "enter":
+		// After a search pick, Enter runs the tab's action on the result.
+		if found := m.matches(); len(found) == 1 && m.exactID != "" {
+			return m.activate(found[0])
+		}
 		return m, nil
 	case "q", "ctrl+c":
 		return m, tea.Quit
@@ -345,7 +373,7 @@ func (m AppModel) mouse(msg tea.MouseMsg) (tea.Model, tea.Cmd) {
 				return m, nil
 			}
 			if msg.Action == tea.MouseActionPress && msg.Button == tea.MouseButtonLeft {
-				return m.pickSuggestion(m.suggestions()[i]), nil
+				return m.pickSuggestion(m.suggestions()[i])
 			}
 		}
 	}
@@ -370,8 +398,13 @@ func (m AppModel) mouse(msg tea.MouseMsg) (tea.Model, tea.Cmd) {
 			}
 		}
 	default:
-		// Clicking also selects, for terminals that don't report motion.
-		m.hover = m.hotspotAt(msg.X, msg.Y)
+		// Clicking runs the tab's action when it has one; otherwise it
+		// selects, for terminals that don't report motion.
+		h := m.hotspotAt(msg.X, msg.Y)
+		if h != nil && m.opts.tabAt(m.active).Activate != nil {
+			return m.activate(h)
+		}
+		m.hover = h
 	}
 	return m, nil
 }
@@ -383,7 +416,7 @@ func (m AppModel) searchKey(k string) (tea.Model, tea.Cmd) {
 	case "ctrl+c":
 		return m, tea.Quit
 	case "esc":
-		m.searching, m.query, m.exact = false, "", false
+		m.searching, m.query, m.exactID = false, "", ""
 		return m, nil
 	case "up", "ctrl+p":
 		if n := len(m.suggestions()); n > 0 {
@@ -397,7 +430,7 @@ func (m AppModel) searchKey(k string) (tea.Model, tea.Cmd) {
 		return m, nil
 	case "enter", "tab":
 		if sugs := m.suggestions(); len(sugs) > 0 {
-			return m.pickSuggestion(sugs[min(m.sel, len(sugs)-1)]), nil
+			return m.pickSuggestion(sugs[min(m.sel, len(sugs)-1)])
 		}
 		m.searching = false
 		return m, nil
@@ -415,7 +448,7 @@ func (m AppModel) searchKey(k string) (tea.Model, tea.Cmd) {
 		}
 		m.query += k
 	}
-	m.exact, m.sel = false, 0
+	m.exactID, m.sel = "", 0
 	if found := m.matches(); len(found) > 0 {
 		m.scrollTo(found[0].Line)
 	}
@@ -439,15 +472,15 @@ func (m AppModel) suggestions() []*Hotspot {
 	var out []*Hotspot
 	spots := m.hotspots[m.active]
 	for i := range spots {
-		login := strings.ToLower(spots[i].Search)
-		if login == "" || seen[login] || !strings.Contains(login, q) {
+		id := spots[i].id()
+		if spots[i].Search == "" || seen[id] || !strings.Contains(strings.ToLower(spots[i].Search), q) {
 			continue
 		}
-		seen[login] = true
+		seen[id] = true
 		out = append(out, &spots[i])
 	}
 	sort.SliceStable(out, func(i, j int) bool {
-		a, b := strings.ToLower(out[i].Search), strings.ToLower(out[j].Search)
+		a, b := strings.ToLower(out[i].label()), strings.ToLower(out[j].label())
 		if pa, pb := strings.HasPrefix(a, q), strings.HasPrefix(b, q); pa != pb {
 			return pa
 		}
@@ -459,11 +492,39 @@ func (m AppModel) suggestions() []*Hotspot {
 	return out
 }
 
-// pickSuggestion searches for exactly that person and closes the box.
-func (m AppModel) pickSuggestion(h *Hotspot) AppModel {
-	m.query, m.exact, m.searching = h.Search, true, false
+// pickSuggestion searches for exactly that hotspot, closes the box and, on
+// tabs with an action, runs it.
+func (m AppModel) pickSuggestion(h *Hotspot) (AppModel, tea.Cmd) {
+	m.query, m.exactID, m.searching = h.label(), h.id(), false
 	m.scrollTo(h.Line)
-	return m
+	if m.opts.tabAt(m.active).Activate != nil {
+		return m.activate(h)
+	}
+	return m, nil
+}
+
+// activate runs the active tab's action on a hotspot, off the UI loop.
+func (m AppModel) activate(h *Hotspot) (AppModel, tea.Cmd) {
+	act := m.opts.tabAt(m.active).Activate
+	if act == nil || m.activating {
+		return m, nil
+	}
+	m.activating, m.status = true, "Abrindo "+h.label()+"…"
+	spot := *h
+	return m, func() tea.Msg {
+		ctx, cancel := context.WithTimeout(context.Background(), appActivateTimeout)
+		defer cancel()
+		status, err := act(ctx, spot)
+		return appActivatedMsg{status: status, err: err}
+	}
+}
+
+// tabAt returns the API tab i, or an empty tab (e.g. for the Exam tab).
+func (o AppOptions) tabAt(i int) AppTab {
+	if i >= 0 && i < len(o.Tabs) {
+		return o.Tabs[i]
+	}
+	return AppTab{}
 }
 
 // suggestionBox renders the suggestion list and the screen row of its
@@ -475,12 +536,12 @@ func (m AppModel) suggestionBox() (lines []string, firstRow int) {
 	}
 	width := 0
 	for _, h := range sugs {
-		width = max(width, lipgloss.Width(h.Search))
+		width = max(width, lipgloss.Width(h.label()))
 	}
 	rows := make([]string, 0, len(sugs))
 	for i, h := range sugs {
-		rest := strings.Replace(h.Info, " · "+h.Search, "", 1)
-		login := h.Search + strings.Repeat(" ", width-lipgloss.Width(h.Search))
+		rest := strings.Replace(h.Info, " · "+h.label(), "", 1)
+		login := h.label() + strings.Repeat(" ", width-lipgloss.Width(h.label()))
 		if i == min(m.sel, len(sugs)-1) {
 			rows = append(rows, styleSearch.Render("▸ "+login)+"  "+styleValue.Render(rest))
 		} else {
@@ -500,11 +561,11 @@ func (m AppModel) matches() []*Hotspot {
 	if q == "" {
 		return nil
 	}
-	if m.exact {
+	if m.exactID != "" {
 		var found []*Hotspot
 		spots := m.hotspots[m.active]
 		for i := range spots {
-			if strings.EqualFold(spots[i].Search, m.query) {
+			if spots[i].id() == m.exactID {
 				found = append(found, &spots[i])
 			}
 		}
@@ -550,7 +611,7 @@ func (m AppModel) hotspotAt(x, y int) *Hotspot {
 
 func (m AppModel) selectTab(i int) (tea.Model, tea.Cmd) {
 	m.active, m.scroll, m.confirmFinish, m.hover = i, 0, false, nil
-	m.searching, m.query, m.exact = false, "", false
+	m.searching, m.query, m.exactID, m.status = false, "", "", ""
 	if i == m.examTab() {
 		m.reloadExam()
 		return m, nil
@@ -806,6 +867,8 @@ func (m AppModel) footer() string {
 	switch found := m.matches(); {
 	case m.hover != nil:
 		hint = styleHover.Render(m.hover.Info + " ")
+	case m.status != "" && !m.searching:
+		hint = styleValue.Render(m.status + " ")
 	case strings.TrimSpace(m.query) == "":
 	case len(found) == 0:
 		hint = styleFail.Render(fmt.Sprintf("ninguém online com %q ", strings.TrimSpace(m.query)))

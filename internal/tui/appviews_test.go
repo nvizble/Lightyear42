@@ -323,3 +323,74 @@ func TestAppLongLineDoesNotTruncateOthers(t *testing.T) {
 		t.Fatalf("linha longa deveria ser cortada com …: %q", lines[appBodyTop+appPadTop+1])
 	}
 }
+
+func TestSubjectsView(t *testing.T) {
+	mark := 125
+	yes := true
+	mine := []models.ProjectUser{{Project: models.Project{Name: "Libft", Slug: "42cursus-libft"}, Status: "finished", FinalMark: &mark, Validated: &yes}}
+	catalog := []string{"42cursus-push_swap", "42cursus-libft", "42next-push_swap", "42cursus-minishell", "42cursus-abstract-vm",
+		"42cursus-cybersecurity-inquisitor-network"}
+	view := SubjectsView(mine, catalog)
+
+	if len(view.Hotspots) != len(mine)+len(catalog) {
+		t.Fatalf("esperava %d hotspots, veio %d", len(mine)+len(catalog), len(view.Hotspots))
+	}
+	lines := strings.Split(view.Content, "\n")
+	for _, h := range view.Hotspots {
+		// The grid may truncate long names ("…"); the label stays complete.
+		if got := ansiCut(lines[h.Line], h.Col, h.Col+h.Width); !strings.HasPrefix(h.Label, strings.TrimSuffix(got, "…")) {
+			t.Errorf("hotspot %q não cai no nome: %q", h.Label, got)
+		}
+		if !strings.Contains(h.Search, strings.ToLower(h.ID)) {
+			t.Errorf("busca de %q não inclui o slug %q", h.Label, h.ID)
+		}
+	}
+	if !strings.Contains(view.Content, "Libft   ✔ aprovado  125") {
+		t.Errorf("seus projetos sem status/nota:\n%s", view.Content)
+	}
+	for _, h := range view.Hotspots {
+		if h.ID == "42cursus-cybersecurity-inquisitor-network" &&
+			(h.Label != "cybersecurity-inquisitor-network" || !strings.Contains(view.Content, "cybersecurity-inquisitor-…")) {
+			t.Errorf("nome longo: grade deveria cortar e o rótulo ficar inteiro: %+v", h)
+		}
+	}
+	// "42cursus-" is dropped from the name; other curricula keep the slug.
+	for _, want := range []string{"abstract-vm", "42next-push_swap", "push_swap"} {
+		if !strings.Contains(view.Content, want) {
+			t.Errorf("faltou %q no catálogo:\n%s", want, view.Content)
+		}
+	}
+}
+
+func TestAppActivateOpensSubject(t *testing.T) {
+	var opened []string
+	tabs := []AppTab{{
+		Title: "Subjects",
+		LoadView: func(context.Context) (AppView, error) {
+			return SubjectsView(nil, []string{"42cursus-push_swap", "42cursus-libft"}), nil
+		},
+		Activate: func(_ context.Context, h Hotspot) (string, error) {
+			opened = append(opened, h.ID)
+			return "Aberto: " + h.Label + ".pdf", nil
+		},
+	}}
+	m, _ := newTestApp(t, tabs)
+	m = run(t, m, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("r")})
+	footer := func() string { lines := strings.Split(m.View(), "\n"); return lines[len(lines)-1] }
+
+	// Click on a project name.
+	h := m.hotspots[0][0]
+	m = run(t, m, click(h.Col+appPadLeft, h.Line+appPadTop+appBodyTop))
+	if len(opened) != 1 || opened[0] != h.ID || !strings.Contains(footer(), "Aberto: "+h.Label+".pdf") {
+		t.Fatalf("clique deveria abrir %s: opened=%v footer=%q", h.ID, opened, footer())
+	}
+
+	// Search + pick also opens it.
+	for _, r := range "/push" {
+		m = run(t, m, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{r}})
+	}
+	m = run(t, m, tea.KeyMsg{Type: tea.KeyEnter})
+	if len(opened) != 2 || opened[1] != "42cursus-push_swap" {
+		t.Fatalf("escolher a sugestão deveria abrir o push_swap: %v", opened)
+	}
+}
