@@ -1,10 +1,10 @@
 // Package vim turns key sequences into editor operations, Vim style: modes
-// (Normal, Insert, Visual), counts, operators × motions and an ex command
-// line (:w, :q).
+// (Normal, Insert, Visual), counts, operators × motions, registers and an
+// ex command line (:w, :q).
 //
 // It drives an editor.Editor and knows nothing about the TUI: keys arrive
 // as generic names ("h", "esc", "ctrl+r", "enter"). See
-// internal/editor/DESIGN.md for the roadmap (registers come next).
+// internal/editor/DESIGN.md for the roadmap.
 package vim
 
 import (
@@ -71,11 +71,12 @@ type Controller struct {
 	mode    Mode
 	state   CommandState
 	cmdline string
+	regs    map[rune]Register
 }
 
 // New controls ed, starting in Normal mode.
 func New(ed *editor.Editor) *Controller {
-	return &Controller{ed: ed}
+	return &Controller{ed: ed, regs: map[rune]Register{}}
 }
 
 // Mode is the current mode.
@@ -142,6 +143,14 @@ func (c *Controller) normalKey(key string) Result {
 		return Result{}
 	}
 
+	if keys, ok := aliases[key]; ok && st.Operator == opNone {
+		var res Result
+		for _, k := range keys {
+			res = c.normalKey(k)
+		}
+		return res
+	}
+
 	if op, ok := operators[key]; ok {
 		if st.Operator == opNone {
 			st.Operator, st.opKey, st.opCount, st.Count = op, key, st.Count, 0
@@ -164,6 +173,9 @@ func (c *Controller) normalKey(key string) Result {
 		op, n := st.Operator, st.Count
 		if op != opNone {
 			n = totalCount(st.opCount, st.Count)
+		}
+		if op == opChange && key == "w" {
+			m = changeWord
 		}
 		c.state = CommandState{}
 		t := m(c.ed, n, op != opNone)
@@ -212,6 +224,9 @@ func (c *Controller) prefix(key string) (string, bool) {
 	}
 	return key, true
 }
+
+// aliases are commands spelled as other keys, like Vim's D = d$.
+var aliases = map[string][]string{"D": {"d", "$"}, "C": {"c", "$"}, "Y": {"y", "y"}}
 
 // command runs the Normal-mode commands that aren't motions or operators.
 func (c *Controller) command(key string, n int) Result {
@@ -266,6 +281,8 @@ func (c *Controller) command(key string, n int) Result {
 			}
 		}
 		c.clampNormal()
+	case "p", "P":
+		return c.put(key == "P", n)
 	case ":":
 		c.mode, c.cmdline = Command, ""
 	case "v":
@@ -302,7 +319,7 @@ func totalCount(opCount, count int) int {
 }
 
 // Visual mode: motions extend the selection, which runs from where v/V was
-// pressed to the cursor; d (or x) deletes it.
+// pressed to the cursor; operators (d, y, c) act on it and p replaces it.
 
 func (c *Controller) enterVisual(mode Mode) {
 	c.mode = mode
@@ -331,6 +348,10 @@ func (c *Controller) visualKey(key string) Result {
 	}
 	n := c.state.Count
 	c.state = CommandState{}
+	if op, ok := operators[key]; ok {
+		c.operate(op)
+		return Result{}
+	}
 	if m, ok := motions[key]; ok {
 		if t := m(c.ed, n, false); !t.Failed {
 			c.moveTo(t)
@@ -347,8 +368,10 @@ func (c *Controller) visualKey(key string) Result {
 		}
 	case "o":
 		c.ed.SwapSelectionEnds()
-	case "d", "x", "delete":
-		c.deleteSelection()
+	case "x", "delete":
+		c.operate(opDelete)
+	case "p", "P":
+		return c.replaceSelection(times(n))
 	case ":":
 		c.exitVisual()
 		c.mode, c.cmdline = Command, ""
@@ -356,19 +379,19 @@ func (c *Controller) visualKey(key string) Result {
 	return Result{}
 }
 
-// deleteSelection removes the selected text (whole lines in V-LINE) and
-// goes back to Normal mode.
-func (c *Controller) deleteSelection() {
+// operate runs op on the selection (whole lines in V-LINE), leaving
+// Visual mode.
+func (c *Controller) operate(op Operator) {
 	r, linewise, ok := c.ed.SelectedRange()
 	c.exitVisual()
 	if !ok {
 		return
 	}
 	if linewise {
-		c.deleteLines(r.Start.Line, r.End.Line)
+		c.applyLines(op, r.Start.Line, r.End.Line)
 		return
 	}
-	c.deleteRange(r)
+	c.applyRange(op, r)
 }
 
 // ExtendSelection selects from the cursor to p, entering Visual mode from

@@ -127,7 +127,7 @@ func (e *Editor) Delete(r Range) string {
 }
 
 // Replace swaps the text inside r for text, as one undo step, leaving the
-// cursor after the new text.
+// cursor after the new text (undo brings it back to where it was).
 func (e *Editor) Replace(r Range, text string) {
 	r = r.Normalized()
 	r.Start, r.End = e.buf.Clamp(r.Start), e.buf.Clamp(r.End)
@@ -142,7 +142,7 @@ func (e *Editor) Replace(r Range, text string) {
 		e.hist.record(edit{kind: editDelete, start: r.Start, text: removed, before: before, after: r.Start})
 	}
 	if text != "" {
-		e.hist.record(edit{kind: editInsert, start: r.Start, text: text, before: r.Start, after: end, chained: removed != ""})
+		e.hist.record(edit{kind: editInsert, start: r.Start, text: text, before: before, after: end, chained: removed != ""})
 	}
 	e.hist.seal()
 	e.setCursor(end)

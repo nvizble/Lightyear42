@@ -322,14 +322,14 @@ func (m Model) statusLine() string {
 	right := styleStatus.Render("ctrl+s salva · ctrl+z desfaz · ctrl+q sai ")
 	if m.vim != nil {
 		mode = styleModeNormal.Render(m.vim.Mode().String())
-		right = styleStatus.Render("i insere · v seleciona · :wq salva e sai ")
+		right = styleStatus.Render("i insere · v seleciona · yy copia · p cola · :wq salva e sai ")
 		switch m.vim.Mode() {
 		case vim.Insert:
 			mode = styleMode.Render(m.vim.Mode().String())
 			right = styleStatus.Render("esc volta ao normal ")
 		case vim.Visual, vim.VisualLine:
 			mode = styleModeVisual.Render(m.vim.Mode().String())
-			right = styleStatus.Render("d apaga · o troca a ponta · esc cancela ")
+			right = styleStatus.Render("y copia · d apaga · c muda · p cola · o troca a ponta · esc cancela ")
 		}
 		if p := m.vim.Pending(); p != "" {
 			right = stylePending.Render(p + " ")

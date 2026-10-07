@@ -7,6 +7,16 @@ Mudanças visíveis do lightyear, da mais nova para a mais antiga. O
 Versões `-canary.N` são pre-releases: `lightyear update --canary` entra no
 canal canary e `lightyear update --stable` volta para a estável.
 
+## [1.3.0-canary.13] — 2026-10-07
+
+- Editor: copiar e colar como no Vim — `y` copia (`yy`, `yw`, `y$`, `Y`),
+  `p`/`P` colam depois/antes (`3p`), e o que `d`, `x` e `D` apagam também
+  fica para colar (`ddp` troca duas linhas, `xp` dois caracteres).
+- Editor: `c` muda o texto — `cw`, `cc` (mantém a indentação), `c$`/`C`,
+  `cb`, `2cw` — e um `u` desfaz a mudança inteira.
+- Editor, modo Visual: `y` copia, `c` muda e `p` troca a seleção pelo que
+  foi copiado.
+
 ## [1.3.0-canary.12] — 2026-10-07
 
 - Editor: modo Visual — `v` seleciona caracteres e `V` linhas inteiras

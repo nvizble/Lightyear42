@@ -1,10 +1,11 @@
 # Editor de Código Modal Embutido para TUI em Go
 
 > **Status:** Fases 1 (Editor Core, `internal/editor`), 2 (edição modal,
-> `internal/vim`), 3 (command parser: contadores, operador × motion) e 4
-> (Visual Mode) implementadas, com o componente em `internal/tui/editorview`
-> (comando experimental escondido `lightyear edit <arquivo>`, modal por
-> padrão; `--plain` para o editor sem modos). Próxima: Fase 5 (Registers).
+> `internal/vim`), 3 (command parser: contadores, operador × motion), 4
+> (Visual Mode) e 5 (Registers) implementadas, com o componente em
+> `internal/tui/editorview` (comando experimental escondido
+> `lightyear edit <arquivo>`, modal por padrão; `--plain` para o editor sem
+> modos). Próxima: Fase 6 (Syntax Highlighting).
 >
 > **Desvios desta implementação em relação ao texto abaixo:**
 > - o componente visual mora em `internal/tui/editorview` (a TUI do projeto
@@ -23,11 +24,17 @@
 > - contadores também valem para `x`, `u` e `Ctrl-r`; `y` entra com os
 >   registers (Fase 5), o parser já aceita qualquer operador;
 > - Fase 4: `v`/`V` (e arrastar o mouse) selecionam, `o` troca a ponta e
->   `d`/`x` apagam a seleção; `y`/`c`/`p` sobre a seleção vêm com os
->   registers (Fase 5). Diferente do Vim, `$` no Visual não inclui a quebra
->   de linha (vale o último caractere, como `g_`); terminar a seleção numa
->   linha vazia inclui a quebra, como no Vim. O `u` volta o cursor para o
->   início do trecho alterado.
+>   os operadores agem na seleção. Diferente do Vim, `$` no Visual não
+>   inclui a quebra de linha (vale o último caractere, como `g_`); terminar
+>   a seleção numa linha vazia inclui a quebra, como no Vim. O `u` volta o
+>   cursor para o início do trecho alterado;
+> - Fase 5: o register sem nome (`"`) guarda o que `d`, `c`, `x` e `y`
+>   tiram, e `p`/`P` colam (com contador). Junto vieram o operador `c`
+>   (adiantado da seção 13: `cw` vai só até o fim da palavra e `cc` mantém
+>   a indentação), os atalhos `C`, `D` e `Y`, e `y`/`c`/`p` no Visual (o
+>   texto trocado pelo `p` vai para o register, como no Vim). Os registers
+>   são um mapa por nome no Controller: named registers (`"a`) só precisam
+>   do parser. Ainda sem o clipboard do sistema.
 
 ## 1. Visão Geral
 
@@ -246,8 +253,8 @@ Configuração própria (ex.: `editor.line_numbers`, `editor.relative_numbers`, 
 | 2 — Edição Modal | NORMAL/INSERT, `hjkl`, `i a o`, `x`, `dd`, `u`, `Ctrl-r` | **implementada** |
 | 3 — Command Parser | count + operator + motion (`3j`, `3dd`, `dw`, `3dw`, `d$`) | **implementada** |
 | 4 — Visual Mode | `v`, `V` e operações sobre seleções | **implementada** |
-| 5 — Registers | `yy`, `dd`, `p`, `P` com register padrão | próxima |
-| 6 — Syntax Highlighting | Tree-sitter, highlighting incremental | |
+| 5 — Registers | `yy`, `dd`, `p`, `P` com register padrão | **implementada** |
+| 6 — Syntax Highlighting | Tree-sitter, highlighting incremental | próxima |
 | 7 — LSP | cliente JSON-RPC; diagnostics, hover, completion, go-to-definition | |
 | 8 — Avançados | `ciw diw daw`, busca, `f F t T`, `.`, macros, buffers, splits, code actions, rename, format, references | |
 

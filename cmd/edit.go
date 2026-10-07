@@ -17,10 +17,11 @@ func newEditCmd() *cobra.Command {
 		Long: `Abre o editor embutido do lightyear, com edição modal estilo Vim:
 i/a/o/I/A/O entram no INSERT, esc volta ao NORMAL; movimentos hjkl, w b e,
 0 ^ $, gg G; operador d com qualquer movimento (dw, d$, dG, dd) e contadores
-(3j, 3dd, 2d3w); x apaga, u e Ctrl-r desfazem/refazem; v e V selecionam
-(caracteres ou linhas, também arrastando o mouse), o troca a ponta e d apaga
-a seleção; :w salva, :wq salva e sai, :q! sai sem salvar. Ctrl-S e Ctrl-Q
-também salvam e saem.
+(3j, 3dd, 2d3w); y copia (yy, yw, Y), c muda (cw, cc, C) e p/P colam o
+que foi copiado ou apagado (dd, x, D também guardam); x apaga, u e Ctrl-r
+desfazem/refazem; v e V selecionam (caracteres ou linhas, também arrastando
+o mouse), o troca a ponta e d, y, c e p agem na seleção; :w salva, :wq salva
+e sai, :q! sai sem salvar. Ctrl-S e Ctrl-Q também salvam e saem.
 Use --plain para o editor sem modos.`,
 		Hidden: true,
 		Args:   cobra.ExactArgs(1),
