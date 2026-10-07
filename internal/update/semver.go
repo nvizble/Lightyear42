@@ -24,6 +24,12 @@ func IsReleaseVersion(v string) bool {
 	return semver.IsValid(NormalizeVersion(v))
 }
 
+// IsPrerelease reports whether v is a pre-release (canary) version,
+// e.g. "1.3.0-canary.1".
+func IsPrerelease(v string) bool {
+	return semver.Prerelease(NormalizeVersion(v)) != ""
+}
+
 // CompareVersions returns -1, 0, 1 like semver.Compare.
 func CompareVersions(a, b string) int {
 	return semver.Compare(NormalizeVersion(a), NormalizeVersion(b))

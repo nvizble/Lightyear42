@@ -101,7 +101,7 @@ lightyear friends     # lista local de amigos (add/remove/list/online)
 lightyear search
 lightyear dashboard
 lightyear exam        # simulador de provas offline (start/practice/grademe/status/finish/list)
-lightyear update      # self-update via GitHub Releases (--check / --force / --yes)
+lightyear update      # self-update via GitHub Releases (--check / --force / --yes / --canary / --stable)
 lightyear cache clear
 lightyear config
 ```
