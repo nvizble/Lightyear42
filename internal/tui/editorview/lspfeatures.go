@@ -363,7 +363,7 @@ func (m Model) popups(rows []string, win rect) {
 	var box []string
 	switch {
 	case m.ses.pick != nil:
-		box = m.pickerBox()
+		box = m.pickerBox(m.ses.pick)
 	case st.comp != nil:
 		box = m.completionBox()
 		col = win.x + m.gutterWidth() + m.ed.VisualColumn(st.comp.start.Line, st.comp.start.Column) - v.Left

@@ -148,7 +148,11 @@
 >   terminal. A escolha vai para `editor.colorscheme` no `config.yaml`
 >   (`config.SaveColorscheme`, mantendo as outras chaves e o 0600) por um
 >   hook do host (`OnColorscheme`), e o `lightyear edit` e a aba Exam abrem
->   com ela (`WithColorscheme`).
+>   com ela (`WithColorscheme`). Tab na linha de comando completa o nome:
+>   o controlador completa o argumento dos comandos que o host lista em
+>   `ExCompletions` (Tab e Shift-Tab andam pelas opções, digitar encerra) e
+>   o editorview desenha as opções (`Completions`) sobre a linha de comando,
+>   no mesmo `pickerBox` das listas.
 
 ## 1. Visão Geral
 

@@ -284,9 +284,9 @@ func (m Model) pickKey(k string) (Model, tea.Cmd) {
 	return m, nil
 }
 
-// pickerBox renders the open picker.
-func (m Model) pickerBox() []string {
-	p := m.ses.pick
+// pickerBox renders a picker: its title (when it has one) and the items
+// around the selected one.
+func (m Model) pickerBox(p *picker) []string {
 	from := max(0, min(p.selected-popupRows/2, len(p.items)-popupRows))
 	to := min(len(p.items), from+popupRows)
 	w := ansi.StringWidth(p.title)
@@ -294,7 +294,10 @@ func (m Model) pickerBox() []string {
 		w = max(w, ansi.StringWidth(it))
 	}
 	w = min(w, max(m.width-6, 10))
-	lines := []string{stylePopupInfo.Render(" " + ansi.Truncate(p.title, w, "…") + strings.Repeat(" ", max(w-ansi.StringWidth(p.title), 0)) + " ")}
+	var lines []string
+	if p.title != "" {
+		lines = append(lines, stylePopupInfo.Render(" "+ansi.Truncate(p.title, w, "…")+strings.Repeat(" ", max(w-ansi.StringWidth(p.title), 0))+" "))
+	}
 	for i := from; i < to; i++ {
 		text := ansi.Truncate(p.items[i], w, "…")
 		text = " " + text + strings.Repeat(" ", w-ansi.StringWidth(text)) + " "

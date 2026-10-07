@@ -11,7 +11,7 @@ import (
 
 // keys splits a Vim-style sequence: "ihi<esc>" → "i", "h", "i", "esc".
 func keys(seq string) []string {
-	names := map[string]string{"esc": "esc", "cr": "enter", "bs": "backspace", "tab": "tab", "c-r": "ctrl+r",
+	names := map[string]string{"esc": "esc", "cr": "enter", "bs": "backspace", "tab": "tab", "s-tab": "shift+tab", "c-r": "ctrl+r",
 		"up": "up", "down": "down", "left": "left", "right": "right", "del": "delete"}
 	var out []string
 	for len(seq) > 0 {
@@ -163,6 +163,42 @@ func TestCommandLine(t *testing.T) {
 	run(c, ":wq<esc>")
 	if c.Mode() != Normal || c.CommandLine() != "" {
 		t.Fatal("esc deveria cancelar a linha de comando")
+	}
+}
+
+func TestCommandLineCompletion(t *testing.T) {
+	c := New(editor.New(""))
+	var ran string
+	c.ExCommands = map[string]func(string) Result{"colo": func(arg string) Result { ran = arg; return Result{} }}
+	c.ExCompletions = map[string]func() []string{"colo": func() []string { return []string{"dracula", "nord", "dark"} }}
+	check := func(line string, items string, at int) {
+		t.Helper()
+		got, i := c.Completions()
+		if c.CommandLine() != line || strings.Join(got, " ") != items || i != at {
+			t.Fatalf("linha %q, opções %q (%d); queria %q, %q (%d)", c.CommandLine(), got, i, line, items, at)
+		}
+	}
+	run(c, ":colo  d<tab>")
+	check("colo  dracula", "dracula dark", 0)
+	run(c, "<tab>")
+	check("colo  dark", "dracula dark", 1)
+	run(c, "<tab>")
+	check("colo  dracula", "dracula dark", 0)
+	run(c, "<s-tab><s-tab>")
+	check("colo  dracula", "dracula dark", 0)
+	run(c, "x")
+	check("colo  draculax", "", 0) // typing ends it
+	run(c, "<tab>")
+	check("colo  draculax", "", 0) // nothing matches
+	run(c, "<esc>:colo <s-tab>")
+	check("colo dark", "dracula nord dark", 2) // backwards starts at the last
+	run(c, "<cr>")
+	if ran != "dark" || c.Mode() != Normal {
+		t.Fatalf("Enter roda o comando completado: %q", ran)
+	}
+	for _, seq := range []string{":colo<tab>", ":e <tab>", "/colo <tab>"} {
+		run(c, "<esc>"+seq)
+		check(strings.TrimSuffix(seq[1:], "<tab>"), "", 0)
 	}
 }
 

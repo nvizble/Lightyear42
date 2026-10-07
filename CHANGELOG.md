@@ -7,6 +7,12 @@ Mudanças visíveis do lightyear, da mais nova para a mais antiga. O
 Versões `-canary.N` são pre-releases: `lightyear update --canary` entra no
 canal canary e `lightyear update --stable` volta para a estável.
 
+## [1.3.0-canary.27] — 2026-10-07
+
+- Editor: Tab completa o nome do tema — `:colorscheme d` e Tab vira
+  `:colorscheme dracula`. As opções aparecem sobre a linha de comando,
+  Tab e Shift-Tab andam por elas e Enter troca o tema.
+
 ## [1.3.0-canary.26] — 2026-10-07
 
 - Editor: temas de cores para o código — `:colorscheme` lista, e

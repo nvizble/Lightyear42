@@ -76,6 +76,7 @@ func NewVim(ed *editor.Editor) Model {
 	m := New(ed)
 	m.vim = vim.New(ed)
 	m.vim.ExCommands = m.exCommands()
+	m.vim.ExCompletions = map[string]func() []string{"colo": ColorSchemes, "colorscheme": ColorSchemes}
 	m.vim.Commands = m.windowCommands()
 	for key, f := range m.resizeCommands() {
 		m.vim.Commands[key] = f
@@ -336,6 +337,13 @@ func (m Model) View() string {
 	m.popups(rows, m.rects()[m.ses.win])
 	if t := m.ses.tip; t != nil {
 		m.place(rows, t.lines, t.y, t.x)
+	}
+	if m.vim != nil {
+		if items, at := m.vim.Completions(); items != nil {
+			// Tab's matches, over the command line, lined up with the word.
+			col := ansi.StringWidth(m.vim.Prompt()+m.vim.CommandLine()) - ansi.StringWidth(items[at]) - 1
+			m.place(rows, m.pickerBox(&picker{items: items, selected: at}), len(rows), col)
+		}
 	}
 	rows = append(rows, m.statusLine())
 	return strings.Join(rows, "\n")
