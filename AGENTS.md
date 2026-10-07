@@ -38,6 +38,7 @@ internal/
   repository/  # Acesso à API / GitHub Releases
   notify/      # Push (ntfy) + estado do que já foi avisado
   update/      # Download/extração/replace do binário
+  editor/      # Editor embutido: core (buffer, cursor, viewport, undo) — ver editor/DESIGN.md
   tui/         # Bubble Tea
 pkg/           # Só APIs públicas exportáveis
 ```
@@ -137,10 +138,11 @@ UX: progresso, tabelas, cores, loading — sem poluição visual.
 | 8 | Notificações | Push via ntfy quando surge avaliação nova (**concluído**) |
 | 9 | Simulador de provas | `lightyear exam`: Exam Rank 02 completo, grader local com `cc` + solução de referência, sessão persistida, modo prática (**passos 1–2 concluídos**; próximo: TUI examshell, histórico/pontos fracos) |
 | 10 | App TUI | `lightyear` sozinho abre o app em tela cheia: abas clicáveis reaproveitando services e renderers dos comandos (**canary v1.3.0-canary.1**) |
+| 11 | Editor embutido | Editor modal estilo Vim dentro do app, em 8 fases (`internal/editor/DESIGN.md`). **Fase 1 (Editor Core) concluída**; próxima: edição modal |
 
 Chat (DM/fórum/relay): **parked** — sem DM na API pública; fórum ≠ chat; relay próprio fora de escopo.
 
-Futuro: offline, sync, plugins, export CSV/JSON, editor próprio estilo vim dentro do app (no lugar do vim externo na aba Exam).
+Futuro: offline, sync, plugins, export CSV/JSON, editor próprio estilo vim dentro do app (em andamento: marco 11).
 
 ---
 
