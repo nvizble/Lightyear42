@@ -87,6 +87,9 @@ func NewVim(ed *editor.Editor) Model {
 	m.vim = vim.New(ed)
 	m.vim.ExCommands = m.exCommands()
 	m.vim.Commands = m.windowCommands()
+	for key, f := range m.resizeCommands() {
+		m.vim.Commands[key] = f
+	}
 	m.vim.Commands["ctrl+o"] = m.back
 	return m
 }
@@ -132,6 +135,7 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		m.width, m.height = msg.Width, msg.Height
+		m.ses.width, m.ses.height = msg.Width, msg.Height
 	case tea.KeyMsg:
 		next, cmd := m.key(msg)
 		m = next.(Model).synced() // the key may have switched buffers
@@ -262,8 +266,11 @@ func (m Model) indentation() string {
 }
 
 func (m *Model) mouse(msg tea.MouseMsg) {
-	i, r := m.windowAt(msg.X, msg.Y)
 	m.ses.tip = nil
+	if m.dragBorder(msg) {
+		return // resizing windows
+	}
+	i, r := m.windowAt(msg.X, msg.Y)
 	if i >= 0 && msg.Action == tea.MouseActionMotion && msg.Button == tea.MouseButtonNone {
 		// Resting on a diagnostic shows it.
 		m.ses.tip = m.tipAt(i, r, msg.X, msg.Y)
