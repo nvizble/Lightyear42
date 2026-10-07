@@ -299,7 +299,7 @@ func TestSyntaxColors(t *testing.T) {
 	defer m.Close()
 	next, _ := m.Update(tea.WindowSizeMsg{Width: 60, Height: 8})
 	m = next.(Model)
-	style := func(c syntax.Class, s string) string { return syntaxStyles[c].Render(s) }
+	style := func(c syntax.Class, s string) string { return schemes[0].styles[c].Render(s) }
 	view := m.View()
 	for _, want := range []string{style(syntax.Function, "main"), style(syntax.Keyword, "return"), style(syntax.Number, "0"), style(syntax.Comment, "// ok")} {
 		if !strings.Contains(view, want) {

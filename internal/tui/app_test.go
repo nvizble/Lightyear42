@@ -209,6 +209,27 @@ func TestAppEditOpensExternalEditor(t *testing.T) {
 	}
 }
 
+// The Exam tab's editor uses the saved color scheme and keeps a new one.
+func TestAppEditorColorscheme(t *testing.T) {
+	dir := t.TempDir()
+	m, fe := newTestApp(t, []AppTab{{Title: "Início"}})
+	fe.subject, fe.files = filepath.Join(dir, "subject.txt"), []string{filepath.Join(dir, "a.c")}
+	var saved string
+	m.opts.EditorScheme = func() string { return "nord" }
+	m.opts.SaveEditorScheme = func(name string) { saved = name }
+	key := func(s string) tea.KeyMsg { return tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(s)} }
+	m = run(t, m, key("s"))
+	m = run(t, m, key("e"))
+	if m.editor.Colorscheme() != "nord" {
+		t.Fatalf("o editor abre com o tema salvo: %s", m.editor.Colorscheme())
+	}
+	m = run(t, m, key(":colorscheme gruvbox"))
+	m = run(t, m, tea.KeyMsg{Type: tea.KeyEnter})
+	if saved != "gruvbox" || m.editor.Colorscheme() != "gruvbox" {
+		t.Fatalf(":colorscheme no editor da prova salva o tema: %q", saved)
+	}
+}
+
 // e opens lightyear's editor over the app: subject read-only on the left,
 // the code on the right; keys go to it, and :wq comes back to the app.
 func TestAppEmbeddedEditor(t *testing.T) {

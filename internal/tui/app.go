@@ -85,6 +85,10 @@ type AppOptions struct {
 	// EditorLSP turns on the language server (clangd: errors and
 	// completion) in the Exam tab's editor.
 	EditorLSP bool
+	// EditorScheme is the editor's saved color scheme, and SaveEditorScheme
+	// keeps the one :colorscheme picks (both optional).
+	EditorScheme     func() string
+	SaveEditorScheme func(name string)
 }
 
 type appTabLoadedMsg struct {
@@ -942,7 +946,11 @@ func (m AppModel) openEditor(subject string, files []string) (tea.Model, tea.Cmd
 		ed = ed.WithLSP()
 	}
 	ed = ed.WithShares(m.editorShares) // the subject's width as it was left
-	start := ed.Init()                 // before any Update, like Bubble Tea does
+	if m.opts.EditorScheme != nil {
+		ed = ed.WithColorscheme(m.opts.EditorScheme())
+	}
+	ed = ed.OnColorscheme(m.opts.SaveEditorScheme)
+	start := ed.Init() // before any Update, like Bubble Tea does
 	next, _ := ed.Update(tea.WindowSizeMsg{Width: m.width, Height: m.height})
 	ed = next.(editorview.Model)
 	m.editor = &ed

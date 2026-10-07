@@ -37,6 +37,8 @@ type session struct {
 	jumps    []jump                // where gd jumped from, for Ctrl-o
 	pick     *picker               // an open list to choose from (lspedits.go)
 	tip      *tip                  // the diagnostics under the mouse (diagtip.go)
+	scheme   *scheme               // the code's colors (schemes.go)
+	onScheme func(name string)     // keeps the one :colorscheme picks
 	drag     *drag                 // a window border being dragged (resize.go)
 	// width and height are the screen's, for the window layout: commands
 	// the controller runs see the session, not the latest model.
@@ -341,17 +343,19 @@ func (m Model) exCommands() map[string]func(string) vim.Result {
 		"q!": force, "quit!": force, "qa!": force, "qall!": force,
 		"wa": saveAll, "wall": saveAll,
 		"wqa": saveQuit, "wqall": saveQuit, "xa": saveQuit, "xall": saveQuit,
-		"sp":     func(arg string) vim.Result { return m.split(false, arg) },
-		"split":  func(arg string) vim.Result { return m.split(false, arg) },
-		"vs":     func(arg string) vim.Result { return m.split(true, arg) },
-		"vsp":    func(arg string) vim.Result { return m.split(true, arg) },
-		"vsplit": func(arg string) vim.Result { return m.split(true, arg) },
-		"clo":    func(string) vim.Result { return m.closeWindow() },
-		"close":  func(string) vim.Result { return m.closeWindow() },
-		"on":     func(string) vim.Result { return m.only() },
-		"only":   func(string) vim.Result { return m.only() },
-		"res":    func(arg string) vim.Result { return m.resizeTo(false, arg) },
-		"resize": func(arg string) vim.Result { return m.resizeTo(false, arg) },
-		"vert":   vertical, "vertical": vertical,
+		"sp":          func(arg string) vim.Result { return m.split(false, arg) },
+		"split":       func(arg string) vim.Result { return m.split(false, arg) },
+		"vs":          func(arg string) vim.Result { return m.split(true, arg) },
+		"vsp":         func(arg string) vim.Result { return m.split(true, arg) },
+		"vsplit":      func(arg string) vim.Result { return m.split(true, arg) },
+		"clo":         func(string) vim.Result { return m.closeWindow() },
+		"close":       func(string) vim.Result { return m.closeWindow() },
+		"on":          func(string) vim.Result { return m.only() },
+		"only":        func(string) vim.Result { return m.only() },
+		"colo":        m.colorscheme,
+		"colorscheme": m.colorscheme,
+		"res":         func(arg string) vim.Result { return m.resizeTo(false, arg) },
+		"resize":      func(arg string) vim.Result { return m.resizeTo(false, arg) },
+		"vert":        vertical, "vertical": vertical,
 	}
 }

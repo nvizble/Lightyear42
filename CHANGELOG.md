@@ -7,6 +7,14 @@ Mudanças visíveis do lightyear, da mais nova para a mais antiga. O
 Versões `-canary.N` são pre-releases: `lightyear update --canary` entra no
 canal canary e `lightyear update --stable` volta para a estável.
 
+## [1.3.0-canary.26] — 2026-10-07
+
+- Editor: temas de cores para o código — `:colorscheme` lista, e
+  `:colorscheme dracula` troca na hora: lightyear (padrão), gruvbox,
+  dracula, nord, tokyonight, monokai, catppuccin, onedark, solarized,
+  github-light (terminal claro) e off (sem cores). A escolha fica salva no
+  `config.yaml` e vale também no editor da aba Exam.
+
 ## [1.3.0-canary.25] — 2026-10-07
 
 - Editor: aceite o "fix available" com o mouse — passe o mouse no erro e
