@@ -12,8 +12,13 @@ import (
 	"time"
 )
 
-func newTestClient(serverURL string) *Client {
-	return NewClient(serverURL, nil,
+// newTestClient talks to server through the server's own transport: on the
+// shared http.DefaultTransport, another parallel test's server.Close()
+// (which closes DefaultTransport's idle connections) could break a reused
+// connection mid-test and turn the expected error into a network one.
+func newTestClient(server *httptest.Server) *Client {
+	return NewClient(server.URL, nil,
+		WithHTTPClient(server.Client()),
 		WithMaxRetries(2),
 		WithBaseBackoff(time.Millisecond),
 	)
@@ -37,7 +42,7 @@ func TestClient_Get_DecodesJSON(t *testing.T) {
 	var out struct {
 		Login string `json:"login"`
 	}
-	if err := newTestClient(server.URL).Get(context.Background(), "/me", nil, &out); err != nil {
+	if err := newTestClient(server).Get(context.Background(), "/me", nil, &out); err != nil {
 		t.Fatalf("Get: %v", err)
 	}
 	if out.Login != "jdiniz" {
@@ -69,7 +74,7 @@ func TestClient_Get_TypedErrors(t *testing.T) {
 			}))
 			defer server.Close()
 
-			err := newTestClient(server.URL).Get(context.Background(), "/x", nil, nil)
+			err := newTestClient(server).Get(context.Background(), "/x", nil, nil)
 			if !errors.Is(err, tt.wantErr) {
 				t.Fatalf("err = %v, want %v", err, tt.wantErr)
 			}
@@ -94,7 +99,7 @@ func TestClient_Get_RetriesOn429ThenSucceeds(t *testing.T) {
 	var out struct {
 		OK bool `json:"ok"`
 	}
-	if err := newTestClient(server.URL).Get(context.Background(), "/x", nil, &out); err != nil {
+	if err := newTestClient(server).Get(context.Background(), "/x", nil, &out); err != nil {
 		t.Fatalf("Get: %v", err)
 	}
 	if !out.OK {
@@ -115,7 +120,7 @@ func TestClient_Get_DoesNotRetryOn404(t *testing.T) {
 	}))
 	defer server.Close()
 
-	err := newTestClient(server.URL).Get(context.Background(), "/x", nil, nil)
+	err := newTestClient(server).Get(context.Background(), "/x", nil, nil)
 	if !errors.Is(err, ErrNotFound) {
 		t.Fatalf("err = %v, want ErrNotFound", err)
 	}
@@ -132,7 +137,7 @@ func TestClient_Get_ExhaustsRetries(t *testing.T) {
 	}))
 	defer server.Close()
 
-	err := newTestClient(server.URL).Get(context.Background(), "/x", nil, nil)
+	err := newTestClient(server).Get(context.Background(), "/x", nil, nil)
 	if !errors.Is(err, ErrServer) {
 		t.Fatalf("err = %v, want ErrServer", err)
 	}
@@ -147,6 +152,7 @@ func TestClient_Get_ContextCancellation(t *testing.T) {
 	defer server.Close()
 
 	client := NewClient(server.URL, nil,
+		WithHTTPClient(server.Client()),
 		WithMaxRetries(5),
 		WithBaseBackoff(time.Hour), // força cancelamento durante o backoff
 	)
@@ -182,7 +188,7 @@ func TestClient_Post_SendsJSON(t *testing.T) {
 	var out []struct {
 		ID int `json:"id"`
 	}
-	err := newTestClient(server.URL).Post(context.Background(), "/slots", map[string]any{
+	err := newTestClient(server).Post(context.Background(), "/slots", map[string]any{
 		"slot": map[string]any{"user_id": 42},
 	}, &out)
 	if err != nil {
@@ -204,7 +210,7 @@ func TestClient_Delete_NoContent(t *testing.T) {
 	}))
 	defer server.Close()
 
-	if err := newTestClient(server.URL).Delete(context.Background(), "/slots/99"); err != nil {
+	if err := newTestClient(server).Delete(context.Background(), "/slots/99"); err != nil {
 		t.Fatalf("Delete: %v", err)
 	}
 }
@@ -221,7 +227,7 @@ func TestClient_Get_QueryParams(t *testing.T) {
 	defer server.Close()
 
 	query := map[string][]string{"filter[login]": {"jdiniz"}}
-	if err := newTestClient(server.URL).Get(context.Background(), "/users", query, nil); err != nil {
+	if err := newTestClient(server).Get(context.Background(), "/users", query, nil); err != nil {
 		t.Fatalf("Get: %v", err)
 	}
 }
