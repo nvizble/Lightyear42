@@ -21,6 +21,7 @@
     --mono: "DM Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
   }
   * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
   html { scroll-behavior: smooth; }
   body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.6 var(--sans); -webkit-font-smoothing: antialiased; }
   a { color: inherit; }
@@ -86,6 +87,22 @@
   .card code { font: 500 13px var(--mono); color: var(--green); }
   .card h3 { font: 700 18px/1.3 var(--sans); margin: 12px 0 6px; }
   .card p { margin: 0; color: var(--muted); font-size: 15px; }
+  .tag.canary, .eyebrow .tag { background: var(--orange); }
+  .eyebrow a { color: var(--orange); text-decoration: none; }
+  .eyebrow a:hover { text-decoration: underline; }
+  .channels { display: inline-flex; gap: 4px; padding: 4px; margin-bottom: 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); }
+  .chan { font: 500 13px var(--sans); color: var(--muted); background: none; border: 0; border-radius: 7px; padding: 8px 14px; cursor: pointer; }
+  .chan .mono { font-size: 12px; margin-left: 6px; color: var(--dim); }
+  .chan[aria-selected="true"] { color: var(--bg); background: var(--text); }
+  .chan[aria-selected="true"] .mono { color: #444; }
+  .chan[data-channel="canary"][aria-selected="true"] { background: var(--orange); }
+  #app-screen { min-height: 0; }
+  .app-btn { all: unset; cursor: pointer; border-radius: 3px; }
+  .app-btn:hover { background: #2a2a2e; }
+  .app-btn:focus-visible { outline: 1px solid var(--green); }
+  .app-on { color: #0b0b0c; background: var(--green); font-weight: 500; }
+  .app-on:hover { background: var(--green); }
+  .app-key { color: var(--blue); font-weight: 500; }
   .tag { font: 500 10px var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--bg); background: var(--green); border-radius: 4px; padding: 2px 6px; margin-left: 8px; vertical-align: 2px; }
 
   .split { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: start; }
@@ -141,6 +158,7 @@
     <div class="links">
       <a href="#recursos" class="hide-sm">Recursos</a>
       <a href="#exam" class="hide-sm">Simulador</a>
+      <a href="#canary" class="hide-sm" data-canary-only>Canary</a>
       <a href="#instalar">Instalar</a>
       <a href="https://github.com/nvizble/Lightyear42">GitHub</a>
     </div>
@@ -150,7 +168,7 @@
 <main id="top">
 <header class="hero">
   <div class="wrap">
-    <div class="eyebrow">v1.2.0 · open source · MIT · feito por cadetes da 42</div>
+    <div class="eyebrow"><span data-ver="stable">v1.2.0</span> estável<span data-canary-only> · <a href="#canary">canary <span data-ver="canary">v1.3.0-canary.3</span> →</a></span> · open source · MIT · feito por cadetes da 42</div>
     <h1>A 42 inteira, direto do <span>terminal.</span></h1>
     <p class="lead">Perfil, projetos, avaliações, notificação no celular, mapa do campus, slots, subjects e um simulador de provas com o Exam Rank 02 inteiro. Tudo numa CLI só, rápida, que você instala com um comando.</p>
     <div class="cta">
@@ -226,11 +244,40 @@
   </div>
 </section>
 
+<section id="canary" data-canary-only>
+  <div class="wrap">
+    <div class="eyebrow">Canary <span class="tag" data-ver="canary">v1.3.0-canary.3</span></div>
+    <h2>O próximo lightyear já pode ser testado.</h2>
+    <p class="sub">A canary recebe as novidades antes da versão estável. A grande da vez: rode só <span class="mono">lightyear</span> e ele abre um app em tela cheia, com abas clicáveis e mouse. Clique aqui embaixo para ver como é.</p>
+    <div class="term" role="region" aria-label="Demonstração do app (dados de exemplo)">
+      <div class="term-bar">
+        <div class="dots" aria-hidden="true"><i></i><i></i><i></i></div>
+        <span class="tab" style="cursor:default">~ $ lightyear</span>
+        <span class="eyebrow" style="margin-left:auto;font-size:11px">demo · dados de exemplo</span>
+      </div>
+      <pre id="app-screen"></pre>
+    </div>
+    <div class="grid" style="margin-top:24px">
+      <article class="card"><code>lightyear</code><span class="tag canary">canary</span><h3>App em tela cheia</h3><p>Início, Avaliações, Projetos, Campus, Slots e Exam em abas clicáveis. Rola com o mouse; atalhos no teclado.</p></article>
+      <article class="card"><code>e · aba Exam</code><span class="tag canary">canary</span><h3>Vim lado a lado</h3><p>O subject à esquerda e a sua entrega à direita, no seu vim (ou <span class="mono">$EDITOR</span>). Saiu com <span class="mono">:wq</span>, aperte <span class="mono">g</span> e corrige.</p></article>
+      <article class="card"><code>lightyear update --canary</code><span class="tag canary">canary</span><h3>Escolha o canal</h3><p>Na canary, o <span class="mono">lightyear update</span> continua trazendo canaries. Quer voltar? <span class="mono">lightyear update --stable</span>.</p></article>
+    </div>
+    <div class="cta" style="margin-top:24px">
+      <a class="btn primary" href="#instalar" data-pick-channel="canary">Instalar a canary</a>
+      <a class="btn" data-release-link="canary" href="https://github.com/nvizble/Lightyear42/releases">Notas da release</a>
+    </div>
+  </div>
+</section>
+
 <section id="instalar">
   <div class="wrap">
     <div class="eyebrow">Instalar</div>
     <h2>Um binário. Nenhuma dependência.</h2>
     <p class="sub">No campus, prefira o binário ou o <span class="mono">.deb</span>: o Go das máquinas costuma ser mais antigo que o 1.25 que o lightyear exige.</p>
+    <div class="channels" role="tablist" aria-label="Canal" data-canary-only>
+      <button class="chan" role="tab" aria-selected="true" data-channel="stable">Estável<span class="mono" data-ver="stable">v1.2.0</span></button>
+      <button class="chan" role="tab" aria-selected="false" data-channel="canary">Canary<span class="mono" data-ver="canary">v1.3.0-canary.3</span></button>
+    </div>
     <div class="install">
       <div class="term-bar">
         <div class="tabs" role="tablist" aria-label="Sistema">
@@ -242,7 +289,7 @@
       </div>
       <pre id="install-code"></pre>
       <div class="install-foot">
-        <span>Depois: <span class="mono" style="color:var(--text)">lightyear setup</span> → <span class="mono" style="color:var(--text)">lightyear login</span></span>
+        <span id="install-note"></span>
         <button class="btn copy" id="install-copy">copiar</button>
       </div>
     </div>
@@ -376,35 +423,162 @@ tópico gerado pelo "lightyear notify setup" e pronto.
   demoTabs.forEach(t => t.addEventListener("click", () => { selectTab(demoTabs, t); show(t.dataset.demo); }));
   show("start");
 
-  // Install snippets.
-  const installs = {
-    mac:
+  // Versions: discovered from the GitHub API (stable = newest release that is
+  // not a pre-release; canary = newest pre-release, if ahead of the stable),
+  // with these values as the fallback.
+  const versions = { stable: "1.2.0", canary: "1.3.0-canary.3" };
+  let channel = "stable";
+
+  // Install snippets for a version; the stable Go install tracks @latest.
+  function installs(ver, chan) {
+    const url = file => `https://github.com/nvizble/Lightyear42/releases/download/v\${VER}/lightyear_\${VER}_${file}`;
+    return {
+      mac:
 `<span class="c"># Apple Silicon (Intel: troque arm64 por x86_64)</span>
-VER=1.2.0
-curl -sL "https://github.com/nvizble/Lightyear42/releases/download/v\${VER}/lightyear_\${VER}_Darwin_arm64.tar.gz" | tar -xz lightyear
+VER=${ver}
+curl -sL "${url("Darwin_arm64.tar.gz")}" | tar -xz lightyear
 sudo mv lightyear /usr/local/bin/
 lightyear version`,
-    linux:
-`VER=1.2.0
+      linux:
+`VER=${ver}
 mkdir -p ~/.local/bin
-curl -sL "https://github.com/nvizble/Lightyear42/releases/download/v\${VER}/lightyear_\${VER}_Linux_x86_64.tar.gz" | tar -xz -C ~/.local/bin lightyear
+curl -sL "${url("Linux_x86_64.tar.gz")}" | tar -xz -C ~/.local/bin lightyear
 <span class="c"># garanta que ~/.local/bin está no PATH</span>
 lightyear version`,
-    deb:
-`VER=1.2.0
-curl -sLO "https://github.com/nvizble/Lightyear42/releases/download/v\${VER}/lightyear_\${VER}_linux_amd64.deb"
+      deb:
+`VER=${ver}
+curl -sLO "${url("linux_amd64.deb")}"
 sudo apt install "./lightyear_\${VER}_linux_amd64.deb"
 lightyear version`,
-    go:
+      go:
 `<span class="c"># requer Go 1.25+</span>
-go install github.com/nvizble/Lightyear42/cmd/lightyear@latest`,
+go install github.com/nvizble/Lightyear42/cmd/lightyear@${chan === "canary" ? "v" + ver : "latest"}`,
+    };
+  }
+  const notes = {
+    stable: 'Depois: <span class="mono" style="color:var(--text)">lightyear setup</span> → <span class="mono" style="color:var(--text)">lightyear login</span>',
+    canary: 'Na canary, <span class="mono" style="color:var(--text)">lightyear update</span> traz as próximas canaries; <span class="mono" style="color:var(--text)">lightyear update --stable</span> volta para a estável.',
   };
+
   const code = document.getElementById("install-code");
   const installTabs = [...document.querySelectorAll("[data-install]")];
+  const chanTabs = [...document.querySelectorAll("[data-channel]")];
   let current = "mac";
-  function showInstall(k) { current = k; code.innerHTML = installs[k]; }
+  function snippet() { return installs(versions[channel], channel)[current]; }
+  function showInstall(k) {
+    current = k;
+    code.innerHTML = snippet();
+    document.getElementById("install-note").innerHTML = notes[channel];
+  }
+  function pickChannel(c) {
+    channel = c;
+    selectTab(chanTabs, chanTabs.find(t => t.dataset.channel === c));
+    showInstall(current);
+  }
   installTabs.forEach(t => t.addEventListener("click", () => { selectTab(installTabs, t); showInstall(t.dataset.install); }));
+  chanTabs.forEach(t => t.addEventListener("click", () => pickChannel(t.dataset.channel)));
+  document.querySelectorAll("[data-pick-channel]").forEach(a => a.addEventListener("click", () => pickChannel(a.dataset.pickChannel)));
   showInstall("mac");
+
+  function applyVersions() {
+    document.querySelectorAll("[data-ver]").forEach(el => (el.textContent = "v" + versions[el.dataset.ver]));
+    document.querySelectorAll("[data-canary-only]").forEach(el => (el.hidden = !versions.canary));
+    document.querySelectorAll("[data-release-link]").forEach(a => (a.href = "https://github.com/nvizble/Lightyear42/releases/tag/v" + versions.canary));
+    if (!versions.canary && channel === "canary") pickChannel("stable");
+    showInstall(current);
+  }
+  applyVersions();
+  fetch("https://api.github.com/repos/nvizble/Lightyear42/releases?per_page=30")
+    .then(r => (r.ok ? r.json() : Promise.reject(r.status)))
+    .then(releases => {
+      const live = releases.filter(r => !r.draft);
+      const stableIdx = live.findIndex(r => !r.prerelease);
+      const canaryIdx = live.findIndex(r => r.prerelease);
+      if (stableIdx >= 0) versions.stable = live[stableIdx].tag_name.replace(/^v/, "");
+      // GitHub lists newest first: a canary older than the stable is stale.
+      versions.canary = canaryIdx >= 0 && (stableIdx < 0 || canaryIdx < stableIdx)
+        ? live[canaryIdx].tag_name.replace(/^v/, "") : null;
+      applyVersions();
+    })
+    .catch(() => { /* keep the fallback versions */ });
+
+  // Interactive mock of the full-screen app (canary), sample data.
+  const appTabs = ["Início", "Avaliações", "Projetos", "Campus", "Slots", "Exam"];
+  const appState = { tab: 5, view: "session", confirm: false };
+  const W = 96, BODY = 15;
+  const pad = (html, n) => html + " ".repeat(Math.max(n - html.replace(/<[^>]+>/g, "").length, 0));
+  const btn = (attrs, label, on) => `<button class="app-btn${on ? " app-on" : ""}" ${attrs}>${label}</button>`;
+  const appBodies = {
+    0: () => ['<span class="b">42 São Paulo</span><span class="d"> — 87 online</span>',
+              'marvin<span class="o">  Level 7.42</span><span class="d">  ·  12 ₳  ·  4 pontos de avaliação</span>', "",
+              '<span class="b">Ocupação por cluster</span>',
+              'Cluster 1  <span class="g">█████████████████</span><span class="d">░░░░░░░</span>  41/60  68%',
+              'Cluster 2  <span class="g">███████████</span><span class="d">░░░░░░░░░░░░░</span>  27/60  45%',
+              'Cluster 3  <span class="g">███████</span><span class="d">░░░░░░░░░░░░░░░░░</span>  19/60  32%'],
+    1: () => ['<span class="b">Próximas avaliações</span>', "",
+              'hoje 14:30  <span class="o">você avalia</span>   ft_printf      <span class="d">em 2h</span>',
+              'amanhã 10:00 <span class="g">você é avaliado</span> get_next_line <span class="d">em 21h</span>'],
+    2: () => ['<span class="b">Projetos</span>', "",
+              'libft            <span class="g">125 ✓</span>', 'get_next_line    <span class="g">115 ✓</span>',
+              'ft_printf        <span class="g">100 ✓</span>', 'born2beroot      <span class="o">em andamento</span>'],
+    3: () => ['<span class="b">Cluster 1</span>  <span class="d">(mapa de postos; ● ocupado)</span>', "",
+              'r1  <span class="g">●</span> <span class="g">●</span> · <span class="g">●</span> · · <span class="g">●</span> <span class="g">●</span> <span class="g">●</span> ·',
+              'r2  · <span class="g">●</span> <span class="g">●</span> <span class="g">●</span> · <span class="g">●</span> · · <span class="g">●</span> <span class="g">●</span>',
+              'r3  <span class="g">●</span> · · <span class="g">●</span> <span class="g">●</span> <span class="g">●</span> <span class="g">●</span> · <span class="g">●</span> ·'],
+    4: () => ['<span class="b">Slots</span>', "", 'hoje      14:00 → 16:00  <span class="g">livre</span>', 'amanhã    09:00 → 10:00  <span class="o">reservado</span>'],
+    5: () => {
+      if (appState.view === "vim") return [
+        '<span class="d">subject.pt.txt                              │ first_word.c</span>',
+        'Nome do exercício : first_word              │ <span class="b">#include</span> &lt;unistd.h&gt;',
+        'Arquivos esperados: first_word.c            │',
+        'Funções permitidas: write                   │ <span class="o">int</span>  main(<span class="o">int</span> argc, <span class="o">char</span> **argv)',
+        '──────────────────────────────────────────  │ {',
+        'Escreva um programa que recebe uma string   │     <span class="o">char</span> *s;',
+        'e exibe a primeira palavra dela, seguida    │',
+        'de uma quebra de linha.                     │     <span class="b">if</span> (argc == 2)',
+        '                                            │     {',
+        '<span class="d">-- vim -O: subject à esquerda, código à direita --</span>',
+        '<span class="d">(no app de verdade é o seu vim; :wq e você volta para cá)</span>'];
+      const head = appState.view === "graded"
+        ? ['<span class="g">✓ SUCCESS</span><span class="d">  first_word</span>', ""] : [];
+      const lvl = appState.view === "graded" ? ["union", 2, "25/100"] : ["first_word", 1, "0/100"];
+      return [...head, ...box([
+        '<span class="b">Exam Rank 02</span>',
+        `<span class="d">Exercício  </span><span class="o">${lvl[0]}</span><span class="d">  (nível ${lvl[1]})</span>`,
+        `<span class="d">Nota       </span>${lvl[2]}`,
+        '<span class="d">Tempo      </span>02h47m restantes',
+      ], 44).split("\n"), "",
+        appState.confirm ? '<span class="r">Encerrar a prova? Aperte f de novo para confirmar.</span>'
+          : '<span class="d">Aperte e para abrir o subject e a sua entrega lado a lado no vim.</span>'];
+    },
+  };
+
+  function renderApp() {
+    let bar = '<span class="g">✦ lightyear</span>  ';
+    appTabs.forEach((t, i) => { bar += btn(`data-app-tab="${i}"`, ` ${i + 1} ${t} `, i === appState.tab) + " "; });
+    const body = appBodies[appState.tab]().map(l => "  " + l);
+    while (body.length < BODY) body.push("");
+    const keys = appState.tab === 5 ? [["e", "editar no vim"], ["g", "grademe"], ["f", "encerrar"]] : [];
+    let foot = " ";
+    [...keys, ["r", "atualizar"], ["q", "sair"]].forEach(([k, l]) => { foot += btn(`data-app-key="${k}"`, ` <span class="app-key">${k}</span> ${l} `) + " "; });
+    const rule = '<span class="d">' + "─".repeat(W) + "</span>";
+    document.getElementById("app-screen").innerHTML =
+      [pad(bar, W), rule, ...body.slice(0, BODY), rule, pad(foot, W - 26) + '<span class="d">1-6 / ←→ abas · ↑↓ rolar</span>'].join("\n");
+  }
+  document.getElementById("app-screen").addEventListener("click", e => {
+    const b = e.target.closest(".app-btn");
+    if (!b) return;
+    if (b.dataset.appTab) { appState.tab = +b.dataset.appTab; appState.confirm = false; }
+    const k = b.dataset.appKey;
+    if (k === "e") { appState.tab = 5; appState.view = "vim"; appState.confirm = false; }
+    if (k === "g") { appState.tab = 5; appState.view = "graded"; appState.confirm = false; }
+    if (k === "f") {
+      if (appState.confirm) { appState.view = "session"; appState.confirm = false; } else appState.confirm = true;
+    }
+    if (k === "q") { appState.tab = 5; appState.view = "session"; appState.confirm = false; }
+    renderApp();
+  });
+  renderApp();
 
   // Copy buttons.
   async function copy(btn, text) {
