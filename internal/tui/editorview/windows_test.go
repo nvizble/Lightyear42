@@ -79,3 +79,39 @@ func TestWindows(t *testing.T) {
 		t.Fatalf(":close na última: %q", m.message)
 	}
 }
+
+// An exam: the subject read-only on the left, the code on the right; :wq
+// saves and quits even though the subject window is still there.
+func TestSideBySide(t *testing.T) {
+	dir := t.TempDir()
+	subject, code := filepath.Join(dir, "subject.pt.txt"), filepath.Join(dir, "rendu", "first_word", "first_word.c")
+	if err := os.WriteFile(subject, []byte("Assignment name: first_word\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	m, err := NewSideBySide(subject, []string{code})
+	if err != nil {
+		t.Fatal(err)
+	}
+	next, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 8})
+	m = next.(Model)
+	rows := strings.Split(ansi.Strip(m.View()), "\n")
+	if !strings.Contains(rows[0], "Assignment name: first_word") || filepath.Base(m.Editor().Path()) != "first_word.c" {
+		t.Fatalf("subject à esquerda, código ativo à direita:\n%s", strings.Join(rows, "\n"))
+	}
+	if !strings.Contains(rows[6], "subject.pt.txt [só leitura]") || !strings.Contains(rows[6], " first_word.c ") {
+		t.Fatalf("títulos: %q", rows[6])
+	}
+	// The subject can be read and copied, not changed.
+	m, _ = press(t, m, tea.KeyMsg{Type: tea.KeyCtrlW}, runes("h"), runes("x"), runes("i"))
+	if !strings.Contains(m.message, "E21") || m.Editor().Dirty() {
+		t.Fatalf("subject só leitura: %q", m.message)
+	}
+	m, _ = press(t, m, runes("yy"), tea.KeyMsg{Type: tea.KeyCtrlW}, runes("l"), runes("P"))
+	m, cmd := press(t, m, runes(":wq"), tea.KeyMsg{Type: tea.KeyEnter})
+	if !m.Done() || cmd == nil {
+		t.Fatalf(":wq no código sai: %q", m.message)
+	}
+	if data, _ := os.ReadFile(code); string(data) != "Assignment name: first_word\n" {
+		t.Fatalf("o código foi salvo (com a linha copiada do subject): %q", data)
+	}
+}

@@ -7,6 +7,14 @@ Mudanças visíveis do lightyear, da mais nova para a mais antiga. O
 Versões `-canary.N` são pre-releases: `lightyear update --canary` entra no
 canal canary e `lightyear update --stable` volta para a estável.
 
+## [1.3.0-canary.22] — 2026-10-07
+
+- App, aba Exam: `e` abre o editor do lightyear dentro do app — o subject
+  (só leitura) à esquerda e a sua entrega à direita, com os erros do
+  compilador (as flags do grader) e autocomplete. `Ctrl-w w` alterna,
+  `:wq` salva e volta para o app; `E` continua abrindo o seu `$EDITOR`.
+- Editor: arquivos só leitura (`E21` ao tentar editar), `:wqa`/`:xa`.
+
 ## [1.3.0-canary.21] — 2026-10-07
 
 - Editor: `grn` renomeia no projeto inteiro (`:Rename nome`), `grr` lista

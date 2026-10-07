@@ -259,7 +259,7 @@
     </div>
     <div class="grid" style="margin-top:24px">
       <article class="card"><code>lightyear</code><span class="tag canary">canary</span><h3>App em tela cheia</h3><p>Início, Avaliações, Projetos, Campus, Slots e Exam em abas clicáveis. Rola com o mouse; atalhos no teclado.</p></article>
-      <article class="card"><code>e · aba Exam</code><span class="tag canary">canary</span><h3>Vim lado a lado</h3><p>O subject à esquerda e a sua entrega à direita, no seu vim (ou <span class="mono">$EDITOR</span>). Saiu com <span class="mono">:wq</span>, aperte <span class="mono">g</span> e corrige.</p></article>
+      <article class="card"><code>e · aba Exam</code><span class="tag canary">canary</span><h3>Editor lado a lado</h3><p>O subject à esquerda e a sua entrega à direita, no editor estilo Vim do lightyear, com os erros do compilador e autocomplete (<span class="mono">E</span> abre o seu <span class="mono">$EDITOR</span>). Saiu com <span class="mono">:wq</span>, aperte <span class="mono">g</span> e corrige.</p></article>
       <article class="card"><code>lightyear update --canary</code><span class="tag canary">canary</span><h3>Escolha o canal</h3><p>Na canary, o <span class="mono">lightyear update</span> continua trazendo canaries. Quer voltar? <span class="mono">lightyear update --stable</span>.</p></article>
     </div>
     <div class="cta" style="margin-top:24px">
@@ -567,7 +567,7 @@ go install github.com/nvizble/Lightyear42/cmd/lightyear@${chan === "canary" ? "v
         '<span class="d">Tempo      </span>02h47m restantes',
       ], 44).split("\n"), "",
         appState.confirm ? '<span class="r">Encerrar a prova? Aperte f de novo para confirmar.</span>'
-          : '<span class="d">Aperte e para abrir o subject e a sua entrega lado a lado no vim.</span>'];
+          : '<span class="d">Aperte e para abrir o subject e a sua entrega lado a lado no editor.</span>'];
     },
   };
 
@@ -576,7 +576,7 @@ go install github.com/nvizble/Lightyear42/cmd/lightyear@${chan === "canary" ? "v
     appTabs.forEach((t, i) => { bar += btn(`data-app-tab="${i}"`, ` ${i + 1} ${t} `, i === appState.tab) + " "; });
     const body = appBodies[appState.tab]().map(l => "  " + l);
     while (body.length < BODY) body.push("");
-    const keys = appState.tab === 5 ? [["e", "editar no vim"], ["g", "grademe"], ["f", "encerrar"]] : [];
+    const keys = appState.tab === 5 ? [["e", "editar"], ["E", "$EDITOR"], ["g", "grademe"], ["f", "encerrar"]] : [];
     let foot = " ";
     [...keys, ["r", "atualizar"], ["q", "sair"]].forEach(([k, l]) => { foot += btn(`data-app-key="${k}"`, ` <span class="app-key">${k}</span> ${l} `) + " "; });
     const rule = '<span class="d">' + "─".repeat(W) + "</span>";
