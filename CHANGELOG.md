@@ -7,6 +7,14 @@ Mudanças visíveis do lightyear, da mais nova para a mais antiga. O
 Versões `-canary.N` são pre-releases: `lightyear update --canary` entra no
 canal canary e `lightyear update --stable` volta para a estável.
 
+## [1.3.0-canary.17] — 2026-10-07
+
+- Editor: text objects — `diw`, `daw`, `ci"`, `da(`, `di{` (mantém as
+  chaves nas linhas delas), `yi[`, também no Visual (`viw`, `vi(`).
+- Editor: `f`, `F`, `t`, `T` com `;` e `,` (`dt;`, `cf)`, `2fa`).
+- Editor: busca com `/` e `?`, `n`/`N`, `*`/`#` (a palavra sob o cursor);
+  as ocorrências ficam destacadas até `:noh`.
+
 ## [1.3.0-canary.16] — 2026-10-07
 
 - Editor: autocomplete do language server — a lista abre enquanto você

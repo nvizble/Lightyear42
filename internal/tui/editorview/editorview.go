@@ -32,6 +32,7 @@ var (
 	styleTilde      = lipgloss.NewStyle().Foreground(colorAccent)
 	styleCursor     = lipgloss.NewStyle().Reverse(true)
 	styleSelection  = lipgloss.NewStyle().Background(lipgloss.AdaptiveColor{Light: "153", Dark: "24"})
+	styleSearchHit  = lipgloss.NewStyle().Background(lipgloss.AdaptiveColor{Light: "229", Dark: "58"})
 	styleMode       = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("0")).Background(colorGood).Padding(0, 1)
 	styleModeNormal = styleMode.Background(colorAccent)
 	styleModeVisual = styleMode.Background(colorVisual)
@@ -307,6 +308,16 @@ func (m Model) View() string {
 		if r < len(classes) {
 			look.classes = classes[r]
 		}
+		if m.vim != nil {
+			if starts, n := m.vim.Hits(buf.Line(line)); len(starts) > 0 {
+				look.hits = make([]bool, buf.LineLen(line))
+				for _, s := range starts {
+					for i := s; i < s+n; i++ {
+						look.hits[i] = true
+					}
+				}
+			}
+		}
 		rows = append(rows, gutter+renderLine(buf.Line(line), m.ed.TabSize(), v.Left, m.textWidth(), look))
 	}
 	m.popups(rows)
@@ -321,18 +332,21 @@ type lineLook struct {
 	cursor, selFrom, selTo int
 	classes                []syntax.Class
 	marks                  []lsp.Severity
+	hits                   []bool // search matches, by rune
 }
 
 // renderLine expands tabs, shows the visible slice [left, left+width) and
-// draws it as look says: cursor, then selection, diagnostics and syntax.
+// draws it as look says: cursor, then selection, search matches,
+// diagnostics and syntax.
 func renderLine(line string, tabSize, left, width int, look lineLook) string {
 	var cells []string
 	var cellClasses []syntax.Class
 	var cellMarks []lsp.Severity
+	var cellHits []bool
 	runes := []rune(line)
 	// Marks may run past the end (a missing ";"): blank cells show them.
 	for i := 0; i < max(len(runes), len(look.marks)); i++ {
-		r, class, mark := ' ', syntax.Plain, lsp.Severity(0)
+		r, class, mark, hit := ' ', syntax.Plain, lsp.Severity(0), false
 		if i < len(runes) {
 			r = runes[i]
 		}
@@ -342,6 +356,9 @@ func renderLine(line string, tabSize, left, width int, look lineLook) string {
 		if i < len(look.marks) {
 			mark = look.marks[i]
 		}
+		if i < len(look.hits) {
+			hit = look.hits[i]
+		}
 		cell, n := string(r), 1
 		if r == '\t' {
 			cell, n = " ", tabSize-len(cells)%tabSize
@@ -350,6 +367,7 @@ func renderLine(line string, tabSize, left, width int, look lineLook) string {
 			cells = append(cells, cell)
 			cellClasses = append(cellClasses, class)
 			cellMarks = append(cellMarks, mark)
+			cellHits = append(cellHits, hit)
 		}
 	}
 	// The cursor or the selection may sit past the end (Insert, empty lines).
@@ -375,6 +393,8 @@ func renderLine(line string, tabSize, left, width int, look lineLook) string {
 			next = &styleCursor
 		case x >= look.selFrom && x < look.selTo:
 			next = &styleSelection
+		case x < len(cellHits) && cellHits[x]:
+			next = &styleSearchHit
 		case x < len(cellMarks) && cellMarks[x] != 0:
 			next = &markStyles[cellMarks[x]]
 		case x < len(cellClasses) && cellClasses[x] != syntax.Plain:
@@ -394,7 +414,7 @@ func renderLine(line string, tabSize, left, width int, look lineLook) string {
 func (m Model) statusLine() string {
 	if m.vim != nil && m.vim.Mode() == vim.Command {
 		// The ex command line takes over the status bar, like Vim.
-		return ":" + m.vim.CommandLine() + styleCursor.Render(" ")
+		return m.vim.Prompt() + m.vim.CommandLine() + styleCursor.Render(" ")
 	}
 	name := "[sem nome]"
 	if p := m.ed.Path(); p != "" {
