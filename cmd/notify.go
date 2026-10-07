@@ -24,7 +24,7 @@ const notifyStateFile = "notifications.json"
 // the Intra rate limit is shared with every other command, so checking more
 // often than that would only burn quota.
 const (
-	defaultWatchInterval = 5 * time.Minute
+	defaultWatchInterval = 2 * time.Minute
 	minWatchInterval     = time.Minute
 )
 
