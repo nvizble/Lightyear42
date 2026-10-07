@@ -147,6 +147,12 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, cmd
 	case tea.MouseMsg:
 		m.mouse(msg)
+		// A click on a fix asks the server (see applyFix).
+		if st := m.ses.current().lsp; st != nil && st.pending != nil {
+			cmd := st.pending
+			st.pending = nil
+			return m, cmd
+		}
 	case lspStartedMsg, lspEventMsg:
 		return m.lspMsg(msg)
 	case hoverMsg, definitionMsg, completionMsg:
@@ -266,6 +272,14 @@ func (m Model) indentation() string {
 }
 
 func (m *Model) mouse(msg tea.MouseMsg) {
+	if t := m.ses.tip; t != nil && m.onTip(t, msg.X, msg.Y) {
+		// The box stays while the mouse is on it; a click there fixes.
+		if t.fix && msg.Action == tea.MouseActionPress && msg.Button == tea.MouseButtonLeft {
+			m.ses.tip = nil
+			m.applyFix(t)
+		}
+		return
+	}
 	m.ses.tip = nil
 	if m.dragBorder(msg) {
 		return // resizing windows
