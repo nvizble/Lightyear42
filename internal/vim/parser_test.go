@@ -140,7 +140,7 @@ func TestHostCommands(t *testing.T) {
 	}
 	run(c, "gd3]d[d")
 	run(c, "dK")  // an operator pending cancels
-	run(c, "gxK") // "gx" isn't anything: cancelled, then K runs
+	run(c, "gxK") // "gx" isn't anything: canceled, then K runs
 	if got := strings.Join(calls, " "); got != "K×1 gd×1 ]d×3 [d×1 K×1" {
 		t.Fatalf("chamadas: %s", got)
 	}

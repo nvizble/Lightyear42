@@ -74,7 +74,7 @@ func (m Model) lspCommands() map[string]func(int) vim.Result {
 				return definitionMsg{locs, err}
 			})
 		},
-		"]d": func(n int) vim.Result { return m.jumpDiagnostic(n) },
+		"]d": m.jumpDiagnostic,
 		"[d": func(n int) vim.Result { return m.jumpDiagnostic(-n) },
 	}
 }
