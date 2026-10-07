@@ -7,6 +7,14 @@ Mudanças visíveis do lightyear, da mais nova para a mais antiga. O
 Versões `-canary.N` são pre-releases: `lightyear update --canary` entra no
 canal canary e `lightyear update --stable` volta para a estável.
 
+## [1.3.0-canary.29] — 2026-10-07
+
+- App: na aba Exam, clique no nome de um exercício para treinar só ele,
+  sem tempo (como o `lightyear exam practice`). O mouse sobre o nome mostra
+  o nível, e o `/` busca um exercício pelo nome.
+- App: a lista de exercícios da aba Exam quebra as linhas na largura do
+  terminal. Antes, os nomes que passavam da tela sumiam.
+
 ## [1.3.0-canary.28] — 2026-10-07
 
 - App: com o `lightyear notify` configurado, o app vigia a agenda enquanto

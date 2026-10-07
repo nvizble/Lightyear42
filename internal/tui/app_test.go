@@ -12,6 +12,7 @@ import (
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/x/ansi"
 	"github.com/nvizble/Lightyear42/internal/exam"
 	"github.com/nvizble/Lightyear42/internal/services"
 )
@@ -44,6 +45,14 @@ func (f *fakeExam) Finish() (exam.Session, error) {
 	s := *f.sess
 	f.sess = nil
 	return s, nil
+}
+
+func (f *fakeExam) Practice(now time.Time, name string) (exam.Session, error) {
+	if f.sess != nil {
+		return exam.Session{}, services.ErrExamSessionActive
+	}
+	f.sess = &exam.Session{Mode: exam.ModePractice, Rank: "02", Level: 1, Exercise: name, StartedAt: now}
+	return *f.sess, nil
 }
 
 func (f *fakeExam) EditTargets(exam.Session) (string, []string, error) {
@@ -395,5 +404,61 @@ func TestAppNotifyWatch(t *testing.T) {
 	plain, _ := newTestApp(t, nil)
 	if plain.notifyAfter(0) != nil || strings.Contains(plain.tabBar(), "notify") {
 		t.Fatal("sem notify configurado, nada de checagem")
+	}
+}
+
+func TestAppExamPracticeByClick(t *testing.T) {
+	m, fe := newTestApp(t, nil) // only the Exam tab
+	spots := m.spots()
+	if len(spots) != 1 || spots[0].id() != "first_word" {
+		t.Fatalf("o catálogo deveria ter first_word clicável: %+v", spots)
+	}
+	h := spots[0]
+	x, y := h.Col+appPadLeft, h.Line+appPadTop+appBodyTop-m.scroll
+	m = run(t, m, tea.MouseMsg{X: x, Y: y, Action: tea.MouseActionMotion})
+	if !strings.Contains(m.View(), "treinar first_word (nível 1, sem tempo)") {
+		t.Fatalf("passar o mouse no exercício explica o clique:\n%s", m.View())
+	}
+	m = run(t, m, click(x, y))
+	if fe.sess == nil || fe.sess.Mode != exam.ModePractice || fe.sess.Exercise != "first_word" {
+		t.Fatalf("clicar no exercício começa o treino dele: %+v", fe.sess)
+	}
+	if view := m.View(); !strings.Contains(view, "Prática") || !strings.Contains(view, "Treino de first_word começou") || len(m.spots()) != 0 {
+		t.Fatalf("o treino aparece no lugar do catálogo:\n%s", view)
+	}
+
+	// The "/" search picks an exercise too.
+	m, fe = newTestApp(t, nil)
+	for _, k := range []string{"/", "f", "i", "r"} {
+		m = run(t, m, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(k)})
+	}
+	m = run(t, m, tea.KeyMsg{Type: tea.KeyEnter})
+	if fe.sess == nil || fe.sess.Exercise != "first_word" {
+		t.Fatalf("buscar e escolher o exercício começa o treino: %+v", fe.sess)
+	}
+}
+
+func TestExamCatalogView(t *testing.T) {
+	catalog, err := exam.Load()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if one := RenderExamCatalog(catalog); !strings.Contains(ansi.Strip(one), "    first_word fizzbuzz ft_putstr") {
+		t.Fatalf("sem largura, um nível por linha (lightyear exam list):\n%s", one)
+	}
+	view := ExamCatalogView(catalog, 60)
+	lines := strings.Split(ansi.Strip(view.Content), "\n")
+	for _, l := range lines {
+		if ansi.StringWidth(l) > 60 {
+			t.Fatalf("linha passa de 60 colunas: %q", l)
+		}
+	}
+	if len(view.Hotspots) != len(catalog) {
+		t.Fatalf("um hotspot por exercício: %d de %d", len(view.Hotspots), len(catalog))
+	}
+	for _, h := range view.Hotspots {
+		if got := lines[h.Line][h.Col : h.Col+h.Width]; got != h.id() {
+			t.Fatalf("o hotspot de %s cai em %q", h.id(), got)
+		}
 	}
 }

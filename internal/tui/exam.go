@@ -5,6 +5,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/charmbracelet/lipgloss"
 	"github.com/nvizble/Lightyear42/internal/exam"
 	"github.com/nvizble/Lightyear42/internal/services"
 )
@@ -26,23 +27,39 @@ func RenderGradeReport(r services.GradeReport, now time.Time) string {
 
 // RenderExamCatalog lists the exercises grouped by rank and level.
 func RenderExamCatalog(exercises []exam.Exercise) string {
-	var b strings.Builder
+	return ExamCatalogView(exercises, 0).Content
+}
+
+// ExamCatalogView is the catalog with each exercise's name as a hotspot
+// (its ID is the name), the names of a level wrapped to width cells (0: one
+// line per level).
+func ExamCatalogView(exercises []exam.Exercise, width int) AppView {
+	var lines []string
+	var spots []Hotspot
 	rank, level := "", 0
 	for _, ex := range exercises {
 		if ex.Rank != rank {
 			if rank != "" {
-				b.WriteString("\n\n")
+				lines = append(lines, "")
 			}
-			b.WriteString(styleTitle.Render("Exam Rank " + ex.Rank))
+			lines = append(lines, styleTitle.Render("Exam Rank "+ex.Rank))
 			rank, level = ex.Rank, 0
 		}
 		if ex.Level != level {
-			b.WriteString("\n" + styleLevel.Render(fmt.Sprintf("  nível %d", ex.Level)) + "\n   ")
+			lines = append(lines, styleLevel.Render(fmt.Sprintf("  nível %d", ex.Level)), "   ")
 			level = ex.Level
 		}
-		b.WriteString(" " + ex.Name)
+		last := len(lines) - 1
+		col := lipgloss.Width(lines[last]) + 1
+		if width > 0 && col > 4 && col+lipgloss.Width(ex.Name) > width {
+			lines = append(lines, "   ")
+			last, col = last+1, 4
+		}
+		lines[last] += " " + ex.Name
+		spots = append(spots, Hotspot{Line: last, Col: col, Width: lipgloss.Width(ex.Name), Search: ex.Name,
+			Info: fmt.Sprintf("treinar %s (nível %d, sem tempo)", ex.Name, ex.Level)})
 	}
-	return b.String()
+	return AppView{Content: strings.Join(lines, "\n"), Hotspots: spots}
 }
 
 func renderRemaining(s exam.Session, now time.Time) string {
