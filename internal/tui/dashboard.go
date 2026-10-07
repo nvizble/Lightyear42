@@ -3,7 +3,6 @@ package tui
 import (
 	"context"
 	"fmt"
-	"sort"
 	"strings"
 	"time"
 
@@ -196,9 +195,19 @@ func (m DashboardModel) footer() string {
 	return styleLabel.Render("r atualizar  ·  q sair")
 }
 
-// renderOccupancy draws one occupancy bar per cluster. Capacity comes from
-// layout when configured; otherwise only the online count is shown.
+// renderOccupancy draws the occupancy bars inside a card (live dashboard).
 func renderOccupancy(locations []models.Location, layout map[int]ClusterGrid) string {
+	lines := occupancyLines(locations, layout, occupancyBarWidth)
+	if len(lines) == 0 {
+		return styleCard.Render(styleLabel.Render("Nenhum posto mapeado em clusters."))
+	}
+	return styleCard.Render(styleTitle.Render("Ocupação por cluster") + "\n" + strings.Join(lines, "\n"))
+}
+
+// occupancyLines draws one bar per cluster. Capacity comes from layout when
+// configured; otherwise only the online count is shown. Nil when no session
+// maps to a cluster.
+func occupancyLines(locations []models.Location, layout map[int]ClusterGrid, width int) []string {
 	online := map[int]int{}
 	maxCluster := 0
 	for _, loc := range locations {
@@ -213,33 +222,24 @@ func renderOccupancy(locations []models.Location, layout map[int]ClusterGrid) st
 		maxCluster = max(maxCluster, cluster)
 	}
 
-	if maxCluster == 0 {
-		return styleCard.Render(styleLabel.Render("Nenhum posto mapeado em clusters."))
-	}
-
-	clusters := make([]int, 0, maxCluster)
+	lines := make([]string, 0, maxCluster)
 	for cluster := 1; cluster <= maxCluster; cluster++ {
-		clusters = append(clusters, cluster)
-	}
-	sort.Ints(clusters)
-
-	var b strings.Builder
-	b.WriteString(styleTitle.Render("Ocupação por cluster"))
-	for _, cluster := range clusters {
-		count := online[cluster]
 		capacity := 0
 		if grid, ok := layout[cluster]; ok {
 			capacity = grid.Capacity()
 		}
-		b.WriteString("\n")
-		b.WriteString(occupancyLine(cluster, count, capacity))
+		lines = append(lines, occupancyBar(cluster, online[cluster], capacity, width))
 	}
-	return styleCard.Render(b.String())
+	return lines
 }
 
-// occupancyLine renders "Cluster N  ████░░  57/72  79%".
+// occupancyLine renders "Cluster N  ████░░  57/72  79%" at the default width.
 // capacity == 0 means unknown (no layout configured).
 func occupancyLine(cluster, count, capacity int) string {
+	return occupancyBar(cluster, count, capacity, occupancyBarWidth)
+}
+
+func occupancyBar(cluster, count, capacity, width int) string {
 	label := fmt.Sprintf("Cluster %-2d ", cluster)
 	if capacity <= 0 {
 		return styleValue.Render(label) + styleLabel.Render(fmt.Sprintf("%d online", count))
@@ -249,9 +249,9 @@ func occupancyLine(cluster, count, capacity int) string {
 	if fraction > 1 {
 		fraction = 1
 	}
-	filled := int(fraction*float64(occupancyBarWidth) + 0.5)
+	filled := int(fraction*float64(width) + 0.5)
 	bar := styleGood.Render(strings.Repeat("█", filled)) +
-		styleLabel.Render(strings.Repeat("░", occupancyBarWidth-filled))
+		styleLabel.Render(strings.Repeat("░", width-filled))
 
 	return styleValue.Render(label) + bar +
 		styleValue.Render(fmt.Sprintf(" %3d/%d", count, capacity)) +

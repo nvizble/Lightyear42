@@ -136,6 +136,9 @@ type GradeReport struct {
 	Completed bool
 	// Session is the state after grading (next exercise when it passed).
 	Session exam.Session
+	// Levels lists the levels of the exam's rank, in order (empty in
+	// practice), so the UI can show the progression.
+	Levels []int
 }
 
 // Grade checks the current exercise. On success the exam moves to a random
@@ -159,6 +162,9 @@ func (s *ExamService) Grade(ctx context.Context, now time.Time) (GradeReport, er
 	}
 	sess.Attempts++
 	report := GradeReport{Result: res, Graded: ex.Name}
+	if sess.Mode == exam.ModeExam {
+		report.Levels = s.levels(sess.Rank)
+	}
 
 	tracePath := filepath.Join(sess.Workspace, "traces", ex.Name+".trace")
 	if !res.Passed {

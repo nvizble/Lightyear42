@@ -61,17 +61,28 @@ func newTestApp(t *testing.T, tabs []AppTab) (AppModel, *fakeExam) {
 }
 
 // run applies a message and, if it returns a command, feeds its result back
-// (one level deep, enough for loads and grading).
+// (one level deep, enough for loads and grading; batches run every command).
 func run(t *testing.T, m AppModel, msg tea.Msg) AppModel {
 	t.Helper()
 	next, cmd := m.Update(msg)
 	m = next.(AppModel)
-	if cmd != nil {
-		if out := cmd(); out != nil {
-			if _, batch := out.(tea.BatchMsg); !batch {
-				next, _ = m.Update(out)
-				m = next.(AppModel)
+	if cmd == nil {
+		return m
+	}
+	out := cmd()
+	msgs := []tea.Msg{out}
+	if batch, ok := out.(tea.BatchMsg); ok {
+		msgs = msgs[:0]
+		for _, c := range batch {
+			if c != nil {
+				msgs = append(msgs, c())
 			}
+		}
+	}
+	for _, o := range msgs {
+		if o != nil {
+			next, _ = m.Update(o)
+			m = next.(AppModel)
 		}
 	}
 	return m
@@ -131,8 +142,11 @@ func TestAppExamFlowWithFooterButtons(t *testing.T) {
 
 	fe.passed = true
 	m = clickButton(m, "g")
-	if m.grading || !strings.Contains(m.View(), "SUCCESS") {
+	if m.grading || !strings.Contains(m.View(), strings.Split(banner("✓", "SUCCESS"), "\n")[0]) {
 		t.Fatalf("grademe não mostrou o resultado:\n%s", m.View())
+	}
+	if n := strings.Count(m.View(), "Exam Rank 02"); n != 1 {
+		t.Fatalf("o cartão da prova deveria aparecer uma vez, apareceu %d:\n%s", n, m.View())
 	}
 
 	m = clickButton(m, "f")

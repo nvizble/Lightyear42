@@ -66,6 +66,16 @@ type appGradedMsg struct {
 
 type appTickMsg time.Time
 
+// appSpinMsg animates the spinner while a grading runs.
+type appSpinMsg struct{}
+
+// spinnerFrames is the braille spinner shown while grading.
+var spinnerFrames = []string{"⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"}
+
+func appSpin() tea.Cmd {
+	return tea.Tick(90*time.Millisecond, func(time.Time) tea.Msg { return appSpinMsg{} })
+}
+
 // appEditedMsg arrives when the editor opened with `e` exits.
 type appEditedMsg struct{ err error }
 
@@ -86,6 +96,7 @@ type AppModel struct {
 	examSess      *exam.Session
 	examNotice    string
 	grading       bool
+	spin          int
 	confirmFinish bool
 }
 
@@ -144,12 +155,20 @@ func (m AppModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		m.clampScroll()
 
+	case appSpinMsg:
+		if !m.grading {
+			return m, nil
+		}
+		m.spin++
+		return m, appSpin()
+
 	case appGradedMsg:
 		m.grading = false
 		if msg.err != nil {
 			m.examNotice = styleFail.Render(msg.err.Error())
 		} else {
-			m.examNotice = RenderGradeReport(msg.report, m.now)
+			// The body draws the session card below, so the result stays apart.
+			m.examNotice = RenderGradeResult(msg.report)
 		}
 		m.reloadExam()
 
@@ -239,13 +258,12 @@ func (m AppModel) examKey(k string) (tea.Model, tea.Cmd) {
 		if m.examSess == nil || m.grading {
 			return m, nil
 		}
-		m.grading = true
-		m.examNotice = styleLabel.Render("Corrigindo…")
+		m.grading, m.spin, m.examNotice = true, 0, ""
 		ctrl, now := m.opts.Exam, m.now
-		return m, func() tea.Msg {
+		return m, tea.Batch(appSpin(), func() tea.Msg {
 			report, err := ctrl.Grade(context.Background(), now)
 			return appGradedMsg{report: report, err: err}
-		}
+		})
 	case "f":
 		if m.examSess == nil {
 			return m, nil
@@ -386,12 +404,15 @@ func (m AppModel) body() string {
 
 func (m AppModel) examBody() string {
 	var parts []string
-	if m.examNotice != "" {
+	switch {
+	case m.grading:
+		parts = append(parts, m.gradingLine())
+	case m.examNotice != "":
 		parts = append(parts, m.examNotice)
 	}
 	if m.examSess != nil {
-		parts = append(parts, RenderExamSession(*m.examSess, m.now),
-			styleLabel.Render("Aperte e para abrir o subject e a sua entrega lado a lado no vim\n(o cursor já começa no código; Ctrl-w w alterna entre os dois).\nAo sair (:wq), aperte g para corrigir."))
+		parts = append(parts, examCard(*m.examSess, m.now, false, ""),
+			styleLabel.Render("Aperte e para abrir o subject e a sua entrega lado a lado no vim.\nNo vim, Ctrl-w w alterna entre os dois e :wq volta para cá; aí é só apertar g."))
 	} else {
 		parts = append(parts,
 			styleTitle.Render("Simulador de provas")+"\n"+
@@ -399,6 +420,19 @@ func (m AppModel) examBody() string {
 			RenderExamCatalog(m.opts.Exam.Exercises()))
 	}
 	return strings.Join(parts, "\n\n")
+}
+
+// gradingLine is the spinner shown while grading:
+// "⠋ Corrigindo…  cc -Wall -Wextra -Werror · 8 testes".
+func (m AppModel) gradingLine() string {
+	line := styleGood.Render(spinnerFrames[m.spin%len(spinnerFrames)]) + " " + styleValue.Render("Corrigindo…")
+	info := "cc -Wall -Wextra -Werror"
+	for _, ex := range m.opts.Exam.Exercises() {
+		if m.examSess != nil && ex.Rank == m.examSess.Rank && ex.Name == m.examSess.Exercise {
+			info += fmt.Sprintf(" · %d testes", len(ex.Tests))
+		}
+	}
+	return line + styleLabel.Render("  "+info)
 }
 
 func (m *AppModel) scrollBy(n int) {

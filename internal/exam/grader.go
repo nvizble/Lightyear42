@@ -33,6 +33,16 @@ type Result struct {
 	// Trace explains the first failure (compile error, wrong output, crash,
 	// timeout). Empty when the submission passed.
 	Trace string
+	// Tests lists the tests that ran, in order: every one when the
+	// submission passed, up to (and including) the first failure otherwise.
+	// Empty when it never got to run (missing file, compile error).
+	Tests []TestOutcome
+}
+
+// TestOutcome is the result of one test run.
+type TestOutcome struct {
+	Args   []string
+	Passed bool
 }
 
 // Grader compiles a submission and the reference solution and compares
@@ -88,6 +98,7 @@ func (g Grader) Grade(ctx context.Context, ex Exercise, submissionDir string) (R
 		return Result{Trace: "erro de compilação:\n" + out}, nil
 	}
 
+	var outcomes []TestOutcome
 	for i, args := range ex.Tests {
 		want, err := run(ctx, refBin, args, refTimeout)
 		if err != nil {
@@ -99,13 +110,16 @@ func (g Grader) Grade(ctx context.Context, ex Exercise, submissionDir string) (R
 		}
 		got, err := run(ctx, userBin, args, timeout)
 		if err != nil {
-			return Result{Trace: fmt.Sprintf("%s %s\n%v", ex.Name, quoteArgs(args), err)}, nil
+			outcomes = append(outcomes, TestOutcome{Args: args})
+			return Result{Trace: fmt.Sprintf("%s %s\n%v", ex.Name, QuoteArgs(args), err), Tests: outcomes}, nil
 		}
 		if got != want {
-			return Result{Trace: fmt.Sprintf("%s %s\nesperado: %q\nrecebido: %q", ex.Name, quoteArgs(args), want, got)}, nil
+			outcomes = append(outcomes, TestOutcome{Args: args})
+			return Result{Trace: fmt.Sprintf("%s %s\nesperado: %q\nrecebido: %q", ex.Name, QuoteArgs(args), want, got), Tests: outcomes}, nil
 		}
+		outcomes = append(outcomes, TestOutcome{Args: args, Passed: true})
 	}
-	return Result{Passed: true}, nil
+	return Result{Passed: true, Tests: outcomes}, nil
 }
 
 // build writes the sources, then the exercise's provided files (which win
@@ -187,8 +201,8 @@ func (b *cappedBuffer) Write(p []byte) (int, error) {
 	return b.Buffer.Write(p)
 }
 
-// quoteArgs renders argv the way it would be typed in a shell.
-func quoteArgs(args []string) string {
+// QuoteArgs renders argv the way it would be typed in a shell.
+func QuoteArgs(args []string) string {
 	quoted := make([]string, len(args))
 	for i, a := range args {
 		quoted[i] = fmt.Sprintf("%q", a)

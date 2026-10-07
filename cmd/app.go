@@ -54,7 +54,7 @@ func appTabs(deps *appDeps) []tui.AppTab {
 		if err != nil {
 			return "", err
 		}
-		return tui.RenderDashboard(snap, layout), nil
+		return tui.RenderHome(snap, layout, time.Now()), nil
 	}
 	tabs[1].Load = func(ctx context.Context) (string, error) {
 		me, err := deps.Users.Me(ctx)
@@ -65,7 +65,7 @@ func appTabs(deps *appDeps) []tui.AppTab {
 		if err != nil {
 			return "", err
 		}
-		return tui.RenderEvaluations(evaluations, me.Login, 0), nil
+		return tui.RenderEvaluationRows(evaluations, me.Login, time.Now(), 0), nil
 	}
 	tabs[2].Load = func(ctx context.Context) (string, error) {
 		projects, err := deps.Users.Projects(ctx, "", false)
@@ -75,6 +75,10 @@ func appTabs(deps *appDeps) []tui.AppTab {
 		return tui.RenderProjects(projects), nil
 	}
 	tabs[3].Load = func(ctx context.Context) (string, error) {
+		me, err := deps.Users.Me(ctx)
+		if err != nil {
+			return "", err
+		}
 		id, name, err := primaryCampusID(ctx, deps)
 		if err != nil {
 			return "", err
@@ -83,7 +87,11 @@ func appTabs(deps *appDeps) []tui.AppTab {
 		if err != nil {
 			return "", err
 		}
-		return tui.RenderCampusMap(name, locations, layout), nil
+		friends, err := newFriendsService().List()
+		if err != nil {
+			return "", err
+		}
+		return tui.RenderCampusSeats(name, locations, layout, friends, me.Login), nil
 	}
 	tabs[4].Load = func(ctx context.Context) (string, error) {
 		slots, err := deps.Slots.List(ctx)

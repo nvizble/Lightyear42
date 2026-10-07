@@ -140,7 +140,7 @@ UX: progresso, tabelas, cores, loading — sem poluição visual.
 
 Chat (DM/fórum/relay): **parked** — sem DM na API pública; fórum ≠ chat; relay próprio fora de escopo.
 
-Futuro: offline, sync, plugins, export CSV/JSON.
+Futuro: offline, sync, plugins, export CSV/JSON, editor próprio estilo vim dentro do app (no lugar do vim externo na aba Exam).
 
 ---
 
