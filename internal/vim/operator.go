@@ -2,27 +2,25 @@ package vim
 
 import "github.com/nvizble/Lightyear42/internal/editor"
 
-// Operator acts on the text covered by a motion (d now; y and c come with
-// registers and the next phases).
+// Operator acts on the text covered by a motion or a selection.
 type Operator int
 
 // Operators.
 const (
 	opNone Operator = iota
 	opDelete
+	opYank
+	opChange
 )
 
 // operators maps keys to operators.
-var operators = map[string]Operator{"d": opDelete}
+var operators = map[string]Operator{"d": opDelete, "y": opYank, "c": opChange}
 
 // apply runs op from the cursor to target t.
 func (c *Controller) apply(op Operator, t Target) {
-	if op != opDelete {
-		return
-	}
 	from := c.ed.Cursor()
 	if t.Linewise {
-		c.deleteLines(from.Line, t.Pos.Line)
+		c.applyLines(op, from.Line, t.Pos.Line)
 		return
 	}
 	start, end := from, t.Pos
@@ -32,7 +30,55 @@ func (c *Controller) apply(op Operator, t Target) {
 	if t.Inclusive {
 		end.Column++
 	}
-	c.deleteRange(editor.Range{Start: start, End: end})
+	c.applyRange(op, editor.Range{Start: start, End: end})
+}
+
+// applyRange runs op on the characters in r; the text goes to the register.
+func (c *Controller) applyRange(op Operator, r editor.Range) {
+	if text := c.ed.Buffer().Slice(r); text != "" {
+		c.regs[unnamed] = Register{Text: text}
+	}
+	switch op {
+	case opYank:
+		c.ed.MoveCursor(r.Start)
+		c.clampNormal()
+	case opDelete:
+		c.deleteRange(r)
+	case opChange:
+		c.ed.BeginGroup() // the deletion and what gets typed undo together
+		c.ed.MoveCursor(r.Start)
+		c.ed.Delete(r)
+		c.mode = Insert
+	}
+}
+
+// applyLines runs op on lines first..last (in any order); they go to the
+// register as whole lines.
+func (c *Controller) applyLines(op Operator, first, last int) {
+	if last < first {
+		first, last = last, first
+	}
+	buf := c.ed.Buffer()
+	c.regs[unnamed] = Register{Text: buf.Slice(editor.Range{Start: editor.Position{Line: first}, End: editor.Position{Line: last, Column: buf.LineLen(last)}}), Linewise: true}
+	switch op {
+	case opYank:
+		if cur := c.ed.Cursor(); cur.Line != first {
+			c.ed.MoveCursor(editor.Position{Line: first, Column: cur.Column})
+			c.clampNormal()
+		}
+	case opDelete:
+		c.deleteLines(first, last)
+	case opChange:
+		// The lines become one, empty but for the first one's indentation.
+		indent := editor.Position{Line: first, Column: indentWidth(buf, first)}
+		c.ed.BeginGroup()
+		if cur := c.ed.Cursor(); cur.Line != first {
+			c.ed.MoveCursor(editor.Position{Line: first, Column: cur.Column})
+		}
+		c.ed.Delete(editor.Range{Start: indent, End: editor.Position{Line: last, Column: buf.LineLen(last)}})
+		c.ed.MoveCursor(indent)
+		c.mode = Insert
+	}
 }
 
 // deleteRange removes r and leaves the cursor at its start. The cursor goes
@@ -43,14 +89,10 @@ func (c *Controller) deleteRange(r editor.Range) {
 	c.clampNormal()
 }
 
-// deleteLines removes lines first..last (in any order) with their line
-// breaks and lands on the first non-blank character of the line that takes
-// their place.
+// deleteLines removes lines first..last with their line breaks and lands
+// on the first non-blank character of the line that takes their place.
 func (c *Controller) deleteLines(first, last int) {
 	buf := c.ed.Buffer()
-	if last < first {
-		first, last = last, first
-	}
 	r := editor.Range{Start: editor.Position{Line: first}, End: editor.Position{Line: last + 1}}
 	switch {
 	case last+1 < buf.LineCount():

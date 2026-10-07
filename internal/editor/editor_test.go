@@ -111,8 +111,8 @@ func TestReplaceIsOneStep(t *testing.T) {
 		t.Fatalf("replace: %q %v", e.Buffer().Text(), e.Cursor())
 	}
 	e.Undo()
-	if e.Buffer().Text() != "hello world" {
-		t.Fatalf("um undo deveria desfazer o replace inteiro: %q", e.Buffer().Text())
+	if e.Buffer().Text() != "hello world" || e.Cursor() != (Position{0, 0}) {
+		t.Fatalf("um undo deveria desfazer o replace inteiro e voltar o cursor: %q %v", e.Buffer().Text(), e.Cursor())
 	}
 	e.Redo()
 	if e.Buffer().Text() != "hello 42" {

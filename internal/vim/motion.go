@@ -229,6 +229,27 @@ func backStep(buf *editor.Buffer, p editor.Position) editor.Position {
 	}
 }
 
+// changeWord is "cw": like Vim, on a word it changes only up to the word's
+// end (not the blanks after it), as "ce" but counting the current word.
+func changeWord(ed *editor.Editor, count int, op bool) Target {
+	buf, p := ed.Buffer(), ed.Cursor()
+	cls := classAt(buf, p)
+	if cls == blankClass {
+		return wordForward(ed, count, op)
+	}
+	for {
+		n, ok := next(buf, p)
+		if !ok || n.Line != p.Line || classAt(buf, n) != cls {
+			break
+		}
+		p = n
+	}
+	for i := 1; i < times(count); i++ {
+		p = endStep(buf, p)
+	}
+	return Target{Pos: p, Inclusive: true}
+}
+
 // wordEnd (e) goes to the end of the current or next word, inclusive.
 func wordEnd(ed *editor.Editor, count int, _ bool) Target {
 	buf, p := ed.Buffer(), ed.Cursor()
