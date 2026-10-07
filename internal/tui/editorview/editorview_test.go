@@ -241,8 +241,8 @@ func TestVimProgramWithRealKeys(t *testing.T) {
 	case <-time.After(5 * time.Second):
 		t.Fatal("o editor não saiu com :wq")
 	}
-	// gg isn't implemented yet (phase 3): "g g" are no-ops, so O opens above
-	// the last line and dd removes that new line again.
+	// gg goes to the first line, O opens a line above it and dd removes that
+	// new line again: the file ends up as typed.
 	if data, _ := os.ReadFile(path); string(data) != "int main(void)\n{\n}" {
 		t.Fatalf("arquivo salvo: %q", data)
 	}

@@ -1,10 +1,10 @@
 # Editor de Código Modal Embutido para TUI em Go
 
-> **Status:** Fases 1 (Editor Core, `internal/editor`) e 2 (edição modal,
-> `internal/vim`) implementadas, com o componente em `internal/tui/editorview`
-> (comando experimental escondido `lightyear edit <arquivo>`, modal por
-> padrão; `--plain` para o editor sem modos). Próxima: Fase 3 (command
-> parser: contadores, operadores × motions).
+> **Status:** Fases 1 (Editor Core, `internal/editor`), 2 (edição modal,
+> `internal/vim`) e 3 (command parser: contadores, operador × motion)
+> implementadas, com o componente em `internal/tui/editorview` (comando
+> experimental escondido `lightyear edit <arquivo>`, modal por padrão;
+> `--plain` para o editor sem modos). Próxima: Fase 4 (Visual Mode).
 >
 > **Desvios desta implementação em relação ao texto abaixo:**
 > - o componente visual mora em `internal/tui/editorview` (a TUI do projeto
@@ -15,7 +15,13 @@
 > - a Fase 2 já traz `I A O` (listados na seção 9) e uma linha de comando
 >   mínima (`:w`, `:q`, `:q!`, `:wq`, `:x`), para sair e salvar do jeito Vim;
 > - uma sessão de INSERT inteira é um passo de undo (grupos no core:
->   `BeginGroup`/`EndGroup`).
+>   `BeginGroup`/`EndGroup`);
+> - a Fase 3 inclui `^` (primeiro não-branco), útil em código com tabs; as
+>   motions ficam em `internal/vim/motion.go` (um pacote só, sem
+>   `motions/`), e cada uma devolve um `Target` (exclusivo, inclusivo ou
+>   linewise) que os operadores aplicam;
+> - contadores também valem para `x`, `u` e `Ctrl-r`; `y` entra com os
+>   registers (Fase 5), o parser já aceita qualquer operador.
 
 ## 1. Visão Geral
 
@@ -168,7 +174,28 @@ Toda alteração produz uma operação reversível (Insert, Delete, Replace). `u
 
 ## 16–18. LSP
 
-O editor atua como **cliente LSP** (JSON-RPC) de servidores externos (`gopls`, `rust-analyzer`, `pyright`, `typescript-language-server`). Primeiras funcionalidades: diagnostics, completion, hover, go-to-definition (references depois). Sincronização: `didOpen`, `didChange` (completa no início, incremental depois), `didClose`.
+O editor atua como **cliente LSP** (JSON-RPC) de servidores externos.
+
+**Linguagens-alvo da Fase 7** (decidido com o João):
+
+| Linguagem | Servidor | Instalação (dica mostrada quando falta) |
+|---|---|---|
+| C / C++ | `clangd` | macOS: vem com o Xcode CLT (`xcrun clangd`); Linux: `apt install clangd` |
+| Go | `gopls` | `go install golang.org/x/tools/gopls@latest` |
+| Python | `pyright-langserver --stdio`, senão `pylsp` | `npm i -g pyright` ou `pip install python-lsp-server` |
+| Rust | `rust-analyzer` | `rustup component add rust-analyzer` |
+
+Notas de implementação:
+- achar o binário não basta: o `rust-analyzer` do rustup é um *proxy* que
+  falha se o componente não estiver instalado. O cliente precisa tratar
+  servidor que morre na inicialização e mostrar a dica de instalação;
+- para C (a linguagem das provas da 42), passar ao clangd
+  `fallbackFlags: ["-Wall", "-Wextra", "-Werror"]` quando não houver
+  `compile_commands.json`, para os diagnósticos baterem com o grader;
+- posições LSP são UTF-16 por padrão; o editor usa colunas em runes
+  (converter, ou negociar `positionEncoding`).
+
+Também cabem: `typescript-language-server`. Primeiras funcionalidades: diagnostics, completion, hover, go-to-definition (references depois). Sincronização: `didOpen`, `didChange` (completa no início, incremental depois), `didClose`.
 
 ## 19. Syntax Highlighting
 
@@ -211,8 +238,8 @@ Configuração própria (ex.: `editor.line_numbers`, `editor.relative_numbers`, 
 |---|---|---|
 | 1 — Editor Core | Buffer, Cursor, Viewport, Insert, Delete, Save, Undo, Redo | **implementada** |
 | 2 — Edição Modal | NORMAL/INSERT, `hjkl`, `i a o`, `x`, `dd`, `u`, `Ctrl-r` | **implementada** |
-| 3 — Command Parser | count + operator + motion (`3j`, `3dd`, `dw`, `3dw`, `d$`) | próxima |
-| 4 — Visual Mode | `v`, `V` e operações sobre seleções | |
+| 3 — Command Parser | count + operator + motion (`3j`, `3dd`, `dw`, `3dw`, `d$`) | **implementada** |
+| 4 — Visual Mode | `v`, `V` e operações sobre seleções | próxima |
 | 5 — Registers | `yy`, `dd`, `p`, `P` com register padrão | |
 | 6 — Syntax Highlighting | Tree-sitter, highlighting incremental | |
 | 7 — LSP | cliente JSON-RPC; diagnostics, hover, completion, go-to-definition | |
