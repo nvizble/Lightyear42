@@ -24,6 +24,11 @@ type UpdateOptions struct {
 	CheckOnly bool
 	// Force allows updating from non-semver builds (e.g. "dev").
 	Force bool
+	// Canary opts into the canary channel: the newest release, pre-releases
+	// included. Running a canary build implies it unless Stable is set.
+	Canary bool
+	// Stable pins the stable channel, allowing a downgrade from a canary build.
+	Stable bool
 	// GOOS/GOARCH override the runtime platform (tests).
 	GOOS   string
 	GOARCH string
@@ -33,9 +38,19 @@ type UpdateOptions struct {
 type UpdatePlan struct {
 	Current string
 	Latest  string
+	// Channel is "stable" or "canary".
+	Channel string
 	Newer   bool
-	Asset   models.ReleaseAsset
+	// Downgrade is set when leaving the canary channel for an older stable.
+	Downgrade bool
+	Asset     models.ReleaseAsset
 }
+
+// Update channels.
+const (
+	ChannelStable = "stable"
+	ChannelCanary = "canary"
+)
 
 // BinaryInstaller installs a release archive over the current executable.
 type BinaryInstaller interface {
@@ -69,8 +84,24 @@ func (s *UpdateService) Check(ctx context.Context, opts UpdateOptions) (*UpdateP
 	if !update.IsReleaseVersion(current) && !opts.Force {
 		return nil, fmt.Errorf("versão local %q não é um release (use --force para atualizar builds de desenvolvimento)", current)
 	}
+	if opts.Canary && opts.Stable {
+		return nil, fmt.Errorf("escolha um canal só: --canary ou --stable")
+	}
 
-	rel, err := s.releases.Latest(ctx)
+	// The channel sticks: a canary build keeps getting canaries until the
+	// user asks for --stable.
+	channel := ChannelStable
+	if opts.Canary || (!opts.Stable && update.IsPrerelease(current)) {
+		channel = ChannelCanary
+	}
+
+	var rel *models.Release
+	var err error
+	if channel == ChannelCanary {
+		rel, err = s.newestRelease(ctx)
+	} else {
+		rel, err = s.releases.Latest(ctx)
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -83,6 +114,7 @@ func (s *UpdateService) Check(ctx context.Context, opts UpdateOptions) (*UpdateP
 	plan := &UpdatePlan{
 		Current: current,
 		Latest:  rel.TagName,
+		Channel: channel,
 		Asset:   *asset,
 	}
 
@@ -92,12 +124,37 @@ func (s *UpdateService) Check(ctx context.Context, opts UpdateOptions) (*UpdateP
 			return nil, err
 		}
 		plan.Newer = newer
+		// Leaving canary: the latest stable can be older than the running build.
+		plan.Downgrade = opts.Stable && update.IsPrerelease(current) && !newer
 	} else {
 		// Forced update from dev: always treat remote as installable.
 		plan.Newer = true
 	}
 
 	return plan, nil
+}
+
+// newestRelease returns the highest-versioned published release, canary
+// builds included. A stable newer than every canary wins, as it should.
+func (s *UpdateService) newestRelease(ctx context.Context) (*models.Release, error) {
+	releases, err := s.releases.List(ctx)
+	if err != nil {
+		return nil, err
+	}
+	var newest *models.Release
+	for i := range releases {
+		rel := &releases[i]
+		if rel.Draft || !update.IsReleaseVersion(rel.TagName) {
+			continue
+		}
+		if newest == nil || update.CompareVersions(rel.TagName, newest.TagName) > 0 {
+			newest = rel
+		}
+	}
+	if newest == nil {
+		return nil, fmt.Errorf("nenhuma release publicada encontrada")
+	}
+	return newest, nil
 }
 
 // Apply downloads and installs the planned release asset.

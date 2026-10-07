@@ -16,6 +16,8 @@ func newUpdateCmd() *cobra.Command {
 		checkOnly bool
 		force     bool
 		yes       bool
+		canary    bool
+		stable    bool
 	)
 
 	cmd := &cobra.Command{
@@ -27,10 +29,17 @@ e substitui o binário atual se houver uma versão mais nova.
 Não usa Go — adequado para o campus (Go antigo) e instalações via
 tarball / ~/.local/bin. Pacotes .deb continuam atualizáveis via apt.
 
+Canais: o estável é o padrão. Com --canary você entra no canal canary
+(pre-releases: as novidades chegam antes, menos testadas). Quem está numa
+canary continua recebendo canaries no "lightyear update"; para voltar ao
+estável, use --stable (instala a última estável, mesmo que mais antiga).
+
 Exemplos:
   lightyear update           # baixa e instala se houver versão nova
   lightyear update --check   # só informa se há update
   lightyear update --yes     # sem confirmação interativa
+  lightyear update --canary  # entra no canal canary
+  lightyear update --stable  # volta para a versão estável
   lightyear update --force   # permite atualizar builds "dev"`,
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
@@ -38,6 +47,8 @@ Exemplos:
 				CheckOnly: checkOnly,
 				Force:     force,
 				Yes:       yes,
+				Canary:    canary,
+				Stable:    stable,
 			})
 		},
 	}
@@ -45,6 +56,9 @@ Exemplos:
 	cmd.Flags().BoolVar(&checkOnly, "check", false, "apenas verifica se há versão nova (não baixa)")
 	cmd.Flags().BoolVar(&force, "force", false, "permite atualizar builds sem versão de release (ex.: dev)")
 	cmd.Flags().BoolVarP(&yes, "yes", "y", false, "não pede confirmação antes de instalar")
+	cmd.Flags().BoolVar(&canary, "canary", false, "usa o canal canary (pre-releases: novidades antes, menos testadas)")
+	cmd.Flags().BoolVar(&stable, "stable", false, "volta para o canal estável (instala a última estável, mesmo que mais antiga)")
+	cmd.MarkFlagsMutuallyExclusive("canary", "stable")
 
 	return cmd
 }
@@ -53,6 +67,8 @@ type updateFlags struct {
 	CheckOnly bool
 	Force     bool
 	Yes       bool
+	Canary    bool
+	Stable    bool
 }
 
 func runUpdate(cmd *cobra.Command, flags updateFlags) error {
@@ -68,15 +84,18 @@ func runUpdate(cmd *cobra.Command, flags updateFlags) error {
 	plan, err := svc.Check(ctx, services.UpdateOptions{
 		Current: Version,
 		Force:   flags.Force,
+		Canary:  flags.Canary,
+		Stable:  flags.Stable,
 	})
 	if err != nil {
 		return err
 	}
 
 	fmt.Fprintf(out, "Versão atual:  %s\n", plan.Current)
+	fmt.Fprintf(out, "Canal:         %s\n", plan.Channel)
 	fmt.Fprintf(out, "Última release: %s\n", plan.Latest)
 
-	if !plan.Newer {
+	if !plan.Newer && !plan.Downgrade {
 		fmt.Fprintln(out, "Já está na versão mais recente.")
 		return nil
 	}
@@ -84,7 +103,14 @@ func runUpdate(cmd *cobra.Command, flags updateFlags) error {
 	fmt.Fprintf(out, "Asset:         %s\n", plan.Asset.Name)
 
 	if flags.CheckOnly {
-		fmt.Fprintln(out, "Há uma versão mais nova disponível. Rode: lightyear update")
+		rerun := "lightyear update"
+		switch {
+		case flags.Canary:
+			rerun += " --canary"
+		case flags.Stable:
+			rerun += " --stable"
+		}
+		fmt.Fprintln(out, "Há uma versão disponível. Rode: "+rerun)
 		return nil
 	}
 
@@ -95,7 +121,11 @@ func runUpdate(cmd *cobra.Command, flags updateFlags) error {
 	fmt.Fprintf(out, "Destino:       %s\n", target)
 
 	if !flags.Yes && term.IsTerminal(int(os.Stdin.Fd())) && term.IsTerminal(int(os.Stdout.Fd())) {
-		ok, err := promptConfirm(out, os.Stdin, fmt.Sprintf("Atualizar %s → %s? [y/N] ", plan.Current, plan.Latest))
+		question := fmt.Sprintf("Atualizar %s → %s? [y/N] ", plan.Current, plan.Latest)
+		if plan.Downgrade {
+			question = fmt.Sprintf("Voltar da canary %s para a estável %s? [y/N] ", plan.Current, plan.Latest)
+		}
+		ok, err := promptConfirm(out, os.Stdin, question)
 		if err != nil {
 			return err
 		}

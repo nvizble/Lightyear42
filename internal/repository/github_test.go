@@ -46,6 +46,33 @@ func TestGitHubReleases_Latest(t *testing.T) {
 	}
 }
 
+func TestGitHubReleases_List(t *testing.T) {
+	t.Parallel()
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/repos/nvizble/Lightyear42/releases" || r.URL.Query().Get("per_page") != "30" {
+			t.Errorf("url = %s", r.URL)
+			http.NotFound(w, r)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`[
+			{"tag_name": "v1.3.0-canary.2", "prerelease": true, "assets": []},
+			{"tag_name": "v1.2.0", "prerelease": false, "draft": false, "assets": []}
+		]`))
+	}))
+	t.Cleanup(srv.Close)
+
+	repo := NewGitHubReleases("nvizble", "Lightyear42", srv.Client()).WithBaseURL(srv.URL)
+	releases, err := repo.List(context.Background())
+	if err != nil {
+		t.Fatalf("List: %v", err)
+	}
+	if len(releases) != 2 || !releases[0].Prerelease || releases[1].Prerelease || releases[1].TagName != "v1.2.0" {
+		t.Fatalf("releases = %+v", releases)
+	}
+}
+
 func TestGitHubReleases_Latest_HTTPError(t *testing.T) {
 	t.Parallel()
 

@@ -83,7 +83,14 @@ Para só compilar no diretório do projeto: `make build` → `./lightyear`.
 lightyear update --check   # só verifica
 lightyear update           # baixa e substitui o binário atual
 lightyear update -y        # sem confirmação
+lightyear update --canary  # entra no canal canary (pre-releases: novidades antes)
+lightyear update --stable  # volta para a última versão estável
 ```
+
+**Canais:** o estável é o padrão. As canaries (`v1.3.0-canary.N`) trazem as
+novidades antes, menos testadas. Quem está numa canary continua recebendo
+canaries no `lightyear update`; o `--stable` volta para a estável, mesmo que
+ela seja mais antiga que a canary instalada.
 
 Requer permissão de escrita no caminho do executável (ex.: `~/.local/bin`).
 Instalações via `.deb` em `/usr/bin` pedem `sudo` ou reinstale o `.deb` novo.
