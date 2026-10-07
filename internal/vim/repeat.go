@@ -35,6 +35,12 @@ func (c *Controller) input(s stroke) Result {
 	} else {
 		res = c.handle(s.key)
 	}
+	if c.mode == Insert && c.ed.ReadOnly() {
+		// i, a, o, c... on a read-only document: stay in Normal.
+		c.ed.EndGroup()
+		c.mode = Normal
+		res = Result{Message: "E21: arquivo só leitura", Err: true}
+	}
 
 	if c.mode == Normal && len(c.state.Pending) == 0 && c.changes != c.cmdChanges && repeatable(c.cmd) {
 		c.dot = slices.Clone(c.cmd)

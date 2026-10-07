@@ -212,3 +212,22 @@ func TestSetEditorAndExCommands(t *testing.T) {
 		t.Fatalf("comandos do host: %q", got)
 	}
 }
+
+func TestReadOnlyRefusesInsert(t *testing.T) {
+	ed := editor.New("abc")
+	ed.SetReadOnly(true)
+	c := New(ed)
+	for _, seq := range []string{"i", "A", "o", "ciw", "cc"} {
+		if res := run(c, seq); !res.Err || !strings.Contains(res.Message, "E21") || c.Mode() != Normal {
+			t.Fatalf("%q num arquivo só leitura: %+v modo %v", seq, res, c.Mode())
+		}
+	}
+	run(c, "ddxp")
+	if ed.Buffer().Text() != "abc" {
+		t.Fatalf("nada muda: %q", ed.Buffer().Text())
+	}
+	run(c, "jlvly")
+	if c.Mode() != Normal {
+		t.Fatal("ler e copiar continuam funcionando")
+	}
+}

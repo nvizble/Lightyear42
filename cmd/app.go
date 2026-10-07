@@ -22,7 +22,7 @@ func runApp(ctx context.Context) error {
 		return err
 	}
 
-	opts := tui.AppOptions{Exam: examSvc}
+	opts := tui.AppOptions{Exam: examSvc, EditorLSP: true}
 	deps, cleanup, err := newDeps(ctx)
 	if err != nil {
 		// Logged out (or no OAuth app configured): the API tabs explain how to

@@ -243,7 +243,7 @@ func (m Model) key(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			m.message = fmt.Sprintf("salvo: %s (%d linhas)", m.ed.Path(), m.ed.Buffer().LineCount())
 		}
 	case "ctrl+q":
-		if m.ed.Dirty() && !m.quitArmed {
+		if m.ses.unsaved() != "" && !m.quitArmed {
 			m.quitArmed = true
 			m.message, m.isError = "alterações não salvas: ctrl+s salva, ctrl+q de novo sai sem salvar", true
 			return m, nil
@@ -471,6 +471,9 @@ func (m Model) statusLine() string {
 	}
 	if m.ed.Dirty() {
 		name += " [+]"
+	}
+	if m.ed.ReadOnly() {
+		name += " [só leitura]"
 	}
 	if n := len(m.ses.bufs); n > 1 {
 		name += fmt.Sprintf(" [%d/%d]", m.ses.cur+1, n)

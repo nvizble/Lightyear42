@@ -8,7 +8,8 @@
 > implementada, com os limites registrados abaixo. O
 > componente fica em `internal/tui/editorview` (comando experimental
 > escondido `lightyear edit <arquivo>`, modal por padrão; `--plain` para o
-> editor sem modos).
+> editor sem modos) e roda dentro do app, na aba Exam (`e`): subject só
+> leitura à esquerda, entrega à direita, `:wq` volta ao app.
 >
 > **Desvios desta implementação em relação ao texto abaixo:**
 > - o componente visual mora em `internal/tui/editorview` (a TUI do projeto

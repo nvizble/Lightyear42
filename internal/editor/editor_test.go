@@ -3,6 +3,7 @@ package editor
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -367,5 +368,24 @@ func TestChangesKeepAMirrorInSync(t *testing.T) {
 	}
 	for e.Redo() {
 		check("redo")
+	}
+}
+
+func TestReadOnly(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "subject.txt")
+	e, err := Open(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	e.Insert("x")
+	e.SetReadOnly(true)
+	e.Insert("y")
+	e.Delete(Range{Start: Position{0, 0}, End: Position{0, 1}})
+	e.Replace(Range{Start: Position{0, 0}, End: Position{0, 1}}, "z")
+	if e.Buffer().Text() != "x" || !e.ReadOnly() {
+		t.Fatalf("só leitura não muda: %q", e.Buffer().Text())
+	}
+	if err := e.Save(); err == nil || !strings.Contains(err.Error(), "só leitura") {
+		t.Fatalf("salvar só leitura: %v", err)
 	}
 }

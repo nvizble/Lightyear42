@@ -18,6 +18,9 @@ import (
 type fakeExam struct {
 	sess   *exam.Session
 	passed bool
+	// subject and files, when set, are what EditTargets returns.
+	subject string
+	files   []string
 }
 
 func (f *fakeExam) Status() (exam.Session, error) {
@@ -43,6 +46,9 @@ func (f *fakeExam) Finish() (exam.Session, error) {
 }
 
 func (f *fakeExam) EditTargets(exam.Session) (string, []string, error) {
+	if f.subject != "" {
+		return f.subject, f.files, nil
+	}
 	return "subject.pt.txt", []string{"rendu/first_word.c"}, nil
 }
 
@@ -189,16 +195,54 @@ func TestAppScrollAndUnavailable(t *testing.T) {
 	}
 }
 
-func TestAppEditOpensEditor(t *testing.T) {
+func TestAppEditOpensExternalEditor(t *testing.T) {
 	m, _ := newTestApp(t, []AppTab{{Title: "Início"}})
 	m = run(t, m, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("s")})
 
-	if _, cmd := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("e")}); cmd == nil {
-		t.Fatal("e deveria abrir o editor")
+	if _, cmd := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("E")}); cmd == nil {
+		t.Fatal("E deveria abrir o $EDITOR")
 	}
 	m = run(t, m, appEditedMsg{})
 	if !strings.Contains(m.View(), "Aperte g para corrigir") {
 		t.Fatalf("ao voltar do editor deveria sugerir o grademe:\n%s", m.View())
+	}
+}
+
+// e opens lightyear's editor over the app: subject read-only on the left,
+// the code on the right; keys go to it, and :wq comes back to the app.
+func TestAppEmbeddedEditor(t *testing.T) {
+	dir := t.TempDir()
+	subject, code := filepath.Join(dir, "subject.pt.txt"), filepath.Join(dir, "rendu", "first_word", "first_word.c")
+	if err := os.WriteFile(subject, []byte("Assignment name  : first_word\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	m, fe := newTestApp(t, []AppTab{{Title: "Início"}})
+	fe.subject, fe.files = subject, []string{code}
+	key := func(s string) tea.KeyMsg { return tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(s)} }
+	m = run(t, m, key("s"))
+	m = run(t, m, key("e"))
+	if m.editor == nil || !strings.Contains(m.View(), "Assignment name  : first_word") || !strings.Contains(m.View(), "first_word.c") {
+		t.Fatalf("e abre o editor com o subject e o código:\n%s", m.View())
+	}
+	// Keys go to the editor: q isn't the app's quit there.
+	for _, msg := range []tea.Msg{key("q"), tea.KeyMsg{Type: tea.KeyEsc}, key("i"), key("int\tmain(void);"), tea.KeyMsg{Type: tea.KeyEsc}, key(":wq")} {
+		m = run(t, m, msg)
+	}
+	if m.editor == nil {
+		t.Fatal("o editor deveria continuar aberto até o :wq")
+	}
+	next, cmd := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	m = next.(AppModel)
+	if cmd != nil {
+		if _, quit := cmd().(tea.QuitMsg); quit {
+			t.Fatal("o :wq do editor não pode fechar o app")
+		}
+	}
+	if m.editor != nil || !strings.Contains(m.View(), "De volta do editor") {
+		t.Fatalf(":wq volta ao app:\n%s", m.View())
+	}
+	if data, _ := os.ReadFile(code); string(data) != "int\tmain(void);" {
+		t.Fatalf("o código foi salvo: %q", data)
 	}
 }
 
@@ -223,8 +267,8 @@ func TestEditorCommand(t *testing.T) {
 	}
 }
 
-// Runs the real program loop: pressing e must suspend the app, run the
-// editor with the subject and the turn-in files, and come back.
+// Runs the real program loop: pressing E must suspend the app, run the
+// external editor with the subject and the turn-in files, and come back.
 func TestAppEditRunsEditorProcess(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("usa um editor falso em shell script")
@@ -253,7 +297,7 @@ func TestAppEditRunsEditorProcess(t *testing.T) {
 	go func() { _, err := p.Run(); done <- err }()
 
 	p.Send(tea.WindowSizeMsg{Width: 100, Height: 30})
-	p.Send(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("e")})
+	p.Send(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("E")})
 	deadline := time.Now().Add(5 * time.Second)
 	for {
 		if data, err := os.ReadFile(argsFile); err == nil && len(data) > 0 {

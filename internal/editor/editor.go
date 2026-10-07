@@ -25,6 +25,8 @@ type Editor struct {
 	dirty   bool
 	tabSize int
 	sel     Selection
+	// readonly refuses edits and saving (SetReadOnly).
+	readonly bool
 	// listeners hear about every change to the text (see OnChange).
 	listeners []func(Change)
 }
@@ -36,6 +38,13 @@ type Change struct {
 	Start, OldEnd, NewEnd Position
 	Text                  string
 }
+
+// SetReadOnly makes the document read-only (e.g. an exam's subject): edits
+// do nothing and saving fails.
+func (e *Editor) SetReadOnly(readonly bool) { e.readonly = readonly }
+
+// ReadOnly reports a read-only document.
+func (e *Editor) ReadOnly() bool { return e.readonly }
 
 // OnChange calls f after every change to the text, undo and redo included.
 func (e *Editor) OnChange(f func(Change)) {
@@ -91,6 +100,9 @@ func (e *Editor) Save() error {
 
 // SaveAs writes the document to path and binds the editor to it.
 func (e *Editor) SaveAs(path string) error {
+	if e.readonly {
+		return fmt.Errorf("%s é só leitura", filepath.Base(path))
+	}
 	mode := fs.FileMode(0o644)
 	if info, err := os.Stat(path); err == nil {
 		mode = info.Mode().Perm()
@@ -137,7 +149,7 @@ func (e *Editor) ScrollBy(lines int) {
 
 // Insert types text at the cursor and moves the cursor after it.
 func (e *Editor) Insert(text string) {
-	if text == "" {
+	if text == "" || e.readonly {
 		return
 	}
 	start := e.cursor
@@ -150,6 +162,9 @@ func (e *Editor) Insert(text string) {
 // Delete removes the text inside r, leaving the cursor at its start, and
 // returns what was removed.
 func (e *Editor) Delete(r Range) string {
+	if e.readonly {
+		return ""
+	}
 	r = r.Normalized()
 	r.Start, r.End = e.buf.Clamp(r.Start), e.buf.Clamp(r.End)
 	before := e.cursor
@@ -166,6 +181,9 @@ func (e *Editor) Delete(r Range) string {
 // Replace swaps the text inside r for text, as one undo step, leaving the
 // cursor after the new text (undo brings it back to where it was).
 func (e *Editor) Replace(r Range, text string) {
+	if e.readonly {
+		return
+	}
 	r = r.Normalized()
 	r.Start, r.End = e.buf.Clamp(r.Start), e.buf.Clamp(r.End)
 	before := e.cursor

@@ -17,6 +17,7 @@ import (
 	"github.com/charmbracelet/x/ansi"
 	"github.com/nvizble/Lightyear42/internal/exam"
 	"github.com/nvizble/Lightyear42/internal/services"
+	"github.com/nvizble/Lightyear42/internal/tui/editorview"
 )
 
 // appLoadTimeout bounds each tab load.
@@ -81,6 +82,9 @@ type AppOptions struct {
 	// Unavailable explains why tabs without Load can't be used (e.g. not logged in).
 	Unavailable string
 	Exam        ExamControl
+	// EditorLSP turns on the language server (clangd: errors and
+	// completion) in the Exam tab's editor.
+	EditorLSP bool
 }
 
 type appTabLoadedMsg struct {
@@ -137,6 +141,8 @@ type AppModel struct {
 	errs    map[int]error
 	loading map[int]bool
 
+	// editor is the Exam tab's editor while it is open (over the app).
+	editor        *editorview.Model
 	examSess      *exam.Session
 	examNotice    string
 	grading       bool
@@ -183,6 +189,33 @@ func (m AppModel) titles() []string {
 
 // Update handles keys, mouse, loads and the clock.
 func (m AppModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if m.editor == nil {
+		return m.update(msg)
+	}
+	// The Exam tab's editor is open: it takes the keys and the mouse; the
+	// rest (the clock, loads, its language server) goes to both.
+	var appCmd tea.Cmd
+	switch msg.(type) {
+	case tea.KeyMsg, tea.MouseMsg:
+	default:
+		next, cmd := m.update(msg)
+		m, appCmd = next.(AppModel), cmd
+	}
+	next, edCmd := m.editor.Update(msg)
+	ed := next.(editorview.Model)
+	if ed.Done() {
+		// Its :q closes the editor, not the app.
+		ed.Close()
+		m.editor = nil
+		m.examNotice = styleLabel.Render("De volta do editor. Aperte g para corrigir.")
+		m.reloadExam()
+		return m, appCmd
+	}
+	m.editor = &ed
+	return m, tea.Batch(appCmd, edCmd)
+}
+
+func (m AppModel) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		m.width, m.height = msg.Width, msg.Height
@@ -296,8 +329,9 @@ func (m AppModel) key(k string) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-// examKey handles the Exam tab actions: s starts, e opens the editor, g
-// grades, f finishes (asking for confirmation first).
+// examKey handles the Exam tab actions: s starts, e opens the editor (E
+// the external $EDITOR), g grades, f finishes (asking for confirmation
+// first).
 func (m AppModel) examKey(k string) (tea.Model, tea.Cmd) {
 	if k != "f" {
 		m.confirmFinish = false
@@ -314,7 +348,7 @@ func (m AppModel) examKey(k string) (tea.Model, tea.Cmd) {
 			m.examNotice = styleGood.Render("Prova começou. Boa sorte!")
 		}
 		m.reloadExam()
-	case "e":
+	case "e", "E":
 		if m.examSess == nil {
 			return m, nil
 		}
@@ -323,9 +357,12 @@ func (m AppModel) examKey(k string) (tea.Model, tea.Cmd) {
 			m.examNotice = styleFail.Render(err.Error())
 			return m, nil
 		}
-		return m, tea.ExecProcess(editorCommand(subject, files), func(err error) tea.Msg {
-			return appEditedMsg{err: err}
-		})
+		if k == "E" {
+			return m, tea.ExecProcess(editorCommand(subject, files), func(err error) tea.Msg {
+				return appEditedMsg{err: err}
+			})
+		}
+		return m.openEditor(subject, files)
 	case "g":
 		if m.examSess == nil || m.grading {
 			return m, nil
@@ -659,6 +696,9 @@ func (m AppModel) View() string {
 	if m.width == 0 {
 		return ""
 	}
+	if m.editor != nil {
+		return m.editor.View()
+	}
 	rule := styleLabel.Render(strings.Repeat("─", m.width))
 	lines := m.bodyLines()
 	end := min(m.scroll+m.bodyHeight(), len(lines))
@@ -746,7 +786,7 @@ func (m AppModel) examBody() string {
 	}
 	if m.examSess != nil {
 		parts = append(parts, examCard(*m.examSess, m.now, false, ""),
-			styleLabel.Render("Aperte e para abrir o subject e a sua entrega lado a lado no vim.\nNo vim, Ctrl-w w alterna entre os dois e :wq volta para cá; aí é só apertar g."))
+			styleLabel.Render("Aperte e para abrir o subject (só leitura) e a sua entrega lado a lado no editor,\ncom os erros do compilador e autocomplete. Ctrl-w w alterna entre os dois e :wq\nsalva e volta para cá; aí é só apertar g. E abre no seu $EDITOR (vim por padrão)."))
 	} else {
 		parts = append(parts,
 			styleTitle.Render("Simulador de provas")+"\n"+
@@ -834,7 +874,7 @@ func (m AppModel) buttons() []appButton {
 		if m.examSess == nil {
 			defs = append(defs, [2]string{"s", "começar prova"})
 		} else {
-			defs = append(defs, [2]string{"e", "editar no vim"}, [2]string{"g", "grademe"}, [2]string{"f", "encerrar"})
+			defs = append(defs, [2]string{"e", "editar"}, [2]string{"E", "$EDITOR"}, [2]string{"g", "grademe"}, [2]string{"f", "encerrar"})
 		}
 	}
 	if len(m.hotspots[m.active]) > 0 {
@@ -885,6 +925,24 @@ func (m AppModel) footer() string {
 		b.WriteString(strings.Repeat(" ", gap) + hint)
 	}
 	return b.String()
+}
+
+// openEditor opens lightyear's editor over the app: the subject read-only
+// on the left, the files to turn in on the right.
+func (m AppModel) openEditor(subject string, files []string) (tea.Model, tea.Cmd) {
+	ed, err := editorview.NewSideBySide(subject, files)
+	if err != nil {
+		m.examNotice = styleFail.Render("Editor: " + err.Error())
+		return m, nil
+	}
+	if m.opts.EditorLSP {
+		ed = ed.WithLSP()
+	}
+	start := ed.Init() // before any Update, like Bubble Tea does
+	next, _ := ed.Update(tea.WindowSizeMsg{Width: m.width, Height: m.height})
+	ed = next.(editorview.Model)
+	m.editor = &ed
+	return m, start
 }
 
 // editorCommand opens the subject next to the files to turn in, using

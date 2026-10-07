@@ -1,6 +1,7 @@
 package editorview
 
 import (
+	"errors"
 	"fmt"
 	"path/filepath"
 	"strconv"
@@ -87,6 +88,43 @@ func (m Model) open(path string) error {
 	return nil
 }
 
+// NewSideBySide is a Vim-style editor with files on the right (the first
+// one shown, active) and ref read-only on the left: an exam's subject next
+// to the code. :wq there saves and quits (the read-only window doesn't hold
+// it open).
+func NewSideBySide(ref string, files []string) (Model, error) {
+	if len(files) == 0 {
+		return Model{}, errors.New("nenhum arquivo para editar")
+	}
+	ed, err := editor.Open(files[0])
+	if err != nil {
+		return Model{}, err
+	}
+	m := NewVim(ed)
+	for _, f := range files[1:] {
+		if err := m.open(f); err != nil {
+			return Model{}, err
+		}
+	}
+	m.show(0)
+	if res := m.split(true, ref); res.Err {
+		return Model{}, errors.New(res.Message)
+	}
+	m.ses.current().ed.SetReadOnly(true)
+	m.focus(1)
+	return m.synced(), nil
+}
+
+// unsaved is the name of a modified buffer ("" when none).
+func (ses *session) unsaved() string {
+	for _, b := range ses.bufs {
+		if b.ed.Dirty() {
+			return filepath.Base(b.ed.Path())
+		}
+	}
+	return ""
+}
+
 // Open opens path in another buffer and shows it.
 func (m Model) Open(path string) (Model, error) {
 	err := m.open(path)
@@ -110,6 +148,17 @@ func (m Model) moveCursor(p editor.Position) {
 	} else {
 		m.ses.current().ed.MoveCursor(p)
 	}
+}
+
+// otherEditableWindow reports a window besides the current one showing a
+// file that can be edited.
+func (m Model) otherEditableWindow() bool {
+	for i, w := range m.ses.wins {
+		if i != m.ses.win && !w.buf.ed.ReadOnly() {
+			return true
+		}
+	}
+	return false
 }
 
 // back is Ctrl-o: to where the last jump left from.
@@ -225,8 +274,10 @@ func (m Model) exCommands() map[string]func(string) vim.Result {
 					return vim.Result{Message: err.Error(), Err: true}
 				}
 			}
-			// With several windows, :q closes this one (the buffer stays).
-			if len(ses.wins) > 1 {
+			// With several windows, :q closes this one (the buffer stays),
+			// unless only read-only ones would be left (a subject next to the
+			// code): then it quits.
+			if m.otherEditableWindow() {
 				return m.closeWindow()
 			}
 			if cur.Dirty() {
@@ -260,6 +311,12 @@ func (m Model) exCommands() map[string]func(string) vim.Result {
 		}
 		return vim.Result{Message: fmt.Sprintf("%d arquivo(s) salvo(s)", n)}
 	}
+	saveQuit := func(string) vim.Result {
+		if res := saveAll(""); res.Err {
+			return res
+		}
+		return vim.Result{Quit: true}
+	}
 	return map[string]func(string) vim.Result{
 		"e": edit, "edit": edit,
 		"bn": step(1), "bnext": step(1), "bp": step(-1), "bprev": step(-1), "bprevious": step(-1),
@@ -270,6 +327,7 @@ func (m Model) exCommands() map[string]func(string) vim.Result {
 		"qa": quitAll, "qall": quitAll,
 		"q!": force, "quit!": force, "qa!": force, "qall!": force,
 		"wa": saveAll, "wall": saveAll,
+		"wqa": saveQuit, "wqall": saveQuit, "xa": saveQuit, "xall": saveQuit,
 		"sp":     func(arg string) vim.Result { return m.split(false, arg) },
 		"split":  func(arg string) vim.Result { return m.split(false, arg) },
 		"vs":     func(arg string) vim.Result { return m.split(true, arg) },

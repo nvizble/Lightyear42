@@ -108,6 +108,9 @@ func title(b *buffer, width int, active bool) string {
 	if b.ed.Dirty() {
 		name += " [+]"
 	}
+	if b.ed.ReadOnly() {
+		name += " [só leitura]"
+	}
 	style := styleTitle
 	if active {
 		style = styleTitleActive
