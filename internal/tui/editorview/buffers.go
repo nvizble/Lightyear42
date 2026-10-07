@@ -37,6 +37,10 @@ type session struct {
 	jumps    []jump                // where gd jumped from, for Ctrl-o
 	pick     *picker               // an open list to choose from (lspedits.go)
 	tip      *tip                  // the diagnostics under the mouse (diagtip.go)
+	drag     *drag                 // a window border being dragged (resize.go)
+	// width and height are the screen's, for the window layout: commands
+	// the controller runs see the session, not the latest model.
+	width, height int
 }
 
 type jump struct {
@@ -312,6 +316,14 @@ func (m Model) exCommands() map[string]func(string) vim.Result {
 		}
 		return vim.Result{Message: fmt.Sprintf("%d arquivo(s) salvo(s)", n)}
 	}
+	// :vertical resize N; the other :vertical commands aren't here.
+	vertical := func(arg string) vim.Result {
+		name, rest, _ := strings.Cut(arg, " ")
+		if name != "resize" && name != "res" {
+			return vim.Result{Message: "E492: só :vertical resize por enquanto", Err: true}
+		}
+		return m.resizeTo(true, strings.TrimSpace(rest))
+	}
 	saveQuit := func(string) vim.Result {
 		if res := saveAll(""); res.Err {
 			return res
@@ -338,5 +350,8 @@ func (m Model) exCommands() map[string]func(string) vim.Result {
 		"close":  func(string) vim.Result { return m.closeWindow() },
 		"on":     func(string) vim.Result { return m.only() },
 		"only":   func(string) vim.Result { return m.only() },
+		"res":    func(arg string) vim.Result { return m.resizeTo(false, arg) },
+		"resize": func(arg string) vim.Result { return m.resizeTo(false, arg) },
+		"vert":   vertical, "vertical": vertical,
 	}
 }

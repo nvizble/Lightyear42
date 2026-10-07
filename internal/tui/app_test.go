@@ -2,6 +2,7 @@ package tui
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -243,6 +244,23 @@ func TestAppEmbeddedEditor(t *testing.T) {
 	}
 	if data, _ := os.ReadFile(code); string(data) != "int\tmain(void);" {
 		t.Fatalf("o código foi salvo: %q", data)
+	}
+
+	// The editor comes back with the windows sized as they were left.
+	m = run(t, m, key("e"))
+	before := m.editor.Shares()
+	for _, msg := range []tea.Msg{key("2"), key("0"), tea.KeyMsg{Type: tea.KeyCtrlW}, key(">")} {
+		m = run(t, m, msg)
+	}
+	resized := m.editor.Shares()
+	if fmt.Sprint(resized) == fmt.Sprint(before) {
+		t.Fatalf("20 ctrl+w > deveria mudar os tamanhos: %v", resized)
+	}
+	m = run(t, m, key(":q"))
+	m = run(t, m, tea.KeyMsg{Type: tea.KeyEnter})
+	m = run(t, m, key("e"))
+	if got := m.editor.Shares(); fmt.Sprint(got) != fmt.Sprint(resized) {
+		t.Fatalf("o editor deveria reabrir com os tamanhos de antes: %v, esperado %v", got, resized)
 	}
 }
 

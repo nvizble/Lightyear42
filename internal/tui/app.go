@@ -141,8 +141,10 @@ type AppModel struct {
 	errs    map[int]error
 	loading map[int]bool
 
-	// editor is the Exam tab's editor while it is open (over the app).
+	// editor is the Exam tab's editor while it is open (over the app);
+	// editorShares keeps its window sizes for the next time it opens.
 	editor        *editorview.Model
+	editorShares  []float64
 	examSess      *exam.Session
 	examNotice    string
 	grading       bool
@@ -205,6 +207,7 @@ func (m AppModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	ed := next.(editorview.Model)
 	if ed.Done() {
 		// Its :q closes the editor, not the app.
+		m.editorShares = ed.Shares()
 		ed.Close()
 		m.editor = nil
 		m.examNotice = styleLabel.Render("De volta do editor. Aperte g para corrigir.")
@@ -786,7 +789,7 @@ func (m AppModel) examBody() string {
 	}
 	if m.examSess != nil {
 		parts = append(parts, examCard(*m.examSess, m.now, false, ""),
-			styleLabel.Render("Aperte e para abrir o subject (só leitura) e a sua entrega lado a lado no editor,\ncom os erros do compilador e autocomplete. Ctrl-w w alterna entre os dois e :wq\nsalva e volta para cá; aí é só apertar g. E abre no seu $EDITOR (vim por padrão)."))
+			styleLabel.Render("Aperte e para abrir o subject (só leitura) e a sua entrega lado a lado no editor,\ncom os erros do compilador e autocomplete. Ctrl-w w alterna entre os dois, arrastar\na borda (ou Ctrl-w > <) muda o tamanho e :wq salva e volta para cá; aí é só apertar g.\nE abre no seu $EDITOR (vim por padrão)."))
 	} else {
 		parts = append(parts,
 			styleTitle.Render("Simulador de provas")+"\n"+
@@ -938,7 +941,8 @@ func (m AppModel) openEditor(subject string, files []string) (tea.Model, tea.Cmd
 	if m.opts.EditorLSP {
 		ed = ed.WithLSP()
 	}
-	start := ed.Init() // before any Update, like Bubble Tea does
+	ed = ed.WithShares(m.editorShares) // the subject's width as it was left
+	start := ed.Init()                 // before any Update, like Bubble Tea does
 	next, _ := ed.Update(tea.WindowSizeMsg{Width: m.width, Height: m.height})
 	ed = next.(editorview.Model)
 	m.editor = &ed

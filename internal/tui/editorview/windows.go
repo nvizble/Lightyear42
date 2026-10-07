@@ -14,7 +14,8 @@ import (
 // stacked or all side by side; Ctrl-w w/h/j/k/l move between them, :close
 // (Ctrl-w c) and :only (Ctrl-w o) close them, and :q closes the window
 // while there is more than one. Each window shows a buffer; two windows on
-// the same buffer share its cursor (it lives in the editor).
+// the same buffer share its cursor (it lives in the editor). Resizing is in
+// resize.go.
 
 var (
 	styleTitle       = lipgloss.NewStyle().Foreground(colorMuted).Background(lipgloss.AdaptiveColor{Light: "254", Dark: "236"})
@@ -22,7 +23,8 @@ var (
 )
 
 type window struct {
-	buf *buffer
+	buf    *buffer
+	weight float64 // its share of the screen (see resize.go)
 }
 
 // rect is where a window's text goes on the screen; its title line (when
@@ -31,31 +33,27 @@ type rect struct{ x, y, w, h int }
 
 // rects lays the windows out over the screen above the status line.
 func (m Model) rects() []rect {
-	n, height := len(m.ses.wins), max(m.height-1, 1)
+	n, width, height := len(m.ses.wins), m.ses.width, max(m.ses.height-1, 1)
 	if n == 1 {
-		return []rect{{0, 0, m.width, height}}
+		return []rect{{0, 0, width, height}}
+	}
+	shares := make([]float64, n)
+	for i, w := range m.ses.wins {
+		shares[i] = w.share()
 	}
 	out := make([]rect, 0, n)
 	if m.ses.vertical {
-		w, x := (m.width-(n-1))/n, 0 // separators between them
-		for i := 0; i < n; i++ {
-			wi := w
-			if i == n-1 {
-				wi = m.width - x
-			}
-			out = append(out, rect{x, 0, max(wi, 1), max(height-1, 1)})
-			x += wi + 1
+		x := 0
+		for _, w := range spread(width-(n-1), shares, leastWidth) { // separators between them
+			out = append(out, rect{x, 0, max(w, 1), max(height-1, 1)})
+			x += w + 1
 		}
 		return out
 	}
-	h, y := height/n, 0
-	for i := 0; i < n; i++ {
-		hi := h
-		if i == n-1 {
-			hi = height - y
-		}
-		out = append(out, rect{0, y, m.width, max(hi-1, 1)})
-		y += hi
+	y := 0
+	for _, h := range spread(height, shares, leastHeight) {
+		out = append(out, rect{0, y, width, max(h-1, 1)})
+		y += h
 	}
 	return out
 }
@@ -91,7 +89,11 @@ func (m Model) screen() []string {
 				line += strings.Repeat(" ", pad)
 			}
 			if m.ses.vertical && i > 0 {
-				rows[row] += styleGutter.Render("│")
+				border := styleGutter
+				if d := m.ses.drag; d != nil && d.k == i-1 {
+					border = styleGutterHere // being dragged
+				}
+				rows[row] += border.Render("│")
 			}
 			rows[row] += line
 		}
@@ -147,7 +149,11 @@ func (m Model) split(vertical bool, file string) vim.Result {
 		return vim.Result{Message: "misturar :sp e :vsp ainda não dá (:only volta a uma janela)", Err: true}
 	}
 	ses.vertical = vertical
-	ses.wins = slices.Insert(ses.wins, ses.win, &window{buf: ses.current()})
+	// The new window takes half of the current one, like Vim.
+	cur := ses.wins[ses.win]
+	half := cur.share() / 2
+	cur.weight = half
+	ses.wins = slices.Insert(ses.wins, ses.win, &window{buf: ses.current(), weight: half})
 	m.focus(ses.win)
 	if file != "" {
 		if err := m.open(file); err != nil {
@@ -163,8 +169,12 @@ func (m Model) closeWindow() vim.Result {
 	if len(ses.wins) == 1 {
 		return vim.Result{Message: "E444: é a última janela (:q sai)", Err: true}
 	}
+	// Its space goes to a neighbor.
+	gone := ses.wins[ses.win].share()
 	ses.wins = slices.Delete(ses.wins, ses.win, ses.win+1)
-	m.focus(min(ses.win, len(ses.wins)-1))
+	next := min(ses.win, len(ses.wins)-1)
+	ses.wins[next].weight = ses.wins[next].share() + gone
+	m.focus(next)
 	return vim.Result{}
 }
 

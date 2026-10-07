@@ -67,7 +67,7 @@ func TestWindows(t *testing.T) {
 	// :sp stacks them, each with its title; :only leaves one.
 	ex("sp")
 	rows = screen()
-	if len(m.ses.wins) != 2 || !strings.Contains(rows[2], " ft.c [+] ") || !strings.Contains(rows[6], " ft.c [+] ") {
+	if len(m.ses.wins) != 2 || !strings.Contains(rows[3], " ft.c [+] ") || !strings.Contains(rows[6], " ft.c [+] ") {
 		t.Fatalf(":sp empilha:\n%s", strings.Join(rows, "\n"))
 	}
 	m, _ = press(t, m, tea.KeyMsg{Type: tea.KeyCtrlW}, runes("o"))

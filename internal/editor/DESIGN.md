@@ -128,7 +128,15 @@
 >   aparece uma caixa com as mensagens inteiras, notas incluídas; sobre a
 >   margem, todos os da linha. O `K` mostra os da linha do cursor acima do
 >   hover do servidor. O `lightyear edit` passou a pedir todo movimento do
->   mouse ao terminal (o app já pedia).
+>   mouse ao terminal (o app já pedia);
+> - Janelas redimensionáveis: cada janela tem uma fração da tela (peso),
+>   então o tamanho acompanha o terminal. Arrastar a borda (`│` entre as
+>   lado a lado, a linha de título nas empilhadas), `Ctrl-w > < + - = | _`
+>   (com contador) e `:resize N` / `:vertical resize N` (`+N`/`-N`); o
+>   espaço vem da janela vizinha, com mínimo de 12 colunas ou 2 linhas. O
+>   `:vsp` divide a janela atual ao meio e fechar uma janela devolve o
+>   espaço à vizinha. Na aba Exam o app guarda os pesos (`Shares`) e reabre
+>   o editor igual (`WithShares`).
 
 ## 1. Visão Geral
 

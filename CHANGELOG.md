@@ -7,6 +7,14 @@ Mudanças visíveis do lightyear, da mais nova para a mais antiga. O
 Versões `-canary.N` são pre-releases: `lightyear update --canary` entra no
 canal canary e `lightyear update --stable` volta para a estável.
 
+## [1.3.0-canary.24] — 2026-10-07
+
+- Editor: janelas redimensionáveis — arraste a borda `│` entre o subject e
+  o código (ou a linha de título, nas empilhadas), ou use `Ctrl-w >`/`<`
+  (com contador: `10 Ctrl-w >`), `Ctrl-w +`/`-`, `Ctrl-w =` para igualar,
+  `Ctrl-w |` para maximizar e `:vertical resize 50`. Na aba Exam, o editor
+  reabre com o tamanho que você deixou.
+
 ## [1.3.0-canary.23] — 2026-10-07
 
 - Editor: passe o mouse sobre um erro sublinhado (ou sobre o `●` na
