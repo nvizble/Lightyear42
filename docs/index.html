@@ -97,6 +97,9 @@
   .chan[aria-selected="true"] .mono { color: #444; }
   .chan[data-channel="canary"][aria-selected="true"] { background: var(--orange); }
   #app-screen { min-height: 0; }
+  #theme-screen { min-height: 0; }
+  #theme-screen.light { background: #fff; color: #1f2328; }
+  #theme-screen.light .d { color: #8c959f; }
   .app-btn { all: unset; cursor: pointer; border-radius: 3px; }
   .app-btn:hover { background: #2a2a2e; }
   .app-btn:focus-visible { outline: 1px solid var(--green); }
@@ -261,6 +264,14 @@
       <article class="card"><code>lightyear</code><span class="tag canary">canary</span><h3>App em tela cheia</h3><p>Início, Avaliações, Projetos, Campus, Slots e Exam em abas clicáveis. Rola com o mouse; atalhos no teclado.</p></article>
       <article class="card"><code>e · aba Exam</code><span class="tag canary">canary</span><h3>Editor lado a lado</h3><p>O subject à esquerda e a sua entrega à direita, no editor estilo Vim do lightyear, com os erros do compilador e autocomplete (<span class="mono">E</span> abre o seu <span class="mono">$EDITOR</span>). Saiu com <span class="mono">:wq</span>, aperte <span class="mono">g</span> e corrige.</p></article>
       <article class="card"><code>lightyear update --canary</code><span class="tag canary">canary</span><h3>Escolha o canal</h3><p>Na canary, o <span class="mono">lightyear update</span> continua trazendo canaries. Quer voltar? <span class="mono">lightyear update --stable</span>.</p></article>
+    </div>
+    <p class="sub" style="margin:56px 0 0">O editor também tem temas: <span class="mono">:colorscheme</span> troca as cores do código na hora (Tab completa o nome) e a escolha fica salva. Clique num tema:</p>
+    <div class="term" style="margin-top:20px" role="region" aria-label="Temas do editor">
+      <div class="term-bar">
+        <div class="dots" aria-hidden="true"><i></i><i></i><i></i></div>
+        <div class="tabs" role="tablist" aria-label="Tema" id="theme-tabs"></div>
+      </div>
+      <pre id="theme-screen"></pre>
     </div>
     <div class="cta" style="margin-top:24px">
       <a class="btn primary" href="#instalar" data-pick-channel="canary">Instalar a canary</a>
@@ -597,6 +608,63 @@ go install github.com/nvizble/Lightyear42/cmd/lightyear@${chan === "canary" ? "v
     renderApp();
   });
   renderApp();
+
+  // Editor color schemes (canary): the palettes of
+  // internal/tui/editorview/schemes.go — keyword, string, comment, number,
+  // function, type (lightyear's are its dark-terminal 256 colors).
+  const themes = {
+    lightyear: ["#d75fd7", "#87d787", "#8a8a8a", "#ffaf5f", "#5fafff", "#5fd7d7"],
+    gruvbox: ["#fb4934", "#b8bb26", "#928374", "#d3869b", "#8ec07c", "#fabd2f"],
+    dracula: ["#ff79c6", "#f1fa8c", "#6272a4", "#bd93f9", "#50fa7b", "#8be9fd"],
+    nord: ["#81a1c1", "#a3be8c", "#616e88", "#b48ead", "#88c0d0", "#8fbcbb"],
+    tokyonight: ["#bb9af7", "#9ece6a", "#565f89", "#ff9e64", "#7aa2f7", "#2ac3de"],
+    monokai: ["#f92672", "#e6db74", "#75715e", "#ae81ff", "#a6e22e", "#66d9ef"],
+    catppuccin: ["#cba6f7", "#a6e3a1", "#6c7086", "#fab387", "#89b4fa", "#f9e2af"],
+    onedark: ["#c678dd", "#98c379", "#5c6370", "#d19a66", "#61afef", "#e5c07b"],
+    solarized: ["#859900", "#2aa198", "#586e75", "#d33682", "#268bd2", "#b58900"],
+    "github-light": ["#cf222e", "#0a3069", "#6e7781", "#0550ae", "#8250df", "#953800"],
+    off: null,
+  };
+  // «k while»: a keyword, by the letters of the order above.
+  const themeCode = [
+    "«k #include» «s <unistd.h>»",
+    "",
+    "«c /* escreve s, um char por vez */»",
+    "«t void»    «f ft_putstr»(«t char» *s)",
+    "{",
+    "    «t int» i;",
+    "",
+    "    i = «n 0»;",
+    "    «k while» (s[i] != «n '\\0'»)",
+    "        «f write»(«n 1», &s[i++], «n 1»);",
+    "}",
+    "",
+    "«t int» «f main»(«t void»)",
+    "{",
+    "    «f ft_putstr»(«s \"hello, 42\\n\"»);",
+    "    «k return» («n 0»);",
+    "}",
+  ];
+  function renderTheme(name) {
+    const p = themes[name];
+    const esc = t => t.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    const paint = (_, k, t) => p ? `<span style="color:${p["kscnft".indexOf(k)]}${k === "c" ? ";font-style:italic" : ""}">${t}</span>` : t;
+    const out = document.getElementById("theme-screen");
+    out.className = name === "github-light" ? "light" : "";
+    out.innerHTML = [...themeCode.map((l, i) => `<span class="d">${String(i + 1).padStart(2)} │ </span>` + esc(l).replace(/«(\w) ([^»]*)»/g, paint)),
+      "", ":colorscheme " + name].join("\n");
+  }
+  const themeTabs = Object.keys(themes).map(name => {
+    const b = document.createElement("button");
+    b.className = "tab";
+    b.setAttribute("role", "tab");
+    b.textContent = name;
+    b.addEventListener("click", () => { selectTab(themeTabs, b); renderTheme(name); });
+    return b;
+  });
+  document.getElementById("theme-tabs").append(...themeTabs);
+  selectTab(themeTabs, themeTabs[0]);
+  renderTheme("lightyear");
 
   // Copy buttons.
   async function copy(btn, text) {
