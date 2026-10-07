@@ -273,3 +273,57 @@ func TestPlaceCursorKeepsVerticalColumn(t *testing.T) {
 		t.Fatal("Indent")
 	}
 }
+
+func TestSelection(t *testing.T) {
+	e := New("abc def\nghi\njkl")
+	if _, _, ok := e.SelectedRange(); ok {
+		t.Fatal("sem seleção no começo")
+	}
+	e.MoveCursor(Position{0, 4})
+	e.Select(SelectChars)
+	e.MoveCursor(Position{1, 1})
+	r, lines, ok := e.SelectedRange()
+	if !ok || lines || r != (Range{Start: Position{0, 4}, End: Position{1, 2}}) || e.Buffer().Slice(r) != "def\ngh" {
+		t.Fatalf("seleção por caractere inclui o cursor: %+v %q", r, e.Buffer().Slice(r))
+	}
+	// Selecting backwards gives the same kind of range.
+	e.MoveCursor(Position{0, 1})
+	if r, _, _ := e.SelectedRange(); e.Buffer().Slice(r) != "bc d" {
+		t.Fatalf("seleção para trás: %q", e.Buffer().Slice(r))
+	}
+	if from, to, ok := e.SelectedColumns(0); !ok || from != 1 || to != 5 {
+		t.Fatalf("colunas da linha 0: %d %d %v", from, to, ok)
+	}
+	if _, _, ok := e.SelectedColumns(2); ok {
+		t.Fatal("linha fora da seleção")
+	}
+
+	e.Select(SelectLines) // switching mode keeps the anchor (0,4)
+	e.MoveCursor(Position{1, 0})
+	r, lines, _ = e.SelectedRange()
+	if !lines || r != (Range{Start: Position{0, 0}, End: Position{1, 3}}) {
+		t.Fatalf("seleção por linha: %+v %v", r, lines)
+	}
+	e.SwapSelectionEnds()
+	if e.Cursor() != (Position{0, 4}) || e.Selection().Anchor != (Position{1, 0}) {
+		t.Fatalf("o deveria trocar as pontas: cursor %v âncora %v", e.Cursor(), e.Selection().Anchor)
+	}
+	e.ClearSelection()
+	if _, _, ok := e.SelectedRange(); ok {
+		t.Fatal("ClearSelection")
+	}
+
+	// Ending on an empty line takes its line break, but not the next line.
+	e = New("a\n\nb")
+	e.Select(SelectChars)
+	e.MoveCursor(Position{1, 0})
+	if r, _, _ := e.SelectedRange(); e.Buffer().Slice(r) != "a\n\n" {
+		t.Fatalf("seleção até a linha vazia: %q", e.Buffer().Slice(r))
+	}
+	if from, to, ok := e.SelectedColumns(1); !ok || from != 0 || to != 1 {
+		t.Fatalf("linha vazia selecionada deveria aparecer: %d %d %v", from, to, ok)
+	}
+	if _, _, ok := e.SelectedColumns(2); ok {
+		t.Fatal("a linha seguinte não está selecionada")
+	}
+}

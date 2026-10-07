@@ -1,10 +1,10 @@
-// Package vim turns key sequences into editor operations, Vim style: modes,
-// pending commands and an ex command line (:w, :q).
+// Package vim turns key sequences into editor operations, Vim style: modes
+// (Normal, Insert, Visual), counts, operators × motions and an ex command
+// line (:w, :q).
 //
 // It drives an editor.Editor and knows nothing about the TUI: keys arrive
 // as generic names ("h", "esc", "ctrl+r", "enter"). See
-// internal/editor/DESIGN.md for the roadmap (counts, operators × motions,
-// visual mode and registers come in the next phases).
+// internal/editor/DESIGN.md for the roadmap (registers come next).
 package vim
 
 import (
@@ -21,7 +21,9 @@ type Mode int
 const (
 	Normal Mode = iota
 	Insert
-	Command // typing an ex command after ":"
+	Command    // typing an ex command after ":"
+	Visual     // selecting characters (v)
+	VisualLine // selecting whole lines (V)
 )
 
 func (m Mode) String() string {
@@ -30,6 +32,10 @@ func (m Mode) String() string {
 		return "INSERT"
 	case Command:
 		return "COMMAND"
+	case Visual:
+		return "VISUAL"
+	case VisualLine:
+		return "V-LINE"
 	}
 	return "NORMAL"
 }
@@ -81,9 +87,13 @@ func (c *Controller) Pending() string { return strings.Join(c.state.Pending, "")
 // CommandLine is the ex command being typed after ":".
 func (c *Controller) CommandLine() string { return c.cmdline }
 
-// MoveCursor moves the cursor (e.g. a mouse click) respecting the mode:
-// Normal mode never sits past the last character.
+// MoveCursor moves the cursor (e.g. a mouse click) respecting the mode: it
+// ends a Visual selection, and Normal mode never sits past the last
+// character.
 func (c *Controller) MoveCursor(p editor.Position) {
+	if c.mode == Visual || c.mode == VisualLine {
+		c.exitVisual()
+	}
 	c.ed.MoveCursor(p)
 	if c.mode == Normal {
 		c.clampNormal()
@@ -98,6 +108,8 @@ func (c *Controller) HandleKey(key string) Result {
 		return c.insertKey(key)
 	case Command:
 		return c.commandKey(key)
+	case Visual, VisualLine:
+		return c.visualKey(key)
 	}
 	return c.normalKey(key)
 }
@@ -125,25 +137,8 @@ func (c *Controller) normalKey(key string) Result {
 		return Result{}
 	}
 
-	// Counts: 1-9 start one; 0 continues it (alone, 0 is a motion).
-	if !st.g && len(key) == 1 && key[0] >= '0' && key[0] <= '9' && (key != "0" || st.Count > 0) {
-		st.Count = st.Count*10 + int(key[0]-'0')
-		st.Pending = append(st.Pending, key)
-		return Result{}
-	}
-
-	// "g" prefix: only "gg" for now.
-	switch {
-	case st.g:
-		st.g = false
-		if key != "g" {
-			c.state = CommandState{}
-			return Result{}
-		}
-		key = "gg"
-	case key == "g":
-		st.g = true
-		st.Pending = append(st.Pending, key)
+	key, ok := c.prefix(key)
+	if !ok {
 		return Result{}
 	}
 
@@ -190,6 +185,32 @@ func (c *Controller) normalKey(key string) Result {
 	n := times(st.Count)
 	c.state = CommandState{}
 	return c.command(key, n)
+}
+
+// prefix consumes counts (1-9 start one; 0 continues it, alone it is a
+// motion) and the "g" prefix. It returns the key to interpret ("gg" after
+// two "g"s), or ok=false when the key was consumed.
+func (c *Controller) prefix(key string) (string, bool) {
+	st := &c.state
+	if !st.g && len(key) == 1 && key[0] >= '0' && key[0] <= '9' && (key != "0" || st.Count > 0) {
+		st.Count = st.Count*10 + int(key[0]-'0')
+		st.Pending = append(st.Pending, key)
+		return "", false
+	}
+	switch {
+	case st.g:
+		st.g = false
+		if key != "g" {
+			c.state = CommandState{}
+			return "", false
+		}
+		return "gg", true
+	case key == "g":
+		st.g = true
+		st.Pending = append(st.Pending, key)
+		return "", false
+	}
+	return key, true
 }
 
 // command runs the Normal-mode commands that aren't motions or operators.
@@ -247,6 +268,10 @@ func (c *Controller) command(key string, n int) Result {
 		c.clampNormal()
 	case ":":
 		c.mode, c.cmdline = Command, ""
+	case "v":
+		c.enterVisual(Visual)
+	case "V":
+		c.enterVisual(VisualLine)
 	}
 	return Result{}
 }
@@ -274,6 +299,90 @@ func totalCount(opCount, count int) int {
 		return 0
 	}
 	return times(opCount) * times(count)
+}
+
+// Visual mode: motions extend the selection, which runs from where v/V was
+// pressed to the cursor; d (or x) deletes it.
+
+func (c *Controller) enterVisual(mode Mode) {
+	c.mode = mode
+	if mode == VisualLine {
+		c.ed.Select(editor.SelectLines)
+	} else {
+		c.ed.Select(editor.SelectChars)
+	}
+}
+
+func (c *Controller) exitVisual() {
+	c.ed.ClearSelection()
+	c.mode = Normal
+	c.state = CommandState{}
+	c.clampNormal()
+}
+
+func (c *Controller) visualKey(key string) Result {
+	if key == "esc" {
+		c.exitVisual()
+		return Result{}
+	}
+	key, ok := c.prefix(key)
+	if !ok {
+		return Result{}
+	}
+	n := c.state.Count
+	c.state = CommandState{}
+	if m, ok := motions[key]; ok {
+		if t := m(c.ed, n, false); !t.Failed {
+			c.moveTo(t)
+		}
+		return Result{}
+	}
+	switch key {
+	case "v", "V":
+		// The same key leaves Visual; the other one switches its kind.
+		if mode := map[string]Mode{"v": Visual, "V": VisualLine}[key]; mode == c.mode {
+			c.exitVisual()
+		} else {
+			c.enterVisual(mode)
+		}
+	case "o":
+		c.ed.SwapSelectionEnds()
+	case "d", "x", "delete":
+		c.deleteSelection()
+	case ":":
+		c.exitVisual()
+		c.mode, c.cmdline = Command, ""
+	}
+	return Result{}
+}
+
+// deleteSelection removes the selected text (whole lines in V-LINE) and
+// goes back to Normal mode.
+func (c *Controller) deleteSelection() {
+	r, linewise, ok := c.ed.SelectedRange()
+	c.exitVisual()
+	if !ok {
+		return
+	}
+	if linewise {
+		c.deleteLines(r.Start.Line, r.End.Line)
+		return
+	}
+	c.deleteRange(r)
+}
+
+// ExtendSelection selects from the cursor to p, entering Visual mode from
+// Normal (e.g. dragging the mouse).
+func (c *Controller) ExtendSelection(p editor.Position) {
+	switch c.mode {
+	case Normal:
+		c.enterVisual(Visual)
+	case Visual, VisualLine:
+	default:
+		return
+	}
+	c.ed.MoveCursor(p)
+	c.clampNormal()
 }
 
 func (c *Controller) enterInsert() {

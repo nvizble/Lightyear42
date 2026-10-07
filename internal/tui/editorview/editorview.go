@@ -2,8 +2,8 @@
 // editor: it draws an editor.Editor (line numbers, text, cursor and status
 // line) and turns keys and mouse into editor operations.
 //
-// Phase 1 is a plain (non-modal) editor; the Vim-like modes come from a
-// separate controller in later phases (see internal/editor/DESIGN.md).
+// New is a plain (non-modal) editor; NewVim hands keys to the Vim-like
+// controller in internal/vim (see internal/editor/DESIGN.md).
 package editorview
 
 import (
@@ -23,13 +23,16 @@ var (
 	colorAccent = lipgloss.AdaptiveColor{Light: "25", Dark: "39"}
 	colorGood   = lipgloss.AdaptiveColor{Light: "28", Dark: "42"}
 	colorFail   = lipgloss.AdaptiveColor{Light: "124", Dark: "196"}
+	colorVisual = lipgloss.AdaptiveColor{Light: "127", Dark: "170"}
 
 	styleGutter     = lipgloss.NewStyle().Foreground(colorMuted)
 	styleGutterHere = lipgloss.NewStyle().Foreground(colorAccent).Bold(true)
 	styleTilde      = lipgloss.NewStyle().Foreground(colorAccent)
 	styleCursor     = lipgloss.NewStyle().Reverse(true)
+	styleSelection  = lipgloss.NewStyle().Background(lipgloss.AdaptiveColor{Light: "153", Dark: "24"})
 	styleMode       = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("0")).Background(colorGood).Padding(0, 1)
 	styleModeNormal = styleMode.Background(colorAccent)
+	styleModeVisual = styleMode.Background(colorVisual)
 	stylePending    = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.AdaptiveColor{Light: "130", Dark: "214"})
 	styleStatus     = lipgloss.NewStyle().Foreground(colorMuted)
 	styleFile       = lipgloss.NewStyle().Bold(true)
@@ -191,18 +194,25 @@ func (m *Model) mouse(msg tea.MouseMsg) {
 		m.ed.ScrollBy(3)
 		return
 	}
-	if msg.Action != tea.MouseActionPress || msg.Button != tea.MouseButtonLeft || msg.Y >= m.textHeight() {
+	if msg.Button != tea.MouseButtonLeft || msg.Y >= m.textHeight() {
 		return
 	}
 	v := m.ed.Viewport()
 	line := v.Top + msg.Y
 	visual := max(msg.X-m.gutterWidth(), 0) + v.Left
 	p := editor.Position{Line: line, Column: m.ed.ColumnAt(line, visual)}
-	if m.vim != nil {
+	switch {
+	case msg.Action == tea.MouseActionMotion:
+		// Dragging selects (Vim mode), from where the button went down.
+		if m.vim != nil {
+			m.vim.ExtendSelection(p)
+		}
+	case msg.Action != tea.MouseActionPress:
+	case m.vim != nil:
 		m.vim.MoveCursor(p)
-		return
+	default:
+		m.ed.MoveCursor(p)
 	}
-	m.ed.MoveCursor(p)
 }
 
 // Layout: text area above a one-line status bar, line numbers on the left.
@@ -235,15 +245,21 @@ func (m Model) View() string {
 		if line == cur.Line {
 			cursorCol = m.ed.VisualColumn(line, cur.Column)
 		}
-		rows = append(rows, gutter+renderLine(buf.Line(line), m.ed.TabSize(), v.Left, m.textWidth(), cursorCol))
+		selFrom, selTo := -1, -1
+		if from, to, ok := m.ed.SelectedColumns(line); ok {
+			selFrom = m.ed.VisualColumn(line, from)
+			selTo = max(m.ed.VisualColumn(line, to), selFrom+1) // an empty line still shows a cell
+		}
+		rows = append(rows, gutter+renderLine(buf.Line(line), m.ed.TabSize(), v.Left, m.textWidth(), cursorCol, selFrom, selTo))
 	}
 	rows = append(rows, m.statusLine())
 	return strings.Join(rows, "\n")
 }
 
-// renderLine expands tabs, shows the visible slice [left, left+width) and
-// draws the cursor at screen column cursorCol (-1 for none).
-func renderLine(line string, tabSize, left, width, cursorCol int) string {
+// renderLine expands tabs, shows the visible slice [left, left+width),
+// draws the cursor at screen column cursorCol (-1 for none) and highlights
+// the selected screen columns [selFrom, selTo).
+func renderLine(line string, tabSize, left, width, cursorCol, selFrom, selTo int) string {
 	var cells []string
 	for _, r := range line {
 		if r == '\t' {
@@ -254,23 +270,37 @@ func renderLine(line string, tabSize, left, width, cursorCol int) string {
 		}
 		cells = append(cells, string(r))
 	}
-	if cursorCol >= len(cells) {
-		cells = append(cells, make([]string, cursorCol-len(cells)+1)...)
-		for i := range cells {
-			if cells[i] == "" {
-				cells[i] = " "
-			}
-		}
+	// The cursor or the selection may sit past the end (Insert, empty lines).
+	for len(cells) < max(cursorCol+1, selTo) {
+		cells = append(cells, " ")
 	}
 
-	var b strings.Builder
-	for x := left; x < min(len(cells), left+width); x++ {
-		if x == cursorCol {
-			b.WriteString(styleCursor.Render(cells[x]))
+	// Cells with the same look are styled together: one Render per run.
+	var b, run strings.Builder
+	var style *lipgloss.Style
+	flush := func() {
+		if style != nil {
+			b.WriteString(style.Render(run.String()))
 		} else {
-			b.WriteString(cells[x])
+			b.WriteString(run.String())
 		}
+		run.Reset()
 	}
+	for x := left; x < min(len(cells), left+width); x++ {
+		var next *lipgloss.Style
+		switch {
+		case x == cursorCol:
+			next = &styleCursor
+		case x >= selFrom && x < selTo:
+			next = &styleSelection
+		}
+		if next != style {
+			flush()
+			style = next
+		}
+		run.WriteString(cells[x])
+	}
+	flush()
 	return b.String()
 }
 
@@ -292,10 +322,15 @@ func (m Model) statusLine() string {
 	right := styleStatus.Render("ctrl+s salva · ctrl+z desfaz · ctrl+q sai ")
 	if m.vim != nil {
 		mode = styleModeNormal.Render(m.vim.Mode().String())
-		if m.vim.Mode() == vim.Insert {
+		right = styleStatus.Render("i insere · v seleciona · :wq salva e sai ")
+		switch m.vim.Mode() {
+		case vim.Insert:
 			mode = styleMode.Render(m.vim.Mode().String())
+			right = styleStatus.Render("esc volta ao normal ")
+		case vim.Visual, vim.VisualLine:
+			mode = styleModeVisual.Render(m.vim.Mode().String())
+			right = styleStatus.Render("d apaga · o troca a ponta · esc cancela ")
 		}
-		right = styleStatus.Render("i insere · esc volta ao normal · :wq salva e sai ")
 		if p := m.vim.Pending(); p != "" {
 			right = stylePending.Render(p + " ")
 		}
