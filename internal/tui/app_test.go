@@ -2,6 +2,10 @@ package tui
 
 import (
 	"context"
+	"io"
+	"os"
+	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -36,6 +40,10 @@ func (f *fakeExam) Finish() (exam.Session, error) {
 	s := *f.sess
 	f.sess = nil
 	return s, nil
+}
+
+func (f *fakeExam) EditTargets(exam.Session) (string, []string, error) {
+	return "subject.pt.txt", []string{"rendu/first_word.c"}, nil
 }
 
 func (f *fakeExam) Exercises() []exam.Exercise {
@@ -164,5 +172,96 @@ func TestAppScrollAndUnavailable(t *testing.T) {
 	m = run(t, m, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("2")})
 	if !strings.Contains(m.View(), "faça login") {
 		t.Fatalf("aba sem Load deveria explicar o motivo:\n%s", m.View())
+	}
+}
+
+func TestAppEditOpensEditor(t *testing.T) {
+	m, _ := newTestApp(t, []AppTab{{Title: "Início"}})
+	m = run(t, m, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("s")})
+
+	if _, cmd := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("e")}); cmd == nil {
+		t.Fatal("e deveria abrir o editor")
+	}
+	m = run(t, m, appEditedMsg{})
+	if !strings.Contains(m.View(), "Aperte g para corrigir") {
+		t.Fatalf("ao voltar do editor deveria sugerir o grademe:\n%s", m.View())
+	}
+}
+
+func TestEditorCommand(t *testing.T) {
+	tests := []struct {
+		visual, editor string
+		want           []string
+	}{
+		{"", "", []string{"vim", "-O", "s.txt", "a.c"}},
+		{"", "nvim", []string{"nvim", "-O", "s.txt", "a.c"}},
+		{"", "/usr/local/bin/vim", []string{"/usr/local/bin/vim", "-O", "s.txt", "a.c"}},
+		{"code -w", "vim", []string{"code", "-w", "s.txt", "a.c"}},
+		{"", "nano", []string{"nano", "s.txt", "a.c"}},
+	}
+	for _, tt := range tests {
+		t.Setenv("VISUAL", tt.visual)
+		t.Setenv("EDITOR", tt.editor)
+		got := editorCommand("s.txt", []string{"a.c"}).Args
+		if strings.Join(got, " ") != strings.Join(tt.want, " ") {
+			t.Errorf("VISUAL=%q EDITOR=%q: %v, esperado %v", tt.visual, tt.editor, got, tt.want)
+		}
+	}
+}
+
+// Runs the real program loop: pressing e must suspend the app, run the
+// editor with the subject and the turn-in files, and come back.
+func TestAppEditRunsEditorProcess(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("usa um editor falso em shell script")
+	}
+	dir := t.TempDir()
+	argsFile := filepath.Join(dir, "args")
+	editor := filepath.Join(dir, "fake-editor")
+	script := "#!/bin/sh\necho \"$@\" > " + argsFile + "\n"
+	if err := os.WriteFile(editor, []byte(script), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("VISUAL", "")
+	t.Setenv("EDITOR", editor)
+
+	fe := &fakeExam{sess: &exam.Session{Mode: exam.ModeExam, Rank: "02", Level: 1, Exercise: "first_word"}}
+	// An *os.File input, like the real os.Stdin, is handed to the editor as is.
+	in, keys, err := os.Pipe()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = in.Close() }()
+	p := tea.NewProgram(NewApp(AppOptions{Tabs: []AppTab{{Title: "Início"}}, Exam: fe}, appNow),
+		tea.WithInput(in), tea.WithOutput(io.Discard))
+
+	done := make(chan error, 1)
+	go func() { _, err := p.Run(); done <- err }()
+
+	p.Send(tea.WindowSizeMsg{Width: 100, Height: 30})
+	p.Send(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("e")})
+	deadline := time.Now().Add(5 * time.Second)
+	for {
+		if data, err := os.ReadFile(argsFile); err == nil && len(data) > 0 {
+			if got := strings.TrimSpace(string(data)); got != "subject.pt.txt rendu/first_word.c" {
+				t.Fatalf("editor recebeu %q", got)
+			}
+			break
+		}
+		if time.Now().After(deadline) {
+			t.Fatal("o editor não foi executado")
+		}
+		time.Sleep(20 * time.Millisecond)
+	}
+
+	p.Send(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("q")})
+	_ = keys.Close()
+	select {
+	case err := <-done:
+		if err != nil {
+			t.Fatal(err)
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("o app não voltou do editor")
 	}
 }
