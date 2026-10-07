@@ -1,0 +1,422 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>lightyear: a 42 inteira, direto do terminal</title>
+<meta name="description" content="CLI open source para a 42 Network: perfil, avaliações, notificações no celular, mapa do campus, slots e um simulador de provas offline com os 56 exercícios do Exam Rank 02.">
+<meta property="og:title" content="lightyear: a 42 inteira, direto do terminal">
+<meta property="og:description" content="CLI open source para a 42 Network, com simulador de provas offline.">
+<meta property="og:type" content="website">
+<meta name="theme-color" content="#0b0b0c">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;800;900&family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0b0b0c; --panel: #121214; --panel-2: #161616; --line: #2a2a2a; --line-soft: #1c1c1c;
+    --text: #f3f3f3; --text-2: #cfcfcf; --muted: #9a9a9a; --dim: #858585;
+    --green: #0ecb81; --red: #f6465d; --blue: #39a0ff; --orange: #ffaf00;
+    --sans: "DM Sans", system-ui, sans-serif; --head: "Archivo", system-ui, sans-serif;
+    --mono: "DM Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.6 var(--sans); -webkit-font-smoothing: antialiased; }
+  a { color: inherit; }
+  :focus-visible { outline: 2px solid var(--green); outline-offset: 3px; border-radius: 4px; }
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 0 24px; }
+  .mono { font-family: var(--mono); }
+  .eyebrow { font: 500 12px/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--dim); }
+
+  /* nav */
+  nav { position: sticky; top: 0; z-index: 10; background: rgba(11,11,12,.82); backdrop-filter: blur(10px); border-bottom: 1px solid var(--line-soft); }
+  nav .wrap { display: flex; align-items: center; gap: 28px; height: 60px; }
+  .logo { font: 500 16px var(--mono); text-decoration: none; display: flex; align-items: center; gap: 8px; }
+  .logo b { color: var(--green); font-weight: 500; }
+  nav .links { display: flex; gap: 22px; margin-left: auto; font-size: 14px; color: var(--muted); }
+  nav .links a { text-decoration: none; }
+  nav .links a:hover { color: var(--text); }
+  .btn { display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 16px; border-radius: 8px; font: 500 14px var(--sans); text-decoration: none; border: 1px solid var(--line); background: var(--panel-2); color: var(--text); cursor: pointer; transition: border-color .15s, background .15s; }
+  .btn:hover { border-color: #444; background: #1c1c1c; }
+  .btn.primary { background: var(--text); color: var(--bg); border-color: var(--text); }
+  .btn.primary:hover { background: #fff; }
+
+  /* hero */
+  header.hero { padding: 88px 0 56px; }
+  .hero h1 { font: 900 clamp(40px, 7vw, 76px)/1.02 var(--head); letter-spacing: -.03em; margin: 18px 0 20px; max-width: 14ch; }
+  .hero h1 span { color: var(--green); }
+  .hero p.lead { font-size: 19px; color: var(--text-2); max-width: 60ch; margin: 0 0 32px; }
+  .cta { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+  .copyline { display: inline-flex; align-items: center; gap: 10px; height: 40px; padding: 0 6px 0 14px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); font: 13px var(--mono); color: var(--text-2); }
+  .copyline .p { color: var(--green); }
+
+  /* terminal */
+  .term { margin-top: 56px; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); overflow: hidden; box-shadow: 0 30px 80px -30px rgba(14,203,129,.18); }
+  .term-bar { display: flex; align-items: center; gap: 14px; padding: 0 12px; height: 46px; border-bottom: 1px solid var(--line-soft); background: var(--panel-2); overflow-x: auto; }
+  .dots { display: flex; gap: 6px; flex: none; }
+  .dots i { width: 11px; height: 11px; border-radius: 50%; background: #2f2f33; display: block; }
+  .tabs { display: flex; gap: 4px; }
+  .tab { font: 12px var(--mono); color: var(--muted); background: none; border: 1px solid transparent; border-radius: 6px; padding: 6px 10px; cursor: pointer; white-space: nowrap; }
+  .tab:hover { color: var(--text); }
+  .tab[aria-selected="true"] { color: var(--text); background: #1f1f22; border-color: var(--line); }
+  .term pre { margin: 0; padding: 22px 24px 28px; min-height: 380px; font: 13.5px/1.6 var(--mono); color: var(--text-2); overflow-x: auto; white-space: pre; }
+  .term .cmd { color: var(--text); }
+  .term .pr { color: var(--green); }
+  .g { color: var(--green); } .r { color: var(--red); } .b { color: var(--blue); font-weight: 500; } .o { color: var(--orange); font-weight: 500; } .d { color: var(--dim); }
+  .caret { display: inline-block; width: 8px; height: 1.1em; background: var(--text); vertical-align: -2px; animation: blink 1s steps(1) infinite; }
+  @keyframes blink { 50% { opacity: 0; } }
+
+  /* strip */
+  .strip { display: grid; grid-template-columns: repeat(4, 1fr); border-top: 1px solid var(--line-soft); border-bottom: 1px solid var(--line-soft); margin-top: 72px; }
+  .strip div { padding: 26px 24px; border-right: 1px solid var(--line-soft); }
+  .strip div:last-child { border-right: 0; }
+  .strip b { display: block; font: 800 30px/1.1 var(--head); letter-spacing: -.02em; }
+  .strip span { font: 12px var(--mono); color: var(--dim); text-transform: uppercase; letter-spacing: .08em; }
+
+  /* sections */
+  section { padding: 96px 0 0; }
+  h2 { font: 800 clamp(30px, 4.4vw, 46px)/1.08 var(--head); letter-spacing: -.025em; margin: 14px 0 16px; max-width: 22ch; }
+  .sub { color: var(--muted); max-width: 62ch; margin: 0 0 40px; font-size: 17px; }
+  .grid { display: grid; grid-template-columns: repeat(3, 1fr); border: 1px solid var(--line-soft); border-radius: 12px; overflow: hidden; }
+  .card { padding: 26px; border-right: 1px solid var(--line-soft); border-bottom: 1px solid var(--line-soft); background: var(--bg); transition: background .15s; }
+  .card:hover { background: var(--panel); }
+  .grid .card:nth-child(3n) { border-right: 0; }
+  .grid .card:nth-last-child(-n+3) { border-bottom: 0; }
+  .card code { font: 500 13px var(--mono); color: var(--green); }
+  .card h3 { font: 700 18px/1.3 var(--sans); margin: 12px 0 6px; }
+  .card p { margin: 0; color: var(--muted); font-size: 15px; }
+  .tag { font: 500 10px var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--bg); background: var(--green); border-radius: 4px; padding: 2px 6px; margin-left: 8px; vertical-align: 2px; }
+
+  .split { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: start; }
+  .steps { list-style: none; padding: 0; margin: 0; counter-reset: s; }
+  .steps li { counter-increment: s; position: relative; padding: 0 0 26px 52px; border-left: 1px solid var(--line); margin-left: 15px; }
+  .steps li:last-child { border-left-color: transparent; padding-bottom: 0; }
+  .steps li::before { content: counter(s); position: absolute; left: -16px; top: -2px; width: 31px; height: 31px; border-radius: 50%; display: grid; place-items: center; font: 500 13px var(--mono); background: var(--panel-2); border: 1px solid var(--line); }
+  .steps b { display: block; font-weight: 700; }
+  .steps code { font: 13px var(--mono); color: var(--green); }
+  .steps p { margin: 4px 0 0; color: var(--muted); font-size: 15px; }
+  .checks { list-style: none; padding: 0; margin: 0; display: grid; gap: 14px; }
+  .checks li { padding: 18px 20px; border: 1px solid var(--line-soft); border-radius: 10px; background: var(--panel); color: var(--text-2); font-size: 15px; }
+  .checks li b { color: var(--text); }
+
+  /* install */
+  .install { border: 1px solid var(--line); border-radius: 12px; overflow: hidden; background: var(--panel); }
+  .install .term-bar { gap: 4px; }
+  .install pre { margin: 0; padding: 22px 24px; font: 13.5px/1.7 var(--mono); color: var(--text-2); overflow-x: auto; }
+  .install pre .c { color: var(--dim); }
+  .install-foot { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 12px 16px 12px 24px; border-top: 1px solid var(--line-soft); font-size: 14px; color: var(--muted); flex-wrap: wrap; }
+  .copy { font: 500 12px var(--mono); }
+
+  /* oss */
+  .oss { margin-top: 96px; border: 1px solid var(--line); border-radius: 16px; padding: 56px; background: radial-gradient(120% 140% at 100% 0%, rgba(14,203,129,.12), transparent 55%), var(--panel); }
+  .oss h2 { max-width: 18ch; }
+  .oss .cta { margin-top: 8px; }
+  .credits { margin-top: 28px; font-size: 14px; color: var(--dim); max-width: 70ch; }
+
+  footer { margin-top: 96px; border-top: 1px solid var(--line-soft); padding: 28px 0 40px; color: var(--dim); font: 13px var(--mono); }
+  footer .wrap { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+  footer a { text-decoration: none; } footer a:hover { color: var(--text); }
+
+  @media (max-width: 860px) {
+    nav .links a.hide-sm { display: none; }
+    .strip { grid-template-columns: repeat(2, 1fr); }
+    .strip div:nth-child(2) { border-right: 0; }
+    .strip div:nth-child(-n+2) { border-bottom: 1px solid var(--line-soft); }
+    .grid { grid-template-columns: 1fr; }
+    .grid .card { border-right: 0 !important; border-bottom: 1px solid var(--line-soft) !important; }
+    .grid .card:last-child { border-bottom: 0 !important; }
+    .split { grid-template-columns: 1fr; }
+    .oss { padding: 32px 24px; }
+    .term pre { font-size: 12px; min-height: 300px; }
+  }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } .caret { animation: none; } }
+</style>
+</head>
+<body>
+
+<nav aria-label="Principal">
+  <div class="wrap">
+    <a class="logo" href="#top"><b>✦</b>lightyear</a>
+    <div class="links">
+      <a href="#recursos" class="hide-sm">Recursos</a>
+      <a href="#exam" class="hide-sm">Simulador</a>
+      <a href="#instalar">Instalar</a>
+      <a href="https://github.com/nvizble/Lightyear42">GitHub</a>
+    </div>
+  </div>
+</nav>
+
+<main id="top">
+<header class="hero">
+  <div class="wrap">
+    <div class="eyebrow">v1.2.0 · open source · MIT · feito por cadetes da 42</div>
+    <h1>A 42 inteira, direto do <span>terminal.</span></h1>
+    <p class="lead">Perfil, projetos, avaliações, notificação no celular, mapa do campus, slots, subjects e um simulador de provas com o Exam Rank 02 inteiro. Tudo numa CLI só, rápida, que você instala com um comando.</p>
+    <div class="cta">
+      <a class="btn primary" href="#instalar">Instalar o lightyear</a>
+      <a class="btn" href="https://github.com/nvizble/Lightyear42">★ Ver no GitHub</a>
+      <span class="copyline"><span class="p">$</span>lightyear exam start <button class="btn copy" style="height:28px;padding:0 10px" data-copy="lightyear exam start">copiar</button></span>
+    </div>
+
+    <div class="term" role="region" aria-label="Demonstração no terminal">
+      <div class="term-bar">
+        <div class="dots" aria-hidden="true"><i></i><i></i><i></i></div>
+        <div class="tabs" role="tablist" aria-label="Exemplos">
+          <button class="tab" role="tab" aria-selected="true" data-demo="start">exam start</button>
+          <button class="tab" role="tab" aria-selected="false" data-demo="fail">grademe ✗</button>
+          <button class="tab" role="tab" aria-selected="false" data-demo="ok">grademe ✓</button>
+          <button class="tab" role="tab" aria-selected="false" data-demo="notify">notify</button>
+          <button class="tab" role="tab" aria-selected="false" data-demo="help">--help</button>
+        </div>
+      </div>
+      <pre id="screen" aria-live="polite"></pre>
+    </div>
+
+    <div class="strip">
+      <div><b>20+</b><span>comandos</span></div>
+      <div><b>56</b><span>exercícios do exam rank 02</span></div>
+      <div><b>EN · PT</b><span>enunciados</span></div>
+      <div><b>3 SOs</b><span>macOS · Linux · Windows</span></div>
+    </div>
+  </div>
+</header>
+
+<section id="recursos">
+  <div class="wrap">
+    <div class="eyebrow">Recursos</div>
+    <h2>Tudo que você abre a Intra para ver, agora num comando.</h2>
+    <p class="sub">Usa a API oficial da 42 com OAuth2. O token fica no keyring do sistema (Keychain, Secret Service ou Credential Manager) e é renovado sozinho.</p>
+    <div class="grid">
+      <article class="card"><code>lightyear me · profile · search</code><h3>Perfis</h3><p>Nível, wallet, pontos de avaliação e campus, seu ou de qualquer cadete. Busca por prefixo de login.</p></article>
+      <article class="card"><code>lightyear projects</code><h3>Projetos</h3><p>Status e nota de cada projeto, com a piscine opcional.</p></article>
+      <article class="card"><code>lightyear evaluations --open</code><h3>Avaliações</h3><p>Suas próximas avaliações, como avaliador ou avaliado. Com <span class="mono">--open</span>, abre direto na Intra.</p></article>
+      <article class="card"><code>lightyear notify</code><span class="tag">novo</span><h3>Push no celular</h3><p>Avisa no celular sempre que surge uma avaliação nova na sua agenda, via ntfy. Roda com <span class="mono">watch</span> ou no cron.</p></article>
+      <article class="card"><code>lightyear slots</code><h3>Slots</h3><p>Lista, abre e fecha sua disponibilidade para avaliar, sem passar pelo calendário da Intra.</p></article>
+      <article class="card"><code>lightyear campus --friends</code><h3>Mapa do campus</h3><p>Quem está online, cluster por cluster e posto por posto. Filtre só os seus amigos.</p></article>
+      <article class="card"><code>lightyear friends</code><h3>Amigos</h3><p>Uma lista local de logins favoritos, e onde cada um está sentado agora.</p></article>
+      <article class="card"><code>lightyear dashboard</code><h3>Dashboard ao vivo</h3><p>TUI em tempo real com perfil, ocupação dos clusters, avaliações, calendário de slots e amigos online.</p></article>
+      <article class="card"><code>lightyear subject</code><h3>Subjects</h3><p>Baixa e abre o PDF do subject de qualquer projeto, com catálogo de ~240 projetos embutido.</p></article>
+      <article class="card"><code>lightyear exam</code><span class="tag">novo</span><h3>Simulador de provas</h3><p>O Exam Rank 02 completo, corrigido na sua máquina, offline e sem login.</p></article>
+      <article class="card"><code>lightyear update</code><h3>Self-update</h3><p>Atualiza o próprio binário pelo GitHub Releases. Sem gerenciador de pacotes.</p></article>
+      <article class="card"><code>lightyear setup</code><h3>Pronto em 2 minutos</h3><p>Um guia cria a aplicação OAuth na Intra, faz o login e instala o autocomplete do seu shell.</p></article>
+    </div>
+  </div>
+</section>
+
+<section id="exam">
+  <div class="wrap">
+    <div class="eyebrow">Simulador de provas</div>
+    <h2>Treine o exam como ele é. Sem esperar o dia da prova.</h2>
+    <p class="sub">O lightyear simula o examshell no seu computador: sorteia o exercício, cronometra, corrige e sobe de nível. Funciona offline, só precisa de um compilador C.</p>
+    <div class="split">
+      <ol class="steps">
+        <li><b>Comece a prova</b><code>lightyear exam start</code><p>Nível 1, exercício sorteado, 3h no relógio (ou <span class="mono">--time 90m</span>).</p></li>
+        <li><b>Leia e escreva</b><code>~/lightyear-exam/subjects · rendu</code><p>Enunciado em inglês e português. Sua solução vai em <span class="mono">rendu/&lt;exercício&gt;/</span>, no editor que você quiser.</p></li>
+        <li><b>Peça a correção</b><code>lightyear exam grademe</code><p>Passou: próximo nível, 25 pontos cada. Falhou: o trace mostra o esperado × o recebido.</p></li>
+        <li><b>Ou só pratique</b><code>lightyear exam practice ft_split</code><p>Um exercício específico, sem tempo, quantas vezes quiser.</p></li>
+      </ol>
+      <ul class="checks">
+        <li><b>56 exercícios</b> dos 4 níveis do Exam Rank 02, de <span class="mono">first_word</span> a <span class="mono">sort_list</span>.</li>
+        <li><b>Correção de verdade:</b> compila com <span class="mono">cc -Wall -Wextra -Werror</span>, roda os mesmos testes no seu código e numa solução de referência e compara a saída.</li>
+        <li><b>Traces claros:</b> erro de compilação, saída diferente, crash ou timeout, cada um com a explicação certa.</li>
+        <li><b>Seu código nunca some:</b> ao começar outra prova, o <span class="mono">rendu</span> antigo vai para <span class="mono">history/</span>.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section id="instalar">
+  <div class="wrap">
+    <div class="eyebrow">Instalar</div>
+    <h2>Um binário. Nenhuma dependência.</h2>
+    <p class="sub">No campus, prefira o binário ou o <span class="mono">.deb</span>: o Go das máquinas costuma ser mais antigo que o 1.25 que o lightyear exige.</p>
+    <div class="install">
+      <div class="term-bar">
+        <div class="tabs" role="tablist" aria-label="Sistema">
+          <button class="tab" role="tab" aria-selected="true" data-install="mac">macOS</button>
+          <button class="tab" role="tab" aria-selected="false" data-install="linux">Linux (sem sudo)</button>
+          <button class="tab" role="tab" aria-selected="false" data-install="deb">Ubuntu / Debian</button>
+          <button class="tab" role="tab" aria-selected="false" data-install="go">Go</button>
+        </div>
+      </div>
+      <pre id="install-code"></pre>
+      <div class="install-foot">
+        <span>Depois: <span class="mono" style="color:var(--text)">lightyear setup</span> → <span class="mono" style="color:var(--text)">lightyear login</span></span>
+        <button class="btn copy" id="install-copy">copiar</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="wrap">
+  <div class="oss">
+    <div class="eyebrow">Open source</div>
+    <h2>Feito por cadetes, aberto para todo mundo.</h2>
+    <p class="sub" style="margin-bottom:28px">O lightyear é MIT e está inteiro no GitHub. Achou um bug, quer um comando novo ou quer adicionar os exercícios de outro rank? Abra uma issue ou mande um PR. Cada exercício do simulador é só uma pasta com enunciado, testes e solução de referência.</p>
+    <div class="cta">
+      <a class="btn primary" href="https://github.com/nvizble/Lightyear42">Contribuir no GitHub</a>
+      <a class="btn" href="https://github.com/nvizble/Lightyear42/issues/new">Abrir uma issue</a>
+      <a class="btn" href="https://github.com/nvizble/Lightyear42/releases">Releases</a>
+    </div>
+    <p class="credits">Créditos: o fluxo do simulador foi inspirado no <a href="https://github.com/vgomes-p/CodeSim">CodeSim</a> (vgomes-p), e a lista e as soluções base do Exam Rank 02 vêm do <a href="https://github.com/alexhiguera/Exam_Rank_02_42_School">Exam_Rank_02_42_School</a> (Alex Higuera, MIT). Os enunciados foram reescritos. O lightyear não é um projeto oficial da 42.</p>
+  </div>
+</div>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>✦ lightyear · MIT</span>
+    <span><a href="https://github.com/nvizble/Lightyear42">github.com/nvizble/Lightyear42</a></span>
+  </div>
+</footer>
+
+<script>
+  // Draws a Lip Gloss-style rounded card, padding each line by its visible length.
+  function box(lines, width = 53) {
+    const edge = t => '<span class="b">' + t + '</span>';
+    const visible = t => t.replace(/<[^>]+>/g, "").length;
+    return [
+      edge("╭" + "─".repeat(width) + "╮"),
+      ...lines.map(l => edge("│") + "  " + l + " ".repeat(width - 2 - visible(l)) + edge("│")),
+      edge("╰" + "─".repeat(width) + "╯"),
+    ].join("\n");
+  }
+
+  // Terminal demos: real output from the lightyear binary (paths shortened).
+  const demos = {
+    start: { cmd: "lightyear exam start", out: box([
+      '<span class="b">Exam Rank 02</span>',
+      '<span class="d">Exercício  </span><span class="o">ulstr</span><span class="d">  (nível 1)</span>',
+      '<span class="d">Nota       </span>0/100',
+      '<span class="d">Tempo      </span>03h00m restantes',
+      '<span class="d">Tentativas </span>0',
+      '<span class="d">Subject    </span>~/lightyear-exam/subjects/ulstr/',
+      '<span class="d">Entrega    </span>~/lightyear-exam/rendu/ulstr/',
+      '',
+      '<span class="d">Quando terminar, rode `lightyear exam grademe`.</span>',
+    ]) },
+    fail: { cmd: "lightyear exam grademe", out:
+`<span class="d">Corrigindo…</span>
+<span class="r">✗ FAILURE</span><span class="d">  first_word</span>
+
+first_word "   lorem,ipsum   "
+esperado: "lorem,ipsum\\n"
+recebido: "\\n"
+
+<span class="d">Trace salvo em ~/lightyear-exam/traces/first_word.trace</span>` },
+    ok: { cmd: "lightyear exam grademe", out:
+`<span class="d">Corrigindo…</span>
+<span class="g">✓ SUCCESS</span><span class="d">  ulstr</span>
+
+` + box([
+      '<span class="b">Exam Rank 02</span>',
+      '<span class="d">Exercício  </span><span class="o">union</span><span class="d">  (nível 2)</span>',
+      '<span class="d">Nota       </span>25/100',
+      '<span class="d">Tempo      </span>02h41m restantes',
+      '<span class="d">Tentativas </span>0',
+      '<span class="d">Subject    </span>~/lightyear-exam/subjects/union/',
+      '<span class="d">Entrega    </span>~/lightyear-exam/rendu/union/',
+    ]) },
+    notify: { cmd: "lightyear notify --help", out:
+`Envia uma notificação push quando aparece uma avaliação nova na sua
+agenda — como avaliador ou como avaliado.
+
+A entrega usa o ntfy (https://ntfy.sh): instale o app no celular, assine o
+tópico gerado pelo "lightyear notify setup" e pronto.
+
+<span class="d">Fluxo típico:</span>
+
+  <span class="g">lightyear notify setup</span>    <span class="d"># gera o tópico e mostra como assinar</span>
+  <span class="g">lightyear notify test</span>     <span class="d"># confirma que chega no celular</span>
+  <span class="g">lightyear notify watch</span>    <span class="d"># deixa rodando; avisa a cada avaliação nova</span>` },
+    help: { cmd: "lightyear --help", out:
+`<span class="d">Available Commands:</span>
+  <span class="g">campus</span>      Mostra quem está online no campus, organizado como um mapa
+  <span class="g">dashboard</span>   Dashboard em tempo real do campus (Bubble Tea)
+  <span class="g">evaluations</span> Lista suas próximas avaliações agendadas
+  <span class="g">exam</span>        Simulador de provas da 42 (exam rank), com correção local
+  <span class="g">friends</span>     Gerencia sua lista local de amigos
+  <span class="g">me</span>          Mostra o seu perfil na 42
+  <span class="g">notify</span>      Avisa no celular quando uma avaliação nova for agendada
+  <span class="g">profile</span>     Mostra o perfil de um usuário da 42
+  <span class="g">projects</span>    Lista os projetos de um usuário da 42
+  <span class="g">search</span>      Busca usuários da 42 por prefixo de login
+  <span class="g">slots</span>       Gerencia seus slots de disponibilidade para avaliar
+  <span class="g">subject</span>     Baixa e abre o PDF do subject de um projeto
+  <span class="g">update</span>      Atualiza o lightyear a partir do GitHub Releases
+  <span class="d">…</span>` },
+  };
+
+  const screen = document.getElementById("screen");
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  let typing;
+
+  function show(key) {
+    const d = demos[key];
+    clearInterval(typing);
+    const prompt = '<span class="pr">~ $</span> ';
+    if (reduce) { screen.innerHTML = prompt + '<span class="cmd">' + d.cmd + '</span>\n' + d.out; return; }
+    let i = 0;
+    typing = setInterval(() => {
+      i++;
+      screen.innerHTML = prompt + '<span class="cmd">' + d.cmd.slice(0, i) + '</span><span class="caret"></span>';
+      if (i >= d.cmd.length) {
+        clearInterval(typing);
+        setTimeout(() => { screen.innerHTML = prompt + '<span class="cmd">' + d.cmd + '</span>\n' + d.out; }, 180);
+      }
+    }, 28);
+  }
+
+  function selectTab(tabs, active) {
+    tabs.forEach(t => t.setAttribute("aria-selected", String(t === active)));
+  }
+
+  const demoTabs = [...document.querySelectorAll("[data-demo]")];
+  demoTabs.forEach(t => t.addEventListener("click", () => { selectTab(demoTabs, t); show(t.dataset.demo); }));
+  show("start");
+
+  // Install snippets.
+  const installs = {
+    mac:
+`<span class="c"># Apple Silicon (Intel: troque arm64 por x86_64)</span>
+VER=1.2.0
+curl -sL "https://github.com/nvizble/Lightyear42/releases/download/v\${VER}/lightyear_\${VER}_Darwin_arm64.tar.gz" | tar -xz lightyear
+sudo mv lightyear /usr/local/bin/
+lightyear version`,
+    linux:
+`VER=1.2.0
+mkdir -p ~/.local/bin
+curl -sL "https://github.com/nvizble/Lightyear42/releases/download/v\${VER}/lightyear_\${VER}_Linux_x86_64.tar.gz" | tar -xz -C ~/.local/bin lightyear
+<span class="c"># garanta que ~/.local/bin está no PATH</span>
+lightyear version`,
+    deb:
+`VER=1.2.0
+curl -sLO "https://github.com/nvizble/Lightyear42/releases/download/v\${VER}/lightyear_\${VER}_linux_amd64.deb"
+sudo apt install "./lightyear_\${VER}_linux_amd64.deb"
+lightyear version`,
+    go:
+`<span class="c"># requer Go 1.25+</span>
+go install github.com/nvizble/Lightyear42/cmd/lightyear@latest`,
+  };
+  const code = document.getElementById("install-code");
+  const installTabs = [...document.querySelectorAll("[data-install]")];
+  let current = "mac";
+  function showInstall(k) { current = k; code.innerHTML = installs[k]; }
+  installTabs.forEach(t => t.addEventListener("click", () => { selectTab(installTabs, t); showInstall(t.dataset.install); }));
+  showInstall("mac");
+
+  // Copy buttons.
+  async function copy(btn, text) {
+    try { await navigator.clipboard.writeText(text); btn.textContent = "copiado ✓"; }
+    catch { btn.textContent = "erro"; }
+    setTimeout(() => (btn.textContent = "copiar"), 1400);
+  }
+  document.getElementById("install-copy").addEventListener("click", e => {
+    const text = installs[current].replace(/<[^>]+>/g, "").split("\n").filter(l => !l.startsWith("#")).join("\n");
+    copy(e.currentTarget, text);
+  });
+  document.querySelectorAll("[data-copy]").forEach(b => b.addEventListener("click", () => copy(b, b.dataset.copy)));
+</script>
+</body>
+</html>
