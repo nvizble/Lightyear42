@@ -11,8 +11,16 @@ builds:
   - id: lightyear
     main: ./cmd/lightyear
     binary: lightyear
+    # The editor's syntax highlighting is Tree-sitter, in C: builds need cgo.
+    # The release runs on macOS, where clang builds darwin; Zig
+    # cross-compiles Linux (static, with musl) and Windows.
     env:
-      - CGO_ENABLED=0
+      - CGO_ENABLED=1
+      - CGO_CFLAGS=-O2 # no -g: the C has no debug info to carry
+      - >-
+        {{- if eq .Os "linux" }}CC=zig cc -target {{ if eq .Arch "amd64" }}x86_64{{ else }}aarch64{{ end }}-linux-musl{{ end }}
+        {{- if eq .Os "windows" }}CC=zig cc -target x86_64-windows-gnu{{ end }}
+      - '{{ if eq .Os "darwin" }}MACOSX_DEPLOYMENT_TARGET=12.0{{ end }}'
     goos:
       - linux
       - darwin
@@ -28,6 +36,7 @@ builds:
       - -X github.com/nvizble/Lightyear42/cmd.Version={{.Version}}
       - -X github.com/nvizble/Lightyear42/cmd.Commit={{.ShortCommit}}
       - -X github.com/nvizble/Lightyear42/cmd.BuildDate={{.Date}}
+      - "{{ if eq .Os \"linux\" }}-linkmode=external -extldflags '-static -s'{{ end }}"
 
 archives:
   - id: default

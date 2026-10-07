@@ -7,6 +7,14 @@ Mudanças visíveis do lightyear, da mais nova para a mais antiga. O
 Versões `-canary.N` são pre-releases: `lightyear update --canary` entra no
 canal canary e `lightyear update --stable` volta para a estável.
 
+## [1.3.0-canary.14] — 2026-10-07
+
+- Editor: syntax highlighting com Tree-sitter para C, C++, Go, Python e
+  Rust — palavras-chave, strings, comentários, números, funções e tipos.
+  As cores acompanham cada tecla, sem reprocessar o arquivo inteiro.
+- Instalar via `go install` (canary) agora pede um compilador C (`cc`);
+  os binários dos releases continuam prontos para usar.
+
 ## [1.3.0-canary.13] — 2026-10-07
 
 - Editor: copiar e colar como no Vim — `y` copia (`yy`, `yw`, `y$`, `Y`),

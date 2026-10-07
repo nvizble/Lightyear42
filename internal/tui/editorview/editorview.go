@@ -15,6 +15,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/x/ansi"
 	"github.com/nvizble/Lightyear42/internal/editor"
+	"github.com/nvizble/Lightyear42/internal/syntax"
 	"github.com/nvizble/Lightyear42/internal/vim"
 )
 
@@ -37,6 +38,16 @@ var (
 	styleStatus     = lipgloss.NewStyle().Foreground(colorMuted)
 	styleFile       = lipgloss.NewStyle().Bold(true)
 	styleError      = lipgloss.NewStyle().Foreground(colorFail)
+
+	// syntaxStyles color the code, by syntax.Class (Plain stays as is).
+	syntaxStyles = [...]lipgloss.Style{
+		syntax.Keyword:  lipgloss.NewStyle().Foreground(colorVisual),
+		syntax.String:   lipgloss.NewStyle().Foreground(lipgloss.AdaptiveColor{Light: "28", Dark: "114"}),
+		syntax.Comment:  lipgloss.NewStyle().Foreground(colorMuted).Italic(true),
+		syntax.Number:   lipgloss.NewStyle().Foreground(lipgloss.AdaptiveColor{Light: "130", Dark: "215"}),
+		syntax.Function: lipgloss.NewStyle().Foreground(lipgloss.AdaptiveColor{Light: "25", Dark: "75"}),
+		syntax.Type:     lipgloss.NewStyle().Foreground(lipgloss.AdaptiveColor{Light: "30", Dark: "80"}),
+	}
 )
 
 // Model is the editor component.
@@ -51,16 +62,31 @@ type Model struct {
 	done      bool
 	// vim, when set, interprets keys Vim style (modes, :w, :q).
 	vim *vim.Controller
+	// syn colors the code (nil for files without a grammar).
+	syn *syntax.Highlighter
 }
 
 // New wraps an editor as a plain (non-modal) editor.
 func New(ed *editor.Editor) Model {
-	return Model{ed: ed}
+	m := Model{ed: ed, syn: syntax.For(ed.Path(), ed.Buffer().Text())}
+	if m.syn != nil {
+		ed.OnChange(m.syn.Edit)
+	}
+	return m
 }
 
 // NewVim wraps an editor with Vim-style modal editing.
 func NewVim(ed *editor.Editor) Model {
-	return Model{ed: ed, vim: vim.New(ed)}
+	m := New(ed)
+	m.vim = vim.New(ed)
+	return m
+}
+
+// Close frees the syntax highlighter; call it once the editor is closed.
+func (m Model) Close() {
+	if m.syn != nil {
+		m.syn.Close()
+	}
 }
 
 // Editor is the document being edited.
@@ -230,6 +256,10 @@ func (m Model) View() string {
 	buf, v, cur := m.ed.Buffer(), m.ed.Viewport(), m.ed.Cursor()
 	numWidth := m.gutterWidth() - 3
 
+	var classes [][]syntax.Class
+	if m.syn != nil {
+		classes = m.syn.Lines(v.Top, v.Top+m.textHeight()-1)
+	}
 	rows := make([]string, 0, m.textHeight()+1)
 	for r := 0; r < m.textHeight(); r++ {
 		line := v.Top + r
@@ -250,25 +280,36 @@ func (m Model) View() string {
 			selFrom = m.ed.VisualColumn(line, from)
 			selTo = max(m.ed.VisualColumn(line, to), selFrom+1) // an empty line still shows a cell
 		}
-		rows = append(rows, gutter+renderLine(buf.Line(line), m.ed.TabSize(), v.Left, m.textWidth(), cursorCol, selFrom, selTo))
+		var lineClasses []syntax.Class
+		if r < len(classes) {
+			lineClasses = classes[r]
+		}
+		rows = append(rows, gutter+renderLine(buf.Line(line), lineClasses, m.ed.TabSize(), v.Left, m.textWidth(), cursorCol, selFrom, selTo))
 	}
 	rows = append(rows, m.statusLine())
 	return strings.Join(rows, "\n")
 }
 
 // renderLine expands tabs, shows the visible slice [left, left+width),
-// draws the cursor at screen column cursorCol (-1 for none) and highlights
-// the selected screen columns [selFrom, selTo).
-func renderLine(line string, tabSize, left, width, cursorCol, selFrom, selTo int) string {
+// colors the code by classes (one per rune, may be nil), draws the cursor
+// at screen column cursorCol (-1 for none) and highlights the selected
+// screen columns [selFrom, selTo).
+func renderLine(line string, classes []syntax.Class, tabSize, left, width, cursorCol, selFrom, selTo int) string {
 	var cells []string
-	for _, r := range line {
-		if r == '\t' {
-			for n := tabSize - len(cells)%tabSize; n > 0; n-- {
-				cells = append(cells, " ")
-			}
-			continue
+	var cellClasses []syntax.Class
+	for i, r := range []rune(line) {
+		class := syntax.Plain
+		if i < len(classes) {
+			class = classes[i]
 		}
-		cells = append(cells, string(r))
+		cell, n := string(r), 1
+		if r == '\t' {
+			cell, n = " ", tabSize-len(cells)%tabSize
+		}
+		for ; n > 0; n-- {
+			cells = append(cells, cell)
+			cellClasses = append(cellClasses, class)
+		}
 	}
 	// The cursor or the selection may sit past the end (Insert, empty lines).
 	for len(cells) < max(cursorCol+1, selTo) {
@@ -293,6 +334,8 @@ func renderLine(line string, tabSize, left, width, cursorCol, selFrom, selTo int
 			next = &styleCursor
 		case x >= selFrom && x < selTo:
 			next = &styleSelection
+		case x < len(cellClasses) && cellClasses[x] != syntax.Plain:
+			next = &syntaxStyles[cellClasses[x]]
 		}
 		if next != style {
 			flush()

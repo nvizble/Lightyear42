@@ -13,6 +13,7 @@ import (
 	"github.com/charmbracelet/x/ansi"
 	"github.com/muesli/termenv"
 	"github.com/nvizble/Lightyear42/internal/editor"
+	"github.com/nvizble/Lightyear42/internal/syntax"
 )
 
 func newTestModel(t *testing.T, ed *editor.Editor) Model {
@@ -121,16 +122,16 @@ func TestMouseClickPlacesCursor(t *testing.T) {
 
 func TestRenderLine(t *testing.T) {
 	// Tabs expand to the next stop of 4; the cursor past the end draws a cell.
-	if got := ansi.Strip(renderLine("\tx", 4, 0, 20, -1, -1, -1)); got != "    x" {
+	if got := ansi.Strip(renderLine("\tx", nil, 4, 0, 20, -1, -1, -1)); got != "    x" {
 		t.Fatalf("tab: %q", got)
 	}
-	if got := ansi.Strip(renderLine("ab\tc", 4, 0, 20, -1, -1, -1)); got != "ab  c" {
+	if got := ansi.Strip(renderLine("ab\tc", nil, 4, 0, 20, -1, -1, -1)); got != "ab  c" {
 		t.Fatalf("tab no meio: %q", got)
 	}
-	if got := ansi.Strip(renderLine("abc", 4, 0, 20, 5, -1, -1)); got != "abc   " {
+	if got := ansi.Strip(renderLine("abc", nil, 4, 0, 20, 5, -1, -1)); got != "abc   " {
 		t.Fatalf("cursor depois do fim: %q", got)
 	}
-	if got := ansi.Strip(renderLine("abcdef", 4, 2, 3, -1, -1, -1)); got != "cde" {
+	if got := ansi.Strip(renderLine("abcdef", nil, 4, 2, 3, -1, -1, -1)); got != "cde" {
 		t.Fatalf("rolagem horizontal: %q", got)
 	}
 
@@ -148,7 +149,7 @@ func TestRenderLine(t *testing.T) {
 		{"seleção cortada pela rolagem", "abcdef", 1, 3, -1, 0, 3, sel("bc") + "d"},
 	}
 	for _, tt := range tests {
-		if got := renderLine(tt.line, 4, tt.left, tt.width, tt.cursor, tt.selFrom, tt.selTo); got != tt.want {
+		if got := renderLine(tt.line, nil, 4, tt.left, tt.width, tt.cursor, tt.selFrom, tt.selTo); got != tt.want {
 			t.Errorf("%s: %q, esperado %q", tt.name, got, tt.want)
 		}
 	}
@@ -281,6 +282,40 @@ func TestVimVisualSelection(t *testing.T) {
 	if _, _, ok := m.Editor().SelectedRange(); ok || !strings.Contains(status(), "NORMAL") {
 		t.Fatalf("um clique deveria encerrar a seleção: %q", status())
 	}
+}
+
+func TestSyntaxColors(t *testing.T) {
+	colors(t)
+	path := filepath.Join(t.TempDir(), "main.c")
+	if err := os.WriteFile(path, []byte("int\tmain(void)\n{\n\treturn (0); // ok\n}"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	ed, err := editor.Open(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	m := NewVim(ed)
+	defer m.Close()
+	next, _ := m.Update(tea.WindowSizeMsg{Width: 60, Height: 8})
+	m = next.(Model)
+	style := func(c syntax.Class, s string) string { return syntaxStyles[c].Render(s) }
+	view := m.View()
+	for _, want := range []string{style(syntax.Function, "main"), style(syntax.Keyword, "return"), style(syntax.Number, "0"), style(syntax.Comment, "// ok")} {
+		if !strings.Contains(view, want) {
+			t.Errorf("faltou %q na tela:\n%s", want, view)
+		}
+	}
+	// Typing keeps the tree in step: the new line is colored right away.
+	m, _ = press(t, m, runes("Goint x;"), tea.KeyMsg{Type: tea.KeyEsc})
+	for _, row := range strings.Split(m.View(), "\n") {
+		if strings.Contains(ansi.Strip(row), "5 │ int x;") {
+			if !strings.Contains(row, style(syntax.Type, "int")) {
+				t.Fatalf("a linha digitada deveria ganhar cor: %q", row)
+			}
+			return
+		}
+	}
+	t.Fatalf("a linha digitada não apareceu:\n%s", ansi.Strip(m.View()))
 }
 
 // Real keyboard bytes through a running program, Vim style.
