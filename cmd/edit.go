@@ -18,7 +18,8 @@ func newEditCmd() *cobra.Command {
 cores (Tree-sitter) e erros do language server (clangd, gopls, pyright,
 rust-analyzer) para C, C++, Go, Python e Rust — K mostra a assinatura, gd
 vai à definição, ]d e [d andam entre os erros e o INSERT completa enquanto
-você digita (ou com Ctrl-n), Tab aceita:
+você digita (ou com Ctrl-n), Tab aceita. Text objects (diw, ci", da(, yi{),
+f/F/t/T com ; e , e busca com / ? n N * (:noh apaga os destaques):
 i/a/o/I/A/O entram no INSERT, esc volta ao NORMAL; movimentos hjkl, w b e,
 0 ^ $, gg G; operador d com qualquer movimento (dw, d$, dG, dd) e contadores
 (3j, 3dd, 2d3w); y copia (yy, yw, Y), c muda (cw, cc, C) e p/P colam o

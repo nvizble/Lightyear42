@@ -357,3 +357,24 @@ func TestVimProgramWithRealKeys(t *testing.T) {
 		t.Fatalf("arquivo salvo: %q", data)
 	}
 }
+
+func TestSearchPromptAndHighlight(t *testing.T) {
+	colors(t)
+	next, _ := NewVim(editor.New("foo bar\nbar")).Update(tea.WindowSizeMsg{Width: 60, Height: 6})
+	m := next.(Model)
+	m, _ = press(t, m, runes("/bar"))
+	lines := strings.Split(m.View(), "\n")
+	if got := ansi.Strip(lines[len(lines)-1]); strings.TrimSpace(got) != "/bar" {
+		t.Fatalf("o prompt da busca toma a barra: %q", got)
+	}
+	m, _ = press(t, m, tea.KeyMsg{Type: tea.KeyEnter})
+	rows := strings.Split(m.View(), "\n")
+	// The cursor sits on the first match; the other one is highlighted.
+	if !strings.Contains(rows[1], styleSearchHit.Render("bar")) || !strings.Contains(rows[0], styleSearchHit.Render("ar")) {
+		t.Fatalf("destaques:\n%q\n%q", rows[0], rows[1])
+	}
+	m, _ = press(t, m, runes(":noh"), tea.KeyMsg{Type: tea.KeyEnter})
+	if strings.Contains(m.View(), styleSearchHit.Render("bar")) {
+		t.Fatal(":noh apaga os destaques")
+	}
+}

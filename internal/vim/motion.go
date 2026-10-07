@@ -280,3 +280,35 @@ func endStep(buf *editor.Buffer, p editor.Position) editor.Position {
 		q = n
 	}
 }
+
+// findMotion is f, F, t and T: to the count-th char on the line, after the
+// cursor (f, t: inclusive) or before it (F, T); t and T stop one short.
+// Repeated with ; a t doesn't get stuck on the char right next to it.
+func findMotion(kind byte, char rune, repeat bool) Motion {
+	return func(ed *editor.Editor, count int, _ bool) Target {
+		cur := ed.Cursor()
+		line := []rune(ed.Buffer().Line(cur.Line))
+		step := 1
+		if kind == 'F' || kind == 'T' {
+			step = -1
+		}
+		col := cur.Column
+		if repeat && (kind == 't' || kind == 'T') && col+step >= 0 && col+step < len(line) && line[col+step] == char {
+			col += step
+		}
+		for n := 0; n < times(count); n++ {
+			for col += step; col >= 0 && col < len(line) && line[col] != char; col += step {
+			}
+			if col < 0 || col >= len(line) {
+				return Target{Failed: true}
+			}
+		}
+		switch kind {
+		case 't':
+			col--
+		case 'T':
+			col++
+		}
+		return Target{Pos: editor.Position{Line: cur.Line, Column: col}, Inclusive: step > 0}
+	}
+}

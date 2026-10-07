@@ -62,7 +62,8 @@ type CommandState struct {
 
 	opKey   string // the operator's key, so "dd" can be told apart
 	opCount int    // the count typed before the operator
-	lead    string // a prefix ("g", "[", "]") waiting for its second key
+	lead    string // a prefix ("g", "[", "]", "i", "a") waiting for its second key
+	find    string // f, F, t or T waiting for its character
 }
 
 // Controller interprets keys for one editor.
@@ -71,7 +72,11 @@ type Controller struct {
 	mode    Mode
 	state   CommandState
 	cmdline string
+	prompt  string // ":" for ex commands, "/" or "?" for a search
 	regs    map[rune]Register
+	search  search
+	// lastFind is the last f/F/t/T and its character, for ; and ,.
+	lastFind string
 
 	// Commands are extra Normal-mode commands the host provides, by key
 	// ("K", "gd", "]d": a language server's hover, definition...). They get
@@ -90,8 +95,17 @@ func (c *Controller) Mode() Mode { return c.mode }
 // Pending is the command typed so far in Normal mode (e.g. "d").
 func (c *Controller) Pending() string { return strings.Join(c.state.Pending, "") }
 
-// CommandLine is the ex command being typed after ":".
+// CommandLine is what is being typed after the prompt.
 func (c *Controller) CommandLine() string { return c.cmdline }
+
+// Prompt is the command line's prompt: ":" (ex command), "/" or "?"
+// (search).
+func (c *Controller) Prompt() string {
+	if c.prompt == "" {
+		return ":"
+	}
+	return c.prompt
+}
 
 // MoveCursor moves the cursor (e.g. a mouse click) respecting the mode: it
 // ends a Visual selection, and Normal mode never sits past the last
@@ -174,7 +188,7 @@ func (c *Controller) normalKey(key string) Result {
 		return Result{}
 	}
 
-	if m, ok := motions[key]; ok {
+	if m, ok := c.motion(key); ok {
 		op, n := st.Operator, st.Count
 		if op != opNone {
 			n = totalCount(st.opCount, st.Count)
@@ -194,6 +208,20 @@ func (c *Controller) normalKey(key string) Result {
 		return Result{}
 	}
 
+	if obj, inner, ok := lookupObject(key); ok {
+		op := st.Operator
+		c.state = CommandState{}
+		r, linewise, found := obj(c.ed, inner)
+		switch {
+		case !found || op == opNone:
+		case linewise:
+			c.applyLines(op, r.Start.Line, r.End.Line)
+		default:
+			c.applyRange(op, r)
+		}
+		return Result{}
+	}
+
 	// Anything else cancels a pending operator, like Vim.
 	if st.Operator != opNone {
 		c.state = CommandState{}
@@ -208,31 +236,70 @@ func (c *Controller) normalKey(key string) Result {
 }
 
 // prefix consumes counts (1-9 start one; 0 continues it, alone it is a
-// motion) and the two-key prefixes "g", "[" and "]". It returns the key to
-// interpret ("gg", "gd" once complete), or ok=false when the key was
-// consumed.
+// motion), the two-key prefixes ("g", "[", "]", and "i"/"a" for text
+// objects after an operator or in Visual) and f/F/t/T with their
+// character. It returns the key to interpret ("gg", "gd", "iw", "fa" once
+// complete), or ok=false when the key was consumed.
 func (c *Controller) prefix(key string) (string, bool) {
 	st := &c.state
-	if st.lead == "" && len(key) == 1 && key[0] >= '0' && key[0] <= '9' && (key != "0" || st.Count > 0) {
+	if st.lead == "" && st.find == "" && len(key) == 1 && key[0] >= '0' && key[0] <= '9' && (key != "0" || st.Count > 0) {
 		st.Count = st.Count*10 + int(key[0]-'0')
 		st.Pending = append(st.Pending, key)
 		return "", false
 	}
 	switch {
+	case st.find != "":
+		find := st.find
+		st.find = ""
+		if !isChar(key) {
+			c.state = CommandState{}
+			return "", false
+		}
+		return find + key, true
 	case st.lead != "":
 		key, st.lead = st.lead+key, ""
 		_, motion := motions[key]
-		if _, command := c.Commands[key]; motion || command {
+		_, command := c.Commands[key]
+		_, _, object := lookupObject(key)
+		if motion || command || object {
 			return key, true
 		}
 		c.state = CommandState{}
 		return "", false
-	case key == "g" || key == "[" || key == "]":
+	case key == "f" || key == "F" || key == "t" || key == "T":
+		st.find = key
+		st.Pending = append(st.Pending, key)
+		return "", false
+	case key == "g" || key == "[" || key == "]" || ((key == "i" || key == "a") && (st.Operator != opNone || c.visual())):
 		st.lead = key
 		st.Pending = append(st.Pending, key)
 		return "", false
 	}
 	return key, true
+}
+
+// motion finds the motion for key: the fixed ones, f/F/t/T with their
+// character ("fa"), and ; and , repeating the last of those.
+func (c *Controller) motion(key string) (Motion, bool) {
+	if m, ok := motions[key]; ok {
+		return m, true
+	}
+	switch {
+	case (key == ";" || key == ",") && c.lastFind != "":
+		kind, char := c.lastFind[0], []rune(c.lastFind[1:])[0]
+		if key == "," {
+			kind = map[byte]byte{'f': 'F', 'F': 'f', 't': 'T', 'T': 't'}[kind]
+		}
+		return findMotion(kind, char, true), true
+	case len(key) > 1 && (key[0] == 'f' || key[0] == 'F' || key[0] == 't' || key[0] == 'T') && isChar(key[1:]):
+		c.lastFind = key
+		return findMotion(key[0], []rune(key[1:])[0], false), true
+	}
+	return nil, false
+}
+
+func (c *Controller) visual() bool {
+	return c.mode == Visual || c.mode == VisualLine
 }
 
 // aliases are commands spelled as other keys, like Vim's D = d$.
@@ -293,8 +360,12 @@ func (c *Controller) command(key string, n int) Result {
 		c.clampNormal()
 	case "p", "P":
 		return c.put(key == "P", n)
-	case ":":
-		c.mode, c.cmdline = Command, ""
+	case ":", "/", "?":
+		c.mode, c.cmdline, c.prompt = Command, "", key
+	case "n", "N":
+		return c.repeatSearch(c.search.backward != (key == "N"), n)
+	case "*", "#":
+		return c.searchWord(key == "#", n)
 	case "v":
 		c.enterVisual(Visual)
 	case "V":
@@ -362,9 +433,15 @@ func (c *Controller) visualKey(key string) Result {
 		c.operate(op)
 		return Result{}
 	}
-	if m, ok := motions[key]; ok {
+	if m, ok := c.motion(key); ok {
 		if t := m(c.ed, n, false); !t.Failed {
 			c.moveTo(t)
+		}
+		return Result{}
+	}
+	if obj, inner, ok := lookupObject(key); ok {
+		if r, _, found := obj(c.ed, inner); found {
+			c.selectRange(r)
 		}
 		return Result{}
 	}
@@ -384,9 +461,26 @@ func (c *Controller) visualKey(key string) Result {
 		return c.replaceSelection(times(n))
 	case ":":
 		c.exitVisual()
-		c.mode, c.cmdline = Command, ""
+		c.mode, c.cmdline, c.prompt = Command, "", ":"
 	}
 	return Result{}
+}
+
+// selectRange selects r (a text object) in charwise Visual mode.
+func (c *Controller) selectRange(r editor.Range) {
+	if !r.Start.Before(r.End) {
+		return
+	}
+	end := editor.Position{Line: r.End.Line, Column: r.End.Column - 1}
+	if r.End.Column == 0 {
+		// Up to the line break before r.End.
+		end = editor.Position{Line: r.End.Line - 1, Column: c.ed.Buffer().LineLen(r.End.Line - 1)}
+	}
+	c.mode = Visual
+	c.ed.ClearSelection()
+	c.ed.MoveCursor(r.Start)
+	c.ed.Select(editor.SelectChars)
+	c.ed.MoveCursor(end)
 }
 
 // operate runs op on the selection (whole lines in V-LINE), leaving
@@ -468,9 +562,12 @@ func (c *Controller) commandKey(key string) Result {
 			c.cmdline = string(r[:len(r)-1])
 		}
 	case "enter":
-		cmd := strings.TrimSpace(c.cmdline)
+		cmd, prompt := c.cmdline, c.prompt
 		c.mode, c.cmdline = Normal, ""
-		return c.execute(cmd)
+		if prompt == "/" || prompt == "?" {
+			return c.findPattern(cmd, prompt == "?", false, 1)
+		}
+		return c.execute(strings.TrimSpace(cmd))
 	default:
 		if isChar(key) {
 			c.cmdline += key
@@ -495,6 +592,9 @@ func (c *Controller) execute(cmd string) Result {
 		return Result{Quit: true}
 	case "q!":
 		return Result{Quit: true}
+	case "noh", "nohlsearch":
+		c.search.highlight = false
+		return Result{}
 	}
 	return Result{Message: "E492: não é um comando: " + cmd, Err: true}
 }
