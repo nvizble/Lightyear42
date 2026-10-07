@@ -5,7 +5,7 @@
 > (Visual Mode), 5 (Registers) e 6 (Syntax Highlighting, `internal/syntax`)
 > implementadas, e a Fase 7 (LSP, `internal/lsp`) também: diagnostics,
 > hover, go-to-definition e completion. A Fase 8 (avançados) está em
-> andamento: text objects, `f F t T` e busca prontos. O
+> andamento: text objects, `f F t T`, busca, `.` e macros prontos. O
 > componente fica em `internal/tui/editorview` (comando experimental
 > escondido `lightyear edit <arquivo>`, modal por padrão; `--plain` para o
 > editor sem modos).
@@ -79,8 +79,16 @@
 >   preso). Busca `/ ? n N * #`: o padrão é **texto literal** (não regex),
 >   `*`/`#` buscam a palavra inteira, as ocorrências ficam destacadas até
 >   `:noh`. Ainda não: busca como motion de operador (`d/x`) e contadores
->   em text objects (`2i(`). Depois: `.` e macros, buffers, splits e os
->   extras de LSP.
+>   em text objects (`2i(`);
+> - Fase 8, segunda parte: `.` repete as teclas do último comando que mudou
+>   o texto (uma sessão de INSERT inteira, colagens incluídas; um contador
+>   novo substitui o do comando); `u`, `Ctrl-r`, `.` e macros não viram o
+>   `.`. Macros: `q{a-z}` grava, `q` para (a statusline mostra "gravando
+>   @a"), `@{a-z}` e `@@` tocam, com contador; uma macro que chama a si
+>   mesma para em 20 níveis. Ficam num mapa próprio (ainda não nos
+>   registers de texto). A completion aceita entra pelo controller, então
+>   `.` e macros a repetem (só o que completa a palavra, como no Vim).
+>   Depois: buffers, splits e os extras de LSP.
 
 ## 1. Visão Geral
 
@@ -302,7 +310,7 @@ Configuração própria (ex.: `editor.line_numbers`, `editor.relative_numbers`, 
 | 5 — Registers | `yy`, `dd`, `p`, `P` com register padrão | **implementada** |
 | 6 — Syntax Highlighting | Tree-sitter, highlighting incremental | **implementada** |
 | 7 — LSP | cliente JSON-RPC; diagnostics, hover, completion, go-to-definition | **implementada** |
-| 8 — Avançados | `ciw diw daw`, busca, `f F t T`, `.`, macros, buffers, splits, code actions, rename, format, references | em andamento (text objects, `f t`, busca) |
+| 8 — Avançados | `ciw diw daw`, busca, `f F t T`, `.`, macros, buffers, splits, code actions, rename, format, references | em andamento (text objects, `f t`, busca, `.`, macros) |
 
 ## 26. Princípios
 

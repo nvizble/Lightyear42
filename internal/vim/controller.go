@@ -63,7 +63,7 @@ type CommandState struct {
 	opKey   string // the operator's key, so "dd" can be told apart
 	opCount int    // the count typed before the operator
 	lead    string // a prefix ("g", "[", "]", "i", "a") waiting for its second key
-	find    string // f, F, t or T waiting for its character
+	find    string // f, F, t, T, q or @ waiting for its character
 }
 
 // Controller interprets keys for one editor.
@@ -78,6 +78,15 @@ type Controller struct {
 	// lastFind is the last f/F/t/T and its character, for ; and ,.
 	lastFind string
 
+	// Repeating (repeat.go): the command being typed and the text changes
+	// when it started, the last change for ".", macros and their recording.
+	changes, cmdChanges int
+	cmd, dot            []stroke
+	replaying           int
+	macro, lastMacro    rune
+	macroKeys           []stroke
+	macros              map[rune][]stroke
+
 	// Commands are extra Normal-mode commands the host provides, by key
 	// ("K", "gd", "]d": a language server's hover, definition...). They get
 	// the count (1 when none); the controller only dispatches them.
@@ -86,7 +95,9 @@ type Controller struct {
 
 // New controls ed, starting in Normal mode.
 func New(ed *editor.Editor) *Controller {
-	return &Controller{ed: ed, regs: map[rune]Register{}}
+	c := &Controller{ed: ed, regs: map[rune]Register{}, macros: map[rune][]stroke{}}
+	ed.OnChange(func(editor.Change) { c.changes++ })
+	return c
 }
 
 // Mode is the current mode.
@@ -123,6 +134,10 @@ func (c *Controller) MoveCursor(p editor.Position) {
 // HandleKey processes one key: a single character ("h", "A", " ") or a
 // named key ("esc", "enter", "ctrl+r").
 func (c *Controller) HandleKey(key string) Result {
+	return c.input(stroke{key: key})
+}
+
+func (c *Controller) handle(key string) Result {
 	switch c.mode {
 	case Insert:
 		return c.insertKey(key)
@@ -138,8 +153,7 @@ func (c *Controller) HandleKey(key string) Result {
 // read as keys one character at a time otherwise.
 func (c *Controller) HandleText(text string) Result {
 	if c.mode == Insert {
-		c.ed.Insert(strings.NewReplacer("\r\n", "\n", "\r", "\n").Replace(text))
-		return Result{}
+		return c.input(stroke{key: text, paste: true})
 	}
 	var res Result
 	for _, r := range text {
@@ -227,8 +241,14 @@ func (c *Controller) normalKey(key string) Result {
 		c.state = CommandState{}
 		return Result{}
 	}
-	n := times(st.Count)
+	n, count := times(st.Count), st.Count
 	c.state = CommandState{}
+	switch {
+	case key == ".":
+		return c.repeatLast(count)
+	case key == "q" || key[0] == '@' || (key[0] == 'q' && len(key) == 2):
+		return c.macroKey(key, n)
+	}
 	if f, ok := c.Commands[key]; ok {
 		return f(n)
 	}
@@ -266,7 +286,9 @@ func (c *Controller) prefix(key string) (string, bool) {
 		}
 		c.state = CommandState{}
 		return "", false
-	case key == "f" || key == "F" || key == "t" || key == "T":
+	case key == "q" && c.macro != 0:
+		return key, true // stops recording
+	case key == "f" || key == "F" || key == "t" || key == "T" || key == "q" || key == "@":
 		st.find = key
 		st.Pending = append(st.Pending, key)
 		return "", false

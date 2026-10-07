@@ -444,6 +444,9 @@ func (m Model) statusLine() string {
 			right = styleStatus.Render("y copia · d apaga · c muda · p cola · o troca a ponta · esc cancela ")
 		}
 	}
+	if m.vim != nil && m.vim.Recording() != "" {
+		mode += styleError.Render(" gravando @" + m.vim.Recording())
+	}
 	// The diagnostic under the cursor replaces the hints.
 	if d := m.worst(cur.Line); d != nil && (m.vim == nil || m.vim.Mode() == vim.Normal) {
 		msg, _, _ := strings.Cut(d.Message, "\n")
