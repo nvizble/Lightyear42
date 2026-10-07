@@ -2,6 +2,7 @@ package cmd
 
 import (
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/nvizble/Lightyear42/internal/config"
 	"github.com/nvizble/Lightyear42/internal/editor"
 	"github.com/nvizble/Lightyear42/internal/tui/editorview"
 	"github.com/spf13/cobra"
@@ -15,7 +16,8 @@ func newEditCmd() *cobra.Command {
 		Use:   "edit <arquivo>...",
 		Short: "Editor embutido (experimental)",
 		Long: `Abre o editor embutido do lightyear, com edição modal estilo Vim e
-cores (Tree-sitter) e erros do language server (clangd, gopls, pyright,
+cores (Tree-sitter, com temas: :colorscheme lista, :colorscheme dracula troca e
+fica salvo) e erros do language server (clangd, gopls, pyright,
 rust-analyzer) para C, C++, Go, Python e Rust — o mouse sobre um erro mostra
 a mensagem, K mostra a assinatura (e os erros da linha), gd
 vai à definição, ]d e [d andam entre os erros e o INSERT completa enquanto
@@ -53,7 +55,9 @@ Use --plain para o editor sem modos.`,
 					return err
 				}
 			}
-			model = model.WithLSP()
+			// The color scheme chosen last time (:colorscheme keeps it).
+			scheme, _ := config.Colorscheme()
+			model = model.WithLSP().WithColorscheme(scheme).OnColorscheme(func(name string) { _ = config.SaveColorscheme(name) })
 			defer model.Close()
 			_, err = tea.NewProgram(model, tea.WithAltScreen(), tea.WithMouseAllMotion(), tea.WithContext(cmd.Context())).Run()
 			return err

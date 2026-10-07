@@ -9,6 +9,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/nvizble/Lightyear42/internal/auth"
+	"github.com/nvizble/Lightyear42/internal/config"
 	"github.com/nvizble/Lightyear42/internal/services"
 	"github.com/nvizble/Lightyear42/internal/subjects"
 	"github.com/nvizble/Lightyear42/internal/tui"
@@ -22,7 +23,13 @@ func runApp(ctx context.Context) error {
 		return err
 	}
 
-	opts := tui.AppOptions{Exam: examSvc, EditorLSP: true}
+	opts := tui.AppOptions{
+		Exam:      examSvc,
+		EditorLSP: true,
+		// The editor's color scheme lives in config.yaml (:colorscheme).
+		EditorScheme:     func() string { name, _ := config.Colorscheme(); return name },
+		SaveEditorScheme: func(name string) { _ = config.SaveColorscheme(name) },
+	}
 	deps, cleanup, err := newDeps(ctx)
 	if err != nil {
 		// Logged out (or no OAuth app configured): the API tabs explain how to

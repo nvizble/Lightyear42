@@ -40,16 +40,6 @@ var (
 	styleStatus     = lipgloss.NewStyle().Foreground(colorMuted)
 	styleFile       = lipgloss.NewStyle().Bold(true)
 	styleError      = lipgloss.NewStyle().Foreground(colorFail)
-
-	// syntaxStyles color the code, by syntax.Class (Plain stays as is).
-	syntaxStyles = [...]lipgloss.Style{
-		syntax.Keyword:  lipgloss.NewStyle().Foreground(colorVisual),
-		syntax.String:   lipgloss.NewStyle().Foreground(lipgloss.AdaptiveColor{Light: "28", Dark: "114"}),
-		syntax.Comment:  lipgloss.NewStyle().Foreground(colorMuted).Italic(true),
-		syntax.Number:   lipgloss.NewStyle().Foreground(lipgloss.AdaptiveColor{Light: "130", Dark: "215"}),
-		syntax.Function: lipgloss.NewStyle().Foreground(lipgloss.AdaptiveColor{Light: "25", Dark: "75"}),
-		syntax.Type:     lipgloss.NewStyle().Foreground(lipgloss.AdaptiveColor{Light: "30", Dark: "80"}),
-	}
 )
 
 // Model is the editor component.
@@ -76,7 +66,7 @@ type Model struct {
 // New wraps an editor as a plain (non-modal) editor.
 func New(ed *editor.Editor) Model {
 	b := newBuffer(ed)
-	ses := &session{bufs: []*buffer{b}, wins: []*window{{buf: b}}, servers: map[string]*lspServer{}}
+	ses := &session{bufs: []*buffer{b}, wins: []*window{{buf: b}}, servers: map[string]*lspServer{}, scheme: &schemes[0]}
 	return Model{ses: ses}.synced()
 }
 
@@ -387,7 +377,7 @@ func (m Model) renderWindow(b *buffer, r rect, active bool) []string {
 			look.selTo = max(ed.VisualColumn(line, to), look.selFrom+1) // an empty line still shows a cell
 		}
 		if i < len(classes) {
-			look.classes = classes[i]
+			look.classes, look.scheme = classes[i], m.ses.scheme
 		}
 		if m.vim != nil {
 			if starts, n := m.vim.Hits(buf.Line(line)); len(starts) > 0 {
@@ -410,6 +400,7 @@ func (m Model) renderWindow(b *buffer, r rect, active bool) []string {
 type lineLook struct {
 	cursor, selFrom, selTo int
 	classes                []syntax.Class
+	scheme                 *scheme // colors for the classes (nil: none)
 	marks                  []lsp.Severity
 	hits                   []bool // search matches, by rune
 }
@@ -476,8 +467,8 @@ func renderLine(line string, tabSize, left, width int, look lineLook) string {
 			next = &styleSearchHit
 		case x < len(cellMarks) && cellMarks[x] != 0:
 			next = &markStyles[cellMarks[x]]
-		case x < len(cellClasses) && cellClasses[x] != syntax.Plain:
-			next = &syntaxStyles[cellClasses[x]]
+		case look.scheme != nil && x < len(cellClasses) && cellClasses[x] != syntax.Plain:
+			next = &look.scheme.styles[cellClasses[x]]
 		}
 		if next != style {
 			flush()

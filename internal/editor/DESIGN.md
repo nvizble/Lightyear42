@@ -141,7 +141,14 @@
 >   correção ("fix available") mostra "▸ clique aqui para corrigir" e fica
 >   enquanto o mouse estiver nela; o clique pede as code actions com os
 >   diagnostics da caixa (a partir da linha deles) e aplica direto quando há
->   uma só — várias abrem a lista, como o `gra`.
+>   uma só — várias abrem a lista, como o `gra`;
+> - Temas de cores (`internal/tui/editorview/schemes.go`): `:colorscheme`
+>   (`:colo`) lista e troca; cada tema dá uma cor (hex, rebaixada pelo
+>   lipgloss para 256/16 cores) a cada classe de syntax e deixa o fundo do
+>   terminal. A escolha vai para `editor.colorscheme` no `config.yaml`
+>   (`config.SaveColorscheme`, mantendo as outras chaves e o 0600) por um
+>   hook do host (`OnColorscheme`), e o `lightyear edit` e a aba Exam abrem
+>   com ela (`WithColorscheme`).
 
 ## 1. Visão Geral
 
