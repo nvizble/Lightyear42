@@ -204,6 +204,9 @@ func actorLogins(actors models.ScaleTeamActors) string {
 type Hotspot struct {
 	Line, Col, Width int
 	Info             string
+	// Search is the text matched by the "/" search (e.g. the login);
+	// Info is used when empty.
+	Search string
 }
 
 // AppView is a tab's rendered content plus its interactive regions.
@@ -241,8 +244,8 @@ func CampusSeatsView(campusName string, locations []models.Location, layout map[
 		styleTitle.Render(campusName) + styleLabel.Render(fmt.Sprintf(" — %d online", len(locations))) +
 			"     " + styleSeatOn.Render(seatGlyph) + styleLabel.Render(" online   ") +
 			styleSeatFr.Render(seatGlyph) + styleLabel.Render(" amigos   ") +
-			styleSeatMe.Render(seatGlyph) + styleLabel.Render(" você") +
-			styleLabel.Render("   ·   passe o mouse num posto para ver quem está lá"),
+			styleSeatMe.Render(seatGlyph) + styleLabel.Render(" você"),
+		styleLabel.Render("mouse num posto mostra quem está lá · / busca alguém"),
 	}
 
 	var online []models.Location
@@ -288,7 +291,7 @@ func CampusSeatsView(campusName string, locations []models.Location, layout map[
 				if at := since[host]; at != nil {
 					info += " · online desde " + at.Local().Format("15:04")
 				}
-				spots = append(spots, Hotspot{Line: len(lines), Col: i * (lipgloss.Width(seatGlyph) + 1), Width: lipgloss.Width(seatGlyph), Info: info})
+				spots = append(spots, Hotspot{Line: len(lines), Col: i * (lipgloss.Width(seatGlyph) + 1), Width: lipgloss.Width(seatGlyph), Info: info, Search: login})
 			}
 			lines = append(lines, b.String())
 		}

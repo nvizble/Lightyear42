@@ -2,6 +2,7 @@ package tui
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"testing"
 	"time"
@@ -208,5 +209,117 @@ func TestAppHoverShowsWhoSitsThere(t *testing.T) {
 	m = run(t, m, click(x+1, y))
 	if m.hover == nil || m.hover.Info != "c1r1p1 · tlima" {
 		t.Fatalf("clique no posto deveria selecionar: %+v", m.hover)
+	}
+}
+
+func TestAppCampusSearch(t *testing.T) {
+	var locs []models.Location
+	for row := 1; row <= 40; row++ { // tall enough to need scrolling
+		locs = append(locs, models.Location{Host: fmt.Sprintf("c1r%dp1", row), User: models.UserSummary{Login: fmt.Sprintf("user%d", row)}})
+	}
+	locs = append(locs, models.Location{Host: "c1r38p2", User: models.UserSummary{Login: "tlima"}})
+	tabs := []AppTab{{Title: "Campus", LoadView: func(context.Context) (AppView, error) {
+		return CampusSeatsView("SP", locs, map[int]ClusterGrid{1: {Rows: 40, Posts: 2}}, nil, ""), nil
+	}}}
+	m, _ := newTestApp(t, tabs)
+	m = run(t, m, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("r")})
+	footer := func() string { lines := strings.Split(m.View(), "\n"); return lines[len(lines)-1] }
+	typeKeys := func(s string) {
+		for _, r := range s {
+			m = run(t, m, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{r}})
+		}
+	}
+
+	if !strings.Contains(footer(), "/ buscar") {
+		t.Fatalf("aba com postos deveria oferecer a busca:\n%s", footer())
+	}
+	typeKeys("/TLI")
+	if !m.searching || !strings.Contains(footer(), "buscar: TLI") {
+		t.Fatalf("campo de busca não apareceu:\n%s", footer())
+	}
+	if found := m.matches(); len(found) != 1 || found[0].Search != "tlima" {
+		t.Fatalf("busca deveria ignorar maiúsculas e achar a tlima: %+v", found)
+	}
+	// The match was far below: the view scrolled to it.
+	if line := m.matches()[0].Line; line+appPadTop < m.scroll || line+appPadTop >= m.scroll+m.bodyHeight() {
+		t.Fatalf("a busca deveria rolar até o posto (linha %d, scroll %d)", line, m.scroll)
+	}
+
+	m = run(t, m, tea.KeyMsg{Type: tea.KeyEnter})
+	if m.searching || !strings.Contains(footer(), "c1r38p2 · tlima") {
+		t.Fatalf("enter deveria fixar o resultado no rodapé:\n%s", footer())
+	}
+	m = run(t, m, tea.KeyMsg{Type: tea.KeyEsc})
+	if m.query != "" || len(m.matches()) != 0 {
+		t.Fatal("esc deveria limpar a busca")
+	}
+
+	typeKeys("/zeca")
+	m = run(t, m, tea.KeyMsg{Type: tea.KeyEnter})
+	if !strings.Contains(footer(), `ninguém online com "zeca"`) {
+		t.Fatalf("quem não está online deveria ser avisado:\n%s", footer())
+	}
+	// While searching, letters are text, not shortcuts (q would quit).
+	typeKeys("/q")
+	if !m.searching || m.query != "q" {
+		t.Fatalf("q durante a busca deveria ser texto: searching=%v query=%q", m.searching, m.query)
+	}
+}
+
+func TestAppCampusSearchSuggestions(t *testing.T) {
+	locs := []models.Location{
+		{Host: "c1r1p1", User: models.UserSummary{Login: "atlima"}},
+		{Host: "c1r1p2", User: models.UserSummary{Login: "tlima2"}},
+		{Host: "c1r1p3", User: models.UserSummary{Login: "tlima"}},
+		{Host: "c1r1p4", User: models.UserSummary{Login: "rsilva"}},
+	}
+	tabs := []AppTab{{Title: "Campus", LoadView: func(context.Context) (AppView, error) {
+		return CampusSeatsView("SP", locs, map[int]ClusterGrid{1: {Rows: 1, Posts: 4}}, nil, ""), nil
+	}}}
+	m, _ := newTestApp(t, tabs)
+	m = run(t, m, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("r")})
+	for _, r := range "/tli" {
+		m = run(t, m, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{r}})
+	}
+
+	var got []string
+	for _, h := range m.suggestions() {
+		got = append(got, h.Search)
+	}
+	if strings.Join(got, ",") != "tlima,tlima2,atlima" {
+		t.Fatalf("sugestões fora de ordem (prefixo primeiro): %v", got)
+	}
+	if !strings.Contains(m.View(), "▸ tlima ") {
+		t.Fatalf("caixa de sugestões não apareceu:\n%s", m.View())
+	}
+
+	m = run(t, m, tea.KeyMsg{Type: tea.KeyDown})
+	m = run(t, m, tea.KeyMsg{Type: tea.KeyEnter})
+	if m.searching || m.query != "tlima2" || len(m.matches()) != 1 {
+		t.Fatalf("↓ + enter deveria escolher só a tlima2: query=%q matches=%d", m.query, len(m.matches()))
+	}
+
+	// Picking "tlima" matches that login only, not tlima2/atlima.
+	for _, r := range "/tli" {
+		m = run(t, m, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{r}})
+	}
+	box, first := m.suggestionBox()
+	m = run(t, m, click(appPadLeft+3, first)) // first entry: tlima
+	if m.searching || m.query != "tlima" || len(m.matches()) != 1 || m.matches()[0].Info != "c1r1p3 · tlima" {
+		t.Fatalf("clique na sugestão deveria buscar só a tlima: query=%q matches=%+v (caixa %d linhas)", m.query, m.matches(), len(box))
+	}
+}
+
+func TestAppLongLineDoesNotTruncateOthers(t *testing.T) {
+	long := strings.Repeat("x", 300)
+	tabs := []AppTab{{Title: "Início", Load: func(context.Context) (string, error) { return "curta\n" + long, nil }}}
+	m, _ := newTestApp(t, tabs)
+	m = run(t, m, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("r")})
+	lines := strings.Split(m.View(), "\n")
+	if strings.Contains(lines[appBodyTop+appPadTop], "…") {
+		t.Fatalf("linha curta não deveria ser cortada: %q", lines[appBodyTop+appPadTop])
+	}
+	if !strings.HasSuffix(lines[appBodyTop+appPadTop+1], "…") {
+		t.Fatalf("linha longa deveria ser cortada com …: %q", lines[appBodyTop+appPadTop+1])
 	}
 }
