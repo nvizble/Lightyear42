@@ -5,7 +5,8 @@
 > (Visual Mode), 5 (Registers) e 6 (Syntax Highlighting, `internal/syntax`)
 > implementadas, e a Fase 7 (LSP, `internal/lsp`) também: diagnostics,
 > hover, go-to-definition e completion. A Fase 8 (avançados) está em
-> andamento: text objects, `f F t T`, busca, `.`, macros e buffers prontos. O
+> andamento: text objects, `f F t T`, busca, `.`, macros, buffers e splits
+> prontos; faltam os extras de LSP. O
 > componente fica em `internal/tui/editorview` (comando experimental
 > escondido `lightyear edit <arquivo>`, modal por padrão; `--plain` para o
 > editor sem modos).
@@ -99,7 +100,16 @@
 >   (`Controller.SetEditor`); os comandos de buffer são do host
 >   (`Controller.ExCommands`). O cliente LSP virou multi-documento: um
 >   servidor por projeto (nome + raiz), compartilhado pelos buffers, com
->   `didOpen`/`didClose` e diagnostics por arquivo.
+>   `didOpen`/`didClose` e diagnostics por arquivo;
+> - Fase 8, quarta parte: splits. `:sp`/`:vsp` (`Ctrl-w s`/`v`), com
+>   arquivo opcional, abrem uma janela acima/à esquerda e entram nela;
+>   `Ctrl-w w`/`W`/`h`/`j`/`k`/`l` trocam, `:close`/`Ctrl-w c` e
+>   `:only`/`Ctrl-w o` fecham, e `:q` fecha a janela enquanto houver mais de
+>   uma (o buffer continua aberto). Cada janela tem uma linha de título
+>   (ativa em destaque); o clique foca a janela e a roda rola a que está
+>   sob o mouse. Limites desta versão: todas as janelas na mesma orientação
+>   (misturar `:sp` e `:vsp` avisa) e duas janelas no mesmo arquivo
+>   compartilham o cursor e a rolagem, que moram no editor.
 
 ## 1. Visão Geral
 
@@ -321,7 +331,7 @@ Configuração própria (ex.: `editor.line_numbers`, `editor.relative_numbers`, 
 | 5 — Registers | `yy`, `dd`, `p`, `P` com register padrão | **implementada** |
 | 6 — Syntax Highlighting | Tree-sitter, highlighting incremental | **implementada** |
 | 7 — LSP | cliente JSON-RPC; diagnostics, hover, completion, go-to-definition | **implementada** |
-| 8 — Avançados | `ciw diw daw`, busca, `f F t T`, `.`, macros, buffers, splits, code actions, rename, format, references | em andamento (text objects, `f t`, busca, `.`, macros, buffers) |
+| 8 — Avançados | `ciw diw daw`, busca, `f F t T`, `.`, macros, buffers, splits, code actions, rename, format, references | em andamento (text objects, `f t`, busca, `.`, macros, buffers, splits) |
 
 ## 26. Princípios
 

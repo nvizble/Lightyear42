@@ -62,7 +62,7 @@ type CommandState struct {
 
 	opKey   string // the operator's key, so "dd" can be told apart
 	opCount int    // the count typed before the operator
-	lead    string // a prefix ("g", "[", "]", "i", "a") waiting for its second key
+	lead    string // a prefix ("g", "[", "]", "ctrl+w", "i", "a") waiting for its second key
 	find    string // f, F, t, T, q or @ waiting for its character
 }
 
@@ -314,7 +314,7 @@ func (c *Controller) prefix(key string) (string, bool) {
 		st.find = key
 		st.Pending = append(st.Pending, key)
 		return "", false
-	case key == "g" || key == "[" || key == "]" || ((key == "i" || key == "a") && (st.Operator != opNone || c.visual())):
+	case key == "g" || key == "[" || key == "]" || key == "ctrl+w" || ((key == "i" || key == "a") && (st.Operator != opNone || c.visual())):
 		st.lead = key
 		st.Pending = append(st.Pending, key)
 		return "", false

@@ -75,7 +75,8 @@ type Model struct {
 
 // New wraps an editor as a plain (non-modal) editor.
 func New(ed *editor.Editor) Model {
-	ses := &session{bufs: []*buffer{newBuffer(ed)}, servers: map[string]*lspServer{}}
+	b := newBuffer(ed)
+	ses := &session{bufs: []*buffer{b}, wins: []*window{{buf: b}}, servers: map[string]*lspServer{}}
 	return Model{ses: ses}.synced()
 }
 
@@ -85,7 +86,8 @@ func NewVim(ed *editor.Editor) Model {
 	m := New(ed)
 	m.vim = vim.New(ed)
 	m.vim.ExCommands = m.exCommands()
-	m.vim.Commands = map[string]func(int) vim.Result{"ctrl+o": m.back}
+	m.vim.Commands = m.windowCommands()
+	m.vim.Commands["ctrl+o"] = m.back
 	return m
 }
 
@@ -117,6 +119,7 @@ func (m Model) Init() tea.Cmd {
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	next, cmd := m.update(msg)
 	m = next.(Model).synced()
+	m.layout()
 	// Opening a buffer of a new project starts its server.
 	if starts := m.ses.starts; len(starts) > 0 {
 		m.ses.starts = nil
@@ -129,7 +132,6 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		m.width, m.height = msg.Width, msg.Height
-		m.ed.SetViewportSize(m.textWidth(), m.textHeight())
 	case tea.KeyMsg:
 		next, cmd := m.key(msg)
 		m = next.(Model).synced() // the key may have switched buffers
@@ -255,21 +257,33 @@ func (m Model) indentation() string {
 }
 
 func (m *Model) mouse(msg tea.MouseMsg) {
+	i, r := m.windowAt(msg.X, msg.Y)
+	if i < 0 {
+		return
+	}
+	ed := m.ses.wins[i].buf.ed
 	switch msg.Button {
 	case tea.MouseButtonWheelUp:
-		m.ed.ScrollBy(-3)
+		ed.ScrollBy(-3)
 		return
 	case tea.MouseButtonWheelDown:
-		m.ed.ScrollBy(3)
+		ed.ScrollBy(3)
+		return
+	case tea.MouseButtonLeft:
+	default:
 		return
 	}
-	if msg.Button != tea.MouseButtonLeft || msg.Y >= m.textHeight() {
-		return
+	if i != m.ses.win {
+		if msg.Action != tea.MouseActionPress {
+			return // a drag stays in its window
+		}
+		m.focus(i)
+		*m = m.synced()
 	}
-	v := m.ed.Viewport()
-	line := v.Top + msg.Y
-	visual := max(msg.X-m.gutterWidth(), 0) + v.Left
-	p := editor.Position{Line: line, Column: m.ed.ColumnAt(line, visual)}
+	v := ed.Viewport()
+	line := v.Top + msg.Y - r.y
+	visual := max(msg.X-r.x-gutterWidth(ed.Buffer().LineCount()), 0) + v.Left
+	p := editor.Position{Line: line, Column: ed.ColumnAt(line, visual)}
 	switch {
 	case msg.Action == tea.MouseActionMotion:
 		// Dragging selects (Vim mode), from where the button went down.
@@ -280,69 +294,79 @@ func (m *Model) mouse(msg tea.MouseMsg) {
 	case m.vim != nil:
 		m.vim.MoveCursor(p)
 	default:
-		m.ed.MoveCursor(p)
+		ed.MoveCursor(p)
 	}
 }
 
-// Layout: text area above a one-line status bar, line numbers on the left.
-func (m Model) textHeight() int { return max(m.height-1, 1) }
-func (m Model) textWidth() int  { return max(m.width-m.gutterWidth(), 1) }
-func (m Model) gutterWidth() int {
-	return len(fmt.Sprint(m.ed.Buffer().LineCount())) + 3
-}
+// Layout: windows above a one-line status bar (see windows.go), line
+// numbers on the left of each.
+func (m Model) gutterWidth() int { return gutterWidth(m.ed.Buffer().LineCount()) }
+
+// gutterWidth fits the numbers of lines lines, and " │ ".
+func gutterWidth(lines int) int { return len(fmt.Sprint(lines)) + 3 }
 
 // View implements tea.Model.
 func (m Model) View() string {
 	if m.width == 0 {
 		return ""
 	}
-	buf, v, cur := m.ed.Buffer(), m.ed.Viewport(), m.ed.Cursor()
-	numWidth := m.gutterWidth() - 3
+	rows := m.screen()
+	m.popups(rows, m.rects()[m.ses.win])
+	rows = append(rows, m.statusLine())
+	return strings.Join(rows, "\n")
+}
+
+// renderWindow draws buffer b's text in r: line numbers, code, and the
+// cursor when the window is active.
+func (m Model) renderWindow(b *buffer, r rect, active bool) []string {
+	ed := b.ed
+	buf, v, cur := ed.Buffer(), ed.Viewport(), ed.Cursor()
+	numWidth := gutterWidth(buf.LineCount()) - 3
+	textWidth := max(r.w-numWidth-3, 1)
 
 	var classes [][]syntax.Class
-	if m.syn != nil {
-		classes = m.syn.Lines(v.Top, v.Top+m.textHeight()-1)
+	if b.syn != nil {
+		classes = b.syn.Lines(v.Top, v.Top+r.h-1)
 	}
-	rows := make([]string, 0, m.textHeight()+1)
-	for r := 0; r < m.textHeight(); r++ {
-		line := v.Top + r
+	rows := make([]string, 0, r.h)
+	for i := 0; i < r.h; i++ {
+		line := v.Top + i
 		if line >= buf.LineCount() {
 			rows = append(rows, styleTilde.Render(fmt.Sprintf("%*s", numWidth, "~")))
 			continue
 		}
+		here := active && line == cur.Line
 		gutter := styleGutter.Render(fmt.Sprintf("%*d │ ", numWidth, line+1))
-		if line == cur.Line {
+		if here {
 			gutter = styleGutterHere.Render(fmt.Sprintf("%*d", numWidth, line+1)) + styleGutter.Render(" │ ")
 		}
-		if d := m.worst(line); d != nil {
+		if d := b.lsp.worst(line); d != nil {
 			gutter = severityStyles[d.Severity].Render(fmt.Sprintf("%*d ● ", numWidth, line+1))
 		}
-		look := lineLook{cursor: -1, selFrom: -1, selTo: -1, marks: m.marks(line, buf.LineLen(line))}
-		if line == cur.Line {
-			look.cursor = m.ed.VisualColumn(line, cur.Column)
+		look := lineLook{cursor: -1, selFrom: -1, selTo: -1, marks: b.lsp.marks(line, buf.LineLen(line))}
+		if here {
+			look.cursor = ed.VisualColumn(line, cur.Column)
 		}
-		if from, to, ok := m.ed.SelectedColumns(line); ok {
-			look.selFrom = m.ed.VisualColumn(line, from)
-			look.selTo = max(m.ed.VisualColumn(line, to), look.selFrom+1) // an empty line still shows a cell
+		if from, to, ok := ed.SelectedColumns(line); ok {
+			look.selFrom = ed.VisualColumn(line, from)
+			look.selTo = max(ed.VisualColumn(line, to), look.selFrom+1) // an empty line still shows a cell
 		}
-		if r < len(classes) {
-			look.classes = classes[r]
+		if i < len(classes) {
+			look.classes = classes[i]
 		}
 		if m.vim != nil {
 			if starts, n := m.vim.Hits(buf.Line(line)); len(starts) > 0 {
 				look.hits = make([]bool, buf.LineLen(line))
 				for _, s := range starts {
-					for i := s; i < s+n; i++ {
-						look.hits[i] = true
+					for j := s; j < s+n; j++ {
+						look.hits[j] = true
 					}
 				}
 			}
 		}
-		rows = append(rows, gutter+renderLine(buf.Line(line), m.ed.TabSize(), v.Left, m.textWidth(), look))
+		rows = append(rows, gutter+renderLine(buf.Line(line), ed.TabSize(), v.Left, textWidth, look))
 	}
-	m.popups(rows)
-	rows = append(rows, m.statusLine())
-	return strings.Join(rows, "\n")
+	return rows
 }
 
 // lineLook is how to draw one line: the cursor and the selection in screen
