@@ -45,7 +45,7 @@ Fluxo típico:
   lightyear notify test     # confirma que chega no celular
   lightyear notify watch    # deixa rodando; avisa a cada avaliação nova
 
-O app (lightyear sem argumentos) também vigia a agenda enquanto estiver
+O app (só "lightyear", sem subcomando) também vigia a agenda enquanto estiver
 aberto, como o watch.
 
 Para rodar sem deixar terminal aberto, agende "lightyear notify check"
