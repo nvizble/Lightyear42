@@ -31,6 +31,10 @@ clicáveis, mouse e teclado); os subcomandos abaixo continuam iguais.`,
 		// No subcommand: open the full-screen app in a terminal; anywhere else
 		// (pipes, scripts) keep printing the help.
 		RunE: func(cmd *cobra.Command, _ []string) error {
+			if v, _ := cmd.Flags().GetBool("version"); v {
+				printVersion(cmd.OutOrStdout(), false)
+				return nil
+			}
 			if !isInteractive() {
 				return cmd.Help()
 			}
@@ -73,6 +77,7 @@ clicáveis, mouse e teclado); os subcomandos abaixo continuam iguais.`,
 	root.AddCommand(newExamCmd())
 	root.AddCommand(newEditCmd())
 	root.AddCommand(newCacheCmd())
+	root.Flags().BoolP("version", "v", false, "mostra a versão e as novidades dela")
 	attachCompletionInstall(root)
 
 	return root
