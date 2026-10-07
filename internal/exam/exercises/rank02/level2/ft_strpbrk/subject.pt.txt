@@ -1,0 +1,12 @@
+Nome do exercício : ft_strpbrk
+Arquivos esperados: ft_strpbrk.c
+Funções permitidas: nenhuma
+--------------------------------------------------------------------------------
+
+Reproduza exatamente o comportamento da função strpbrk (man strpbrk).
+
+Ela deve ter o seguinte protótipo:
+
+char	*ft_strpbrk(const char *s1, const char *s2);
+
+Entregue apenas a função, sem main.

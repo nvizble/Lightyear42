@@ -1,0 +1,16 @@
+Assignment name  : max
+Expected files   : max.c
+Allowed functions: none
+--------------------------------------------------------------------------------
+
+Write the following function:
+
+int		max(int* tab, unsigned int len);
+
+tab is an array of int and len is how many elements it holds.
+
+The function returns the greatest value in the array.
+
+When the array is empty (len is 0), the function returns 0.
+
+Turn in the function only, without a main.

@@ -1,0 +1,22 @@
+Assignment name  : reverse_bits
+Expected files   : reverse_bits.c
+Allowed functions: none
+--------------------------------------------------------------------------------
+
+Write a function that takes a byte, reverses the order of its bits (as shown
+below) and returns the result.
+
+It must be prototyped as follows:
+
+unsigned char	reverse_bits(unsigned char octet);
+
+Example:
+
+  1 byte
+_____________
+ 0010  0110
+	 ||
+	 \/
+ 0110  0100
+
+Turn in the function only, without a main.

@@ -1,0 +1,16 @@
+Assignment name  : ft_split
+Expected files   : ft_split.c
+Allowed functions: malloc
+--------------------------------------------------------------------------------
+
+Write a function that receives a string, cuts it into words and returns them
+as an array of strings terminated by a NULL pointer.
+
+A "word" is a part of the string delimited by spaces, tabs or newlines, or by
+the start/end of the string.
+
+The function must be declared as follows:
+
+char    **ft_split(char *str);
+
+Turn in the function only, without a main.

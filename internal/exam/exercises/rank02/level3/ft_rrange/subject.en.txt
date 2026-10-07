@@ -1,0 +1,21 @@
+Assignment name  : ft_rrange
+Expected files   : ft_rrange.c
+Allowed functions: malloc
+--------------------------------------------------------------------------------
+
+Write the following function:
+
+int     *ft_rrange(int start, int end);
+
+It allocates (with malloc()) an array of ints, fills it with the consecutive
+values going from end to start (both start and end included!), and returns a
+pointer to the first element of the array.
+
+Examples:
+
+- For (1, 3) the array holds 3, 2 and 1.
+- For (-1, 2) the array holds 2, 1, 0 and -1.
+- For (0, 0) the array holds 0.
+- For (0, -3) the array holds -3, -2, -1 and 0.
+
+Turn in the function only, without a main.

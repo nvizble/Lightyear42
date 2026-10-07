@@ -1,0 +1,12 @@
+Nome do exercício : ft_strdup
+Arquivos esperados: ft_strdup.c
+Funções permitidas: malloc
+--------------------------------------------------------------------------------
+
+Reproduza o comportamento da função strdup (man strdup).
+
+Ela deve ter o seguinte protótipo:
+
+char	*ft_strdup(char *src);
+
+Entregue apenas a função, sem main.

@@ -1,0 +1,22 @@
+Assignment name  : ft_list_size
+Expected files   : ft_list_size.c, ft_list.h
+Allowed functions: none
+--------------------------------------------------------------------------------
+
+Write a function that returns how many elements the linked list it receives
+contains.
+
+It must be declared as follows:
+
+int	ft_list_size(t_list *begin_list);
+
+You must use the structure below, and turn it in inside a file named
+ft_list.h:
+
+typedef struct    s_list
+{
+    struct s_list *next;
+    void          *data;
+}                 t_list;
+
+Turn in the function only, without a main.

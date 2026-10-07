@@ -1,0 +1,22 @@
+Assignment name  : add_prime_sum
+Expected files   : add_prime_sum.c
+Allowed functions: write, exit
+--------------------------------------------------------------------------------
+
+Write a program that receives a positive integer and prints the sum of every
+prime number less than or equal to it, followed by a newline.
+
+When the program does not receive exactly 1 argument, or when the argument is
+not a positive number, it prints only 0 followed by a newline.
+
+The examples below are correct.
+
+Examples:
+
+$>./add_prime_sum 5
+10
+$>./add_prime_sum 7 | cat -e
+17$
+$>./add_prime_sum | cat -e
+0$
+$>

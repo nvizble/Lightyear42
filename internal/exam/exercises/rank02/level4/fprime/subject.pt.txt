@@ -1,0 +1,34 @@
+Nome do exercício : fprime
+Arquivos esperados: fprime.c
+Funções permitidas: printf, atoi
+--------------------------------------------------------------------------------
+
+Escreva um programa que recebe um int positivo e exibe seus fatores primos na
+saída padrão, seguidos de uma quebra de linha.
+
+Os fatores devem aparecer em ordem crescente, separados por '*', de modo que a
+expressão exibida tenha como resultado o número recebido.
+
+Se o número de parâmetros for diferente de 1, exiba apenas uma quebra de
+linha.
+
+Quando houver um parâmetro, ele sempre será válido.
+
+Exemplos:
+
+$> ./fprime 225225 | cat -e
+3*3*5*5*7*11*13$
+$> ./fprime 8333325 | cat -e
+3*3*5*5*7*11*13*37$
+$> ./fprime 9539 | cat -e
+9539$
+$> ./fprime 804577 | cat -e
+804577$
+$> ./fprime 42 | cat -e
+2*3*7$
+$> ./fprime 1 | cat -e
+1$
+$> ./fprime | cat -e
+$
+$> ./fprime 42 21 | cat -e
+$

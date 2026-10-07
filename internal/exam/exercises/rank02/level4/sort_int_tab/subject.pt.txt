@@ -1,0 +1,17 @@
+Nome do exercício : sort_int_tab
+Arquivos esperados: sort_int_tab.c
+Funções permitidas: nenhuma
+--------------------------------------------------------------------------------
+
+Escreva a seguinte função:
+
+void sort_int_tab(int *tab, unsigned int size);
+
+Ela deve ordenar, no próprio array e em ordem crescente, o array de int 'tab',
+que tem exatamente 'size' elementos.
+
+Valores repetidos devem ser mantidos.
+
+A entrada é sempre consistente.
+
+Entregue apenas a função, sem main.

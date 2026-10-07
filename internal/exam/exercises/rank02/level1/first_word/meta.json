@@ -1,0 +1,13 @@
+{
+  "files": ["first_word.c"],
+  "tests": [
+    [],
+    ["FOR PONY"],
+    ["   lorem,ipsum   "],
+    ["\t\t  tabs\tand spaces"],
+    ["single"],
+    ["    "],
+    [""],
+    ["a", "b"]
+  ]
+}

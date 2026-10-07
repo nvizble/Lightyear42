@@ -1,0 +1,16 @@
+{
+  "files": ["ft_split.c"],
+  "tests": [
+    ["hello world"],
+    ["single"],
+    [""],
+    ["   "],
+    [" \t\n \t\n"],
+    ["  leading and trailing  "],
+    ["tab\tseparated\twords"],
+    ["new\nline\nseparated"],
+    ["mixed \t\n  separators\n\n\tbetween   words"],
+    ["a b c d e f g h"],
+    ["punctuation, stays: inside!words"]
+  ]
+}

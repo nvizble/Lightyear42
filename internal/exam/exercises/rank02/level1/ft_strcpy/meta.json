@@ -1,0 +1,11 @@
+{
+  "files": ["ft_strcpy.c"],
+  "tests": [
+    ["hello"],
+    [""],
+    ["a"],
+    ["  with spaces\tand tabs  "],
+    ["0123456789012345678901234567890123456789"],
+    ["first", "", "third arg"]
+  ]
+}

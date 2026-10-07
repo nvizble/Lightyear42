@@ -1,0 +1,13 @@
+Nome do exercício : ft_itoa
+Arquivos esperados: ft_itoa.c
+Funções permitidas: malloc
+--------------------------------------------------------------------------------
+
+Escreva uma função que converte um int em uma string terminada em nulo. O
+resultado deve ser devolvido em um array de char que você mesmo aloca.
+
+A função deve ser declarada assim:
+
+char	*ft_itoa(int nbr);
+
+Entregue apenas a função, sem main.

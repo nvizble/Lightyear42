@@ -1,0 +1,27 @@
+Nome do exercício : wdmatch
+Arquivos esperados: wdmatch.c
+Funções permitidas: write
+--------------------------------------------------------------------------------
+
+Escreva um programa que recebe duas strings e verifica se a primeira pode ser
+escrita usando caracteres tirados da segunda, na mesma ordem em que eles
+aparecem na segunda string.
+
+Se puder, exiba a primeira string seguida de uma quebra de linha; caso
+contrário, exiba apenas uma quebra de linha.
+
+Se o número de argumentos for diferente de 2, o programa exibe apenas uma
+quebra de linha.
+
+Exemplos:
+
+$>./wdmatch "faya" "fgvvfdxcacpolhyghbreda" | cat -e
+faya$
+$>./wdmatch "faya" "fgvvfdxcacpolhyghbred" | cat -e
+$
+$>./wdmatch "quarante deux" "qfqfsudf arzgsayns tsregfdgs sjytdekuoixq " | cat -e
+quarante deux$
+$>./wdmatch "error" rrerrrfiiljdfxjyuifrrvcoojh | cat -e
+$
+$>./wdmatch | cat -e
+$

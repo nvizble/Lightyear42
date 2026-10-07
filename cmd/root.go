@@ -58,6 +58,7 @@ Gerencie autenticação, perfil, projetos, campus e mais — direto do terminal.
 	root.AddCommand(newCampusCmd())
 	root.AddCommand(newDashboardCmd())
 	root.AddCommand(newFriendsCmd())
+	root.AddCommand(newExamCmd())
 	root.AddCommand(newCacheCmd())
 	attachCompletionInstall(root)
 

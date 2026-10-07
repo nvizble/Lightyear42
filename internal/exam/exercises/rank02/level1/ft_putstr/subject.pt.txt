@@ -1,0 +1,12 @@
+Nome do exercício : ft_putstr
+Arquivos esperados: ft_putstr.c
+Funções permitidas: write
+--------------------------------------------------------------------------------
+
+Escreva uma função que escreve uma string na saída padrão.
+
+A função recebe um ponteiro para o primeiro caractere da string.
+
+Ela deve ter o seguinte protótipo:
+
+void	ft_putstr(char *str);

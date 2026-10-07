@@ -1,0 +1,21 @@
+Nome do exercício : ft_rrange
+Arquivos esperados: ft_rrange.c
+Funções permitidas: malloc
+--------------------------------------------------------------------------------
+
+Escreva a seguinte função:
+
+int     *ft_rrange(int start, int end);
+
+Ela aloca (com malloc()) um array de ints, preenche-o com os valores
+consecutivos que vão de end até start (start e end incluídos!) e retorna um
+ponteiro para o primeiro elemento do array.
+
+Exemplos:
+
+- Para (1, 3) o array contém 3, 2 e 1.
+- Para (-1, 2) o array contém 2, 1, 0 e -1.
+- Para (0, 0) o array contém 0.
+- Para (0, -3) o array contém -3, -2, -1 e 0.
+
+Entregue apenas a função, sem main.

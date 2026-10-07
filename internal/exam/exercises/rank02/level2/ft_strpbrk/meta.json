@@ -1,0 +1,13 @@
+{
+  "files": ["ft_strpbrk.c"],
+  "tests": [
+    ["hello world", "ow"],
+    ["hello", "h"],
+    ["hello", "o"],
+    ["hello", "xyz"],
+    ["hello", ""],
+    ["", "abc"],
+    ["", ""],
+    ["a,b;c", ";,"]
+  ]
+}

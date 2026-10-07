@@ -1,0 +1,26 @@
+Assignment name  : wdmatch
+Expected files   : wdmatch.c
+Allowed functions: write
+--------------------------------------------------------------------------------
+
+Write a program that takes two strings and checks whether the first one can
+be spelled using characters taken from the second one, in the same order in
+which they appear in the second string.
+
+If it can, display the first string followed by a newline; otherwise display
+only a newline.
+
+If the number of arguments is not 2, the program displays only a newline.
+
+Examples:
+
+$>./wdmatch "faya" "fgvvfdxcacpolhyghbreda" | cat -e
+faya$
+$>./wdmatch "faya" "fgvvfdxcacpolhyghbred" | cat -e
+$
+$>./wdmatch "quarante deux" "qfqfsudf arzgsayns tsregfdgs sjytdekuoixq " | cat -e
+quarante deux$
+$>./wdmatch "error" rrerrrfiiljdfxjyuifrrvcoojh | cat -e
+$
+$>./wdmatch | cat -e
+$

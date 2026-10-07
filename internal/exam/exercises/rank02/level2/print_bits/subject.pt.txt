@@ -1,0 +1,15 @@
+Nome do exercício : print_bits
+Arquivos esperados: print_bits.c
+Funções permitidas: write
+--------------------------------------------------------------------------------
+
+Escreva uma função que recebe um byte e imprime sua representação binária,
+SEM quebra de linha no final.
+
+Ela deve ter o seguinte protótipo:
+
+void	print_bits(unsigned char octet);
+
+Por exemplo, chamar print_bits com 2 imprime "00000010".
+
+Entregue apenas a função, sem main.

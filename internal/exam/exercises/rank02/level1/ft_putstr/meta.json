@@ -1,0 +1,10 @@
+{
+  "files": ["ft_putstr.c"],
+  "tests": [
+    ["hello"],
+    [""],
+    ["  spaces  and\ttabs\t"],
+    ["!\"#$%&'()*+,-./0123456789:;<=>?@AZ[\\]^_`az{|}~"],
+    ["first", "", "third arg"]
+  ]
+}

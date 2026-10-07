@@ -1,0 +1,24 @@
+Assignment name  : snake_to_camel
+Expected files   : snake_to_camel.c
+Allowed functions: malloc, free, realloc, write
+--------------------------------------------------------------------------------
+
+Write a program that takes a single string written in snake_case and turns it
+into lowerCamelCase.
+
+In snake_case, every word is written in lowercase and words are separated by
+an underscore "_".
+
+In lowerCamelCase, every word starts with an uppercase letter, except the
+first word.
+
+Display the result followed by a newline.
+
+Examples:
+
+$>./snake_to_camel "here_is_a_snake_case_word"
+hereIsASnakeCaseWord
+$>./snake_to_camel "hello_world" | cat -e
+helloWorld$
+$>./snake_to_camel | cat -e
+$

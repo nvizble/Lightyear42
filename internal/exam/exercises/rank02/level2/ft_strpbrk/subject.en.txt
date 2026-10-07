@@ -1,0 +1,12 @@
+Assignment name  : ft_strpbrk
+Expected files   : ft_strpbrk.c
+Allowed functions: none
+--------------------------------------------------------------------------------
+
+Reproduce exactly the behaviour of the strpbrk function (man strpbrk).
+
+It must be prototyped as follows:
+
+char	*ft_strpbrk(const char *s1, const char *s2);
+
+Turn in the function only, without a main.

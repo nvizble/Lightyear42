@@ -1,0 +1,92 @@
+Assignment name  : flood_fill
+Expected files   : flood_fill.c, flood_fill.h
+Allowed functions: none
+--------------------------------------------------------------------------------
+
+Write a function that receives a char ** seen as a 2-dimensional array of
+characters, a t_point holding the dimensions of that array, and a t_point
+holding a starting position.
+
+Beginning at the 'begin' position, the function must replace every character
+of the zone that contains it with the character 'F'. A zone is a group of
+identical characters connected horizontally or vertically, bounded by other
+characters or by the edges of the array.
+
+Filling never spreads diagonally.
+
+The function must be prototyped as follows:
+
+  void  flood_fill(char **tab, t_point size, t_point begin);
+
+The t_point structure, to be defined in flood_fill.h, is:
+
+  typedef struct  s_point
+  {
+    int           x;
+    int           y;
+  }               t_point;
+
+size.x is the number of columns and size.y the number of rows; a cell is
+accessed as tab[y][x].
+
+Turn in the function only, without a main.
+
+Example:
+
+$> cat test.c
+#include <stdlib.h>
+#include <stdio.h>
+#include "flood_fill.h"
+
+char** make_area(char** zone, t_point size)
+{
+	char** new;
+
+	new = malloc(sizeof(char*) * size.y);
+	for (int i = 0; i < size.y; ++i)
+	{
+		new[i] = malloc(size.x + 1);
+		for (int j = 0; j < size.x; ++j)
+			new[i][j] = zone[i][j];
+		new[i][size.x] = '\0';
+	}
+
+	return new;
+}
+
+int main(void)
+{
+	t_point size = {8, 5};
+	char *zone[] = {
+		"11111111",
+		"10001001",
+		"10010001",
+		"10110001",
+		"11100001",
+	};
+
+	char**  area = make_area(zone, size);
+	for (int i = 0; i < size.y; ++i)
+		printf("%s\n", area[i]);
+	printf("\n");
+
+	t_point begin = {7, 4};
+	flood_fill(area, size, begin);
+	for (int i = 0; i < size.y; ++i)
+		printf("%s\n", area[i]);
+	return (0);
+}
+
+$> gcc flood_fill.c test.c -o test; ./test
+11111111
+10001001
+10010001
+10110001
+11100001
+
+FFFFFFFF
+F000F00F
+F00F000F
+F0FF000F
+FFF0000F
+$>

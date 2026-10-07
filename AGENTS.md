@@ -100,13 +100,15 @@ lightyear campus      # mapa de online por cluster/posto (--friends filtra)
 lightyear friends     # lista local de amigos (add/remove/list/online)
 lightyear search
 lightyear dashboard
+lightyear exam        # simulador de provas offline (start/practice/grademe/status/finish/list)
 lightyear update      # self-update via GitHub Releases (--check / --force / --yes)
 lightyear cache clear
 lightyear config
 ```
 
-Nota: `lightyear exams` foi descartado — os endpoints de exames exigem role
-elevada (Basic Staff) e retornam 403 com scope `public`. Avaliações
+Nota: `lightyear exams` (dados de exames da Intra) foi descartado — os endpoints
+de exames exigem role elevada (Basic Staff) e retornam 403 com scope `public`.
+O `lightyear exam` é outra coisa: um simulador offline, sem API. Avaliações
 agendadas (`scale_teams`) funcionam com scope `public` via `lightyear evaluations`.
 Chat/DM no terminal também ficou de fora: a API não expõe DMs com scope
 `public`; fórum exigiria scope `forum` e não é chat 1:1.
@@ -132,6 +134,7 @@ UX: progresso, tabelas, cores, loading — sem poluição visual.
 | 6 | Release | Testes, docs, GoReleaser, GitHub (**concluído**) |
 | 7 | Self-update | `lightyear update` via GitHub Releases (**concluído**) |
 | 8 | Notificações | Push via ntfy quando surge avaliação nova (**concluído**) |
+| 9 | Simulador de provas | `lightyear exam`: Exam Rank 02 completo, grader local com `cc` + solução de referência, sessão persistida, modo prática (**passos 1–2 concluídos**; próximo: TUI examshell, histórico/pontos fracos) |
 
 Chat (DM/fórum/relay): **parked** — sem DM na API pública; fórum ≠ chat; relay próprio fora de escopo.
 
