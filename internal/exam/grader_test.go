@@ -63,6 +63,9 @@ func TestReferenceSolutionsPass(t *testing.T) {
 			if !res.Passed {
 				t.Fatalf("referência reprovada:\n%s", res.Trace)
 			}
+			if len(res.Tests) != len(ex.Tests) {
+				t.Fatalf("esperava %d resultados de teste, veio %d", len(ex.Tests), len(res.Tests))
+			}
 		})
 	}
 }
@@ -99,6 +102,17 @@ func TestGradeFailures(t *testing.T) {
 			}
 			if !strings.Contains(res.Trace, tt.trace) {
 				t.Fatalf("trace sem %q:\n%s", tt.trace, res.Trace)
+			}
+			// Tests that ran: all passed except the last one, which failed.
+			if n := len(res.Tests); n > 0 {
+				for _, o := range res.Tests[:n-1] {
+					if !o.Passed {
+						t.Fatalf("teste antes da falha marcado como reprovado: %+v", res.Tests)
+					}
+				}
+				if res.Tests[n-1].Passed {
+					t.Fatalf("o último teste deveria ser a falha: %+v", res.Tests)
+				}
 			}
 		})
 	}

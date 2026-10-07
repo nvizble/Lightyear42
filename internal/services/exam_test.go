@@ -93,6 +93,9 @@ func TestExamGradeProgression(t *testing.T) {
 	if !report.Passed || report.Completed || report.Session.Exercise != "union" || report.Session.Score != 50 || report.Session.Attempts != 0 {
 		t.Fatalf("progressão errada: %+v", report)
 	}
+	if len(report.Levels) != 2 || report.Levels[0] != 1 || report.Levels[1] != 2 {
+		t.Fatalf("níveis do rank errados: %v", report.Levels)
+	}
 	assertFile(t, filepath.Join(sess.Workspace, "subjects", "union", "subject.pt.txt"), "união")
 	assertFile(t, filepath.Join(sess.Workspace, "subjects", "union", "list.h"), "struct")
 
