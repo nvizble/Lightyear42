@@ -71,6 +71,7 @@ type ExamControl interface {
 	Start(now time.Time, rank string, duration time.Duration) (exam.Session, error)
 	Grade(ctx context.Context, now time.Time) (services.GradeReport, error)
 	Finish() (exam.Session, error)
+	Practice(now time.Time, name string) (exam.Session, error)
 	Exercises() []exam.Exercise
 	EditTargets(sess exam.Session) (subject string, files []string, err error)
 }
@@ -324,7 +325,7 @@ func (m AppModel) key(k string) (tea.Model, tea.Cmd) {
 	}
 	switch k {
 	case "/":
-		if len(m.hotspots[m.active]) > 0 {
+		if len(m.spots()) > 0 {
 			m.searching, m.query, m.exactID, m.sel, m.hover = true, "", "", 0, nil
 		}
 		return m, nil
@@ -479,6 +480,9 @@ func (m AppModel) mouse(msg tea.MouseMsg) (tea.Model, tea.Cmd) {
 		// Clicking runs the tab's action when it has one; otherwise it
 		// selects, for terminals that don't report motion.
 		h := m.hotspotAt(msg.X, msg.Y)
+		if h != nil && m.active == m.examTab() {
+			return m.practice(h.id())
+		}
 		if h != nil && m.opts.tabAt(m.active).Activate != nil {
 			return m.activate(h)
 		}
@@ -548,7 +552,7 @@ func (m AppModel) suggestions() []*Hotspot {
 	}
 	seen := map[string]bool{}
 	var out []*Hotspot
-	spots := m.hotspots[m.active]
+	spots := m.spots()
 	for i := range spots {
 		id := spots[i].id()
 		if spots[i].Search == "" || seen[id] || !strings.Contains(strings.ToLower(spots[i].Search), q) {
@@ -575,6 +579,9 @@ func (m AppModel) suggestions() []*Hotspot {
 func (m AppModel) pickSuggestion(h *Hotspot) (AppModel, tea.Cmd) {
 	m.query, m.exactID, m.searching = h.label(), h.id(), false
 	m.scrollTo(h.Line)
+	if m.active == m.examTab() {
+		return m.practice(h.id())
+	}
 	if m.opts.tabAt(m.active).Activate != nil {
 		return m.activate(h)
 	}
@@ -595,6 +602,27 @@ func (m AppModel) activate(h *Hotspot) (AppModel, tea.Cmd) {
 		status, err := act(ctx, spot)
 		return appActivatedMsg{status: status, err: err}
 	}
+}
+
+// practice starts practicing one exercise, picked in the Exam tab's
+// catalog: untimed, like `lightyear exam practice`.
+func (m AppModel) practice(name string) (AppModel, tea.Cmd) {
+	if _, err := m.opts.Exam.Practice(m.now, name); err != nil {
+		m.examNotice = styleFail.Render(err.Error())
+	} else {
+		m.examNotice = styleGood.Render("Treino de " + name + " começou, sem tempo. Aperte e para abrir no editor.")
+	}
+	m.hover, m.query, m.exactID, m.scroll = nil, "", "", 0
+	m.reloadExam()
+	return m, nil
+}
+
+// spots are the active tab's hotspots; the Exam tab's follow what it shows.
+func (m AppModel) spots() []Hotspot {
+	if m.active == m.examTab() {
+		return m.examView().Hotspots
+	}
+	return m.hotspots[m.active]
 }
 
 // tabAt returns the API tab i, or an empty tab (e.g. for the Exam tab).
@@ -641,7 +669,7 @@ func (m AppModel) matches() []*Hotspot {
 	}
 	if m.exactID != "" {
 		var found []*Hotspot
-		spots := m.hotspots[m.active]
+		spots := m.spots()
 		for i := range spots {
 			if spots[i].id() == m.exactID {
 				found = append(found, &spots[i])
@@ -650,7 +678,7 @@ func (m AppModel) matches() []*Hotspot {
 		return found
 	}
 	var found []*Hotspot
-	spots := m.hotspots[m.active]
+	spots := m.spots()
 	for i := range spots {
 		text := spots[i].Search
 		if text == "" {
@@ -678,7 +706,7 @@ func (m AppModel) hotspotAt(x, y int) *Hotspot {
 		return nil
 	}
 	line, col := y-appBodyTop+m.scroll-appPadTop, x-appPadLeft
-	spots := m.hotspots[m.active]
+	spots := m.spots()
 	for i := range spots {
 		if h := &spots[i]; h.Line == line && col >= h.Col && col < h.Col+h.Width {
 			return h
@@ -798,7 +826,7 @@ func (m AppModel) body() string {
 		return strings.Repeat("\n", appPadTop) + strings.Join(lines, "\n")
 	}
 	if m.active == m.examTab() {
-		return pad(m.examBody())
+		return pad(m.examView().Content)
 	}
 	tab := m.opts.Tabs[m.active]
 	if !tab.loadable() {
@@ -817,7 +845,9 @@ func (m AppModel) body() string {
 	return pad(content)
 }
 
-func (m AppModel) examBody() string {
+// examView is the Exam tab: the session in progress, or the catalog, whose
+// exercises are clicked to practice them.
+func (m AppModel) examView() AppView {
 	var parts []string
 	switch {
 	case m.grading:
@@ -828,13 +858,16 @@ func (m AppModel) examBody() string {
 	if m.examSess != nil {
 		parts = append(parts, examCard(*m.examSess, m.now, false, ""),
 			styleLabel.Render("Aperte e para abrir o subject (só leitura) e a sua entrega lado a lado no editor,\ncom os erros do compilador e autocomplete. Ctrl-w w alterna entre os dois, arrastar\na borda (ou Ctrl-w > <) muda o tamanho e :wq salva e volta para cá; aí é só apertar g.\nE abre no seu $EDITOR (vim por padrão)."))
-	} else {
-		parts = append(parts,
-			styleTitle.Render("Simulador de provas")+"\n"+
-				styleLabel.Render("Nenhuma prova em andamento. Aperte s para começar o Exam Rank 02 (3h),\nou rode `lightyear exam practice <exercício>` para treinar um só."),
-			RenderExamCatalog(m.opts.Exam.Exercises()))
+		return AppView{Content: strings.Join(parts, "\n\n")}
 	}
-	return strings.Join(parts, "\n\n")
+	parts = append(parts, styleTitle.Render("Simulador de provas")+"\n"+
+		styleLabel.Render("Nenhuma prova em andamento. Aperte s para começar o Exam Rank 02 (3h),\nou clique num exercício para treinar só ele, sem tempo (/ busca)."))
+	head := strings.Join(parts, "\n\n") + "\n\n"
+	catalog := ExamCatalogView(m.opts.Exam.Exercises(), m.width-appPadLeft)
+	for i := range catalog.Hotspots {
+		catalog.Hotspots[i].Line += strings.Count(head, "\n")
+	}
+	return AppView{Content: head + catalog.Content, Hotspots: catalog.Hotspots}
 }
 
 // gradingLine is the spinner shown while grading:
@@ -925,7 +958,7 @@ func (m AppModel) buttons() []appButton {
 			defs = append(defs, [2]string{"e", "editar"}, [2]string{"E", "$EDITOR"}, [2]string{"g", "grademe"}, [2]string{"f", "encerrar"})
 		}
 	}
-	if len(m.hotspots[m.active]) > 0 {
+	if len(m.spots()) > 0 {
 		defs = append(defs, [2]string{"/", "buscar"})
 	}
 	defs = append(defs, [2]string{"r", "atualizar"}, [2]string{"q", "sair"})
