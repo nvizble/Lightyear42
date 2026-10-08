@@ -39,7 +39,10 @@ VER=1.2.0
 mkdir -p ~/.local/bin
 curl -sL "https://github.com/nvizble/Lightyear42/releases/download/v${VER}/lightyear_${VER}_Linux_x86_64.tar.gz" \
   | tar -xz -C ~/.local/bin lightyear
-# garanta que ~/.local/bin está no PATH
+# põe o ~/.local/bin no PATH: no rc do seu shell (uma vez só) e neste terminal
+rc="$HOME/.$(basename "$SHELL")rc"
+grep -qs '.local/bin' "$rc" || echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$rc"
+export PATH="$HOME/.local/bin:$PATH"
 lightyear version
 ```
 
