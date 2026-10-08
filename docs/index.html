@@ -454,7 +454,10 @@ lightyear version`,
 `VER=${ver}
 mkdir -p ~/.local/bin
 curl -sL "${url("Linux_x86_64.tar.gz")}" | tar -xz -C ~/.local/bin lightyear
-<span class="c"># garanta que ~/.local/bin está no PATH</span>
+<span class="c"># põe o ~/.local/bin no PATH: no rc do seu shell (uma vez só) e neste terminal</span>
+rc="$HOME/.$(basename "$SHELL")rc"
+grep -qs '.local/bin' "$rc" || echo 'export PATH="$HOME/.local/bin:$PATH"' &gt;&gt; "$rc"
+export PATH="$HOME/.local/bin:$PATH"
 lightyear version`,
       deb:
 `VER=${ver}
@@ -673,7 +676,7 @@ go install github.com/nvizble/Lightyear42/cmd/lightyear@${chan === "canary" ? "v
     setTimeout(() => (btn.textContent = "copiar"), 1400);
   }
   document.getElementById("install-copy").addEventListener("click", e => {
-    const text = installs[current].replace(/<[^>]+>/g, "").split("\n").filter(l => !l.startsWith("#")).join("\n");
+    const text = code.textContent.split("\n").filter(l => !l.startsWith("#")).join("\n");
     copy(e.currentTarget, text);
   });
   document.querySelectorAll("[data-copy]").forEach(b => b.addEventListener("click", () => copy(b, b.dataset.copy)));
