@@ -41,6 +41,7 @@ type lspServer struct {
 	root     string
 	client   *lsp.Client   // nil until started, and after the server stops
 	starting bool          // started in the background, not ready yet
+	fetching bool          // and being downloaded first (lsp.Server.Download)
 	stop     chan struct{} // closed by Close
 }
 
@@ -103,7 +104,7 @@ func (ses *session) attach(b *buffer) {
 	key := s.Name + "\x00" + root
 	srv, running := ses.servers[key]
 	if !running {
-		srv = &lspServer{server: s, root: root, starting: true, stop: make(chan struct{})}
+		srv = &lspServer{server: s, root: root, starting: true, fetching: s.WillDownload(), stop: make(chan struct{})}
 		ses.servers[key] = srv
 		ses.starts = append(ses.starts, func() tea.Msg {
 			c, err := lsp.Start(context.Background(), s, root)

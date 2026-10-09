@@ -413,15 +413,13 @@ func TestFindRootAndURI(t *testing.T) {
 
 // The real clangd: hover, definition and completion on a small program.
 func TestClangdFeatures(t *testing.T) {
-	if _, err := exec.LookPath("clangd"); err != nil {
-		t.Skip("clangd não instalado")
-	}
+	strict := needClangd(t)
 	path := filepath.Join(t.TempDir(), "main.c")
 	text := "int\tadd(int a, int b)\n{\n\treturn (a + b);\n}\n\nint\tcounter;\n\nint\tmain(void)\n{\n\treturn (add(1, cou));\n}\n"
 	s, _ := ServerFor(path)
 	c, err := open(s, path, text)
 	if err != nil {
-		t.Skipf("clangd não iniciou aqui: %v", err)
+		clangdFailed(t, strict, err)
 	}
 	defer c.Close()
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
@@ -445,17 +443,40 @@ func TestClangdFeatures(t *testing.T) {
 	t.Fatalf("completion sem counter: %+v", items)
 }
 
+// needClangd skips a test of the real clangd when it isn't installed,
+// unless LIGHTYEAR_TEST_DOWNLOAD is set where lightyear downloads it: then
+// the download is tested for real, and a clangd that doesn't start fails
+// the test (strict).
+func needClangd(t *testing.T) (strict bool) {
+	t.Helper()
+	if _, err := exec.LookPath("clangd"); err == nil {
+		return false
+	}
+	if os.Getenv("LIGHTYEAR_TEST_DOWNLOAD") != "" && serverC.Download != nil {
+		return true
+	}
+	t.Skip("clangd não instalado")
+	return false
+}
+
+// clangdFailed skips (clangd may not run here) or, when strict, fails.
+func clangdFailed(t *testing.T, strict bool, err error) {
+	t.Helper()
+	if strict {
+		t.Fatalf("clangd baixado não iniciou: %v", err)
+	}
+	t.Skipf("clangd não iniciou aqui: %v", err)
+}
+
 // The real clangd, when installed: the 42 flags turn an unused variable
 // into an error, like the grader.
 func TestClangd(t *testing.T) {
-	if _, err := exec.LookPath("clangd"); err != nil {
-		t.Skip("clangd não instalado")
-	}
+	strict := needClangd(t)
 	path := filepath.Join(t.TempDir(), "main.c")
 	s, _ := ServerFor(path)
 	c, err := open(s, path, "int\tmain(void)\n{\n\tint\tx;\n\n\treturn (0);\n}\n")
 	if err != nil {
-		t.Skipf("clangd não iniciou aqui: %v", err)
+		clangdFailed(t, strict, err)
 	}
 	defer c.Close()
 	for {
@@ -474,9 +495,7 @@ func TestClangd(t *testing.T) {
 // The real clangd: rename, references, the fix-it for a missing ";" as a
 // code action, and formatting with the project's .clang-format.
 func TestClangdEdits(t *testing.T) {
-	if _, err := exec.LookPath("clangd"); err != nil {
-		t.Skip("clangd não instalado")
-	}
+	strict := needClangd(t)
 	dir := t.TempDir()
 	if err := os.WriteFile(filepath.Join(dir, ".clang-format"), []byte("BasedOnStyle: LLVM\n"), 0o644); err != nil {
 		t.Fatal(err)
@@ -486,7 +505,7 @@ func TestClangdEdits(t *testing.T) {
 	s, _ := ServerFor(path)
 	c, err := open(s, path, text)
 	if err != nil {
-		t.Skipf("clangd não iniciou aqui: %v", err)
+		clangdFailed(t, strict, err)
 	}
 	defer c.Close()
 	var diags []Diagnostic

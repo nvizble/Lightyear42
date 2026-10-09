@@ -108,3 +108,24 @@ func TestLSPWithClangd(t *testing.T) {
 		cmd = run(cmd)
 	}
 }
+
+// A server lightyear downloads first (clangd on Linux) says so while it
+// starts.
+func TestStatusWhileDownloadingServer(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "main.c")
+	if err := os.WriteFile(path, []byte("int\tmain(void);\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	ed, err := editor.Open(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	m := NewVim(ed).WithLSP() // the start command is never run
+	defer m.Close()
+	next, _ := m.Update(tea.WindowSizeMsg{Width: 120, Height: 10})
+	m = next.(Model)
+	m.lsp.srv.server.Download, m.lsp.srv.fetching = &lsp.Download{MB: 118}, true
+	if status := ansi.Strip(m.statusLine()); !strings.Contains(status, "C · baixando o clangd (só na 1ª vez, 118 MB)…") {
+		t.Fatalf("deveria avisar do download: %q", status)
+	}
+}

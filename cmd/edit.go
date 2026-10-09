@@ -18,7 +18,9 @@ func newEditCmd() *cobra.Command {
 		Long: `Abre o editor embutido do lightyear, com edição modal estilo Vim e
 cores (Tree-sitter, com temas: :colorscheme lista, :colorscheme dracula troca e
 fica salvo, Tab completa o nome) e erros do language server (clangd, gopls, pyright,
-rust-analyzer) para C, C++, Go, Python e Rust — o mouse sobre um erro mostra
+rust-analyzer) para C, C++, Go, Python e Rust (no Linux sem clangd, como nas
+máquinas da 42, o lightyear baixa o clangd oficial na 1ª vez: 118 MB, em
+~/.cache/42cli) — o mouse sobre um erro mostra
 a mensagem, K mostra a assinatura (e os erros da linha), gd
 vai à definição, ]d e [d andam entre os erros e o INSERT completa enquanto
 você digita (ou com Ctrl-n), Tab aceita. Text objects (diw, ci", da(, yi{),
