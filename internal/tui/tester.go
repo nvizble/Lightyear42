@@ -23,7 +23,7 @@ func RenderTestReport(r tester.Report, took time.Duration, all bool) string {
 			fmt.Fprintf(&b, "%s %s\n", styleGood.Render("✓ "+g.Name), styleLabel.Render(fmt.Sprint(len(g.Cases))))
 		}
 		for _, c := range g.Cases {
-			if !all && !c.Status.Failed() && !(c.Status == tester.Skip && !g.Skipped()) {
+			if !all && !c.Status.Failed() && (c.Status != tester.Skip || g.Skipped()) {
 				continue
 			}
 			mark := styleGood.Render("✓")

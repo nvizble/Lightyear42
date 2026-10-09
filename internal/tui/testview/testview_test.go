@@ -182,7 +182,7 @@ func TestButtonStartsRun(t *testing.T) {
 		t.Fatal("o clique no botão deveria rodar os testes")
 	}
 	if !strings.Contains(screen(m), "preparando") {
-		t.Errorf("o botão deveria mostrar o progresso:\n%s", screen(m))
+		t.Errorf("o botão deveria mostrar o andamento:\n%s", screen(m))
 	}
 	// A second click while running does nothing.
 	if _, cmd := m.Update(click(m.buttonX()+2, 0)); cmd != nil {
@@ -190,7 +190,7 @@ func TestButtonStartsRun(t *testing.T) {
 	}
 	m = send(t, m, stepMsg("make"))
 	if !strings.Contains(screen(m), "make…") {
-		t.Errorf("o progresso não mostra o passo:\n%s", screen(m))
+		t.Errorf("o andamento não mostra o passo:\n%s", screen(m))
 	}
 }
 

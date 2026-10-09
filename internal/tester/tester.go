@@ -77,10 +77,10 @@ type Report struct {
 // Count returns how many cases passed, failed and were skipped.
 func (r Report) Count() (passed, failed, skipped int) {
 	for _, c := range r.Cases {
-		switch {
-		case c.Status == OK:
+		switch c.Status {
+		case OK:
 			passed++
-		case c.Status == Skip:
+		case Skip:
 			skipped++
 		default:
 			failed++

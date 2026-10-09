@@ -80,7 +80,6 @@ func (p *panel) build() {
 			continue
 		}
 		for _, c := range g.Cases {
-			c := c
 			mark := styleGood.Render("✓")
 			switch {
 			case c.Status == tester.Skip:

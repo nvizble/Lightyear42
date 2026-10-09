@@ -107,7 +107,7 @@ func TestLibftCatchesBugs(t *testing.T) {
 			"ft_split", KO, "não liberou"},
 		{"split doesn't check malloc",
 			[]edit{{"part2.c", "\tif (!r)\n\t\treturn (NULL);\n\twhile (k < n)", "\twhile (k < n)"}},
-			"ft_split", Crash, "malloc devolvendo NULL"},
+			"ft_split", Crash, "º malloc"},
 		{"strjoin forgets the +1",
 			[]edit{{"part2.c", "malloc(a + b + 1)", "malloc(a + b)"}},
 			"ft_strjoin", KO, "heap overflow"},
