@@ -91,7 +91,7 @@ func Root(s Server, path string) string {
 // Start runs the server for the project at root. A server that is missing
 // or stops while starting is an error that tells how to install it.
 func Start(ctx context.Context, s Server, root string) (*Client, error) {
-	argv, err := s.command()
+	argv, err := s.command(ctx)
 	if err != nil {
 		return nil, err
 	}

@@ -1,6 +1,7 @@
 package lsp
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"os/exec"
@@ -16,6 +17,9 @@ type Server struct {
 	Commands   [][]string // candidates in order of preference; the first found runs
 	Hint       string     // how to install it, shown when it's missing
 	Options    any        // initializationOptions
+	// Download, when set, is fetched when the server isn't installed
+	// (download.go).
+	Download *Download
 	// RootMarkers are files that mark the project root (the nearest wins).
 	RootMarkers []string
 }
@@ -23,15 +27,18 @@ type Server struct {
 // clangd checks C and C++. Without a compile_commands.json it uses the
 // flags the 42 graders use, so the warnings match.
 func clangd(languageID string, flags ...string) Server {
-	hint := "instale: sudo apt install clangd"
-	if runtime.GOOS == "darwin" {
-		hint = "instale as Command Line Tools: xcode-select --install"
-	}
-	return Server{
-		Name: "clangd", LanguageID: languageID, Commands: [][]string{{"clangd"}}, Hint: hint,
+	s := Server{
+		Name: "clangd", LanguageID: languageID, Commands: [][]string{{"clangd"}}, Hint: "instale: sudo apt install clangd",
 		Options:     map[string]any{"fallbackFlags": append(flags, "-Wall", "-Wextra", "-Werror")},
 		RootMarkers: []string{"compile_commands.json", "compile_flags.txt", ".git"},
 	}
+	switch runtime.GOOS + "/" + runtime.GOARCH {
+	case "linux/amd64":
+		s.Download = clangdLinux
+	case "darwin/amd64", "darwin/arm64":
+		s.Hint = "instale as Command Line Tools: xcode-select --install"
+	}
+	return s
 }
 
 var (
@@ -67,18 +74,39 @@ func ServerFor(path string) (Server, bool) {
 	return s, ok
 }
 
-// command finds the server's executable: on the PATH or, for Go tools, in
-// GOPATH/bin (often off the PATH).
-func (s Server) command() ([]string, error) {
+// command finds the server's executable: on the PATH, for Go tools in
+// GOPATH/bin (often off the PATH), or its Download, fetched when needed.
+func (s Server) command(ctx context.Context) ([]string, error) {
+	if argv := s.installed(); argv != nil {
+		return argv, nil
+	}
+	if s.Download == nil {
+		return nil, fmt.Errorf("%s não encontrado — %s", s.Name, s.Hint)
+	}
+	bin, err := s.Download.fetch(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("%s não encontrado, e baixá-lo falhou: %w — %s", s.Name, err, s.Hint)
+	}
+	return []string{bin}, nil
+}
+
+// installed is the command of an installed server (nil when none).
+func (s Server) installed() []string {
 	for _, argv := range s.Commands {
 		if p, err := exec.LookPath(argv[0]); err == nil {
-			return append([]string{p}, argv[1:]...), nil
+			return append([]string{p}, argv[1:]...)
 		}
 		if p := goBin(argv[0]); p != "" {
-			return append([]string{p}, argv[1:]...), nil
+			return append([]string{p}, argv[1:]...)
 		}
 	}
-	return nil, fmt.Errorf("%s não encontrado — %s", s.Name, s.Hint)
+	return nil
+}
+
+// WillDownload reports that starting s downloads it first: it isn't
+// installed, and lightyear can fetch it.
+func (s Server) WillDownload() bool {
+	return s.Download != nil && s.installed() == nil && !s.Download.downloaded()
 }
 
 func goBin(name string) string {

@@ -7,6 +7,15 @@ Mudanças visíveis do lightyear, da mais nova para a mais antiga. O
 Versões `-canary.N` são pre-releases: `lightyear update --canary` entra no
 canal canary e `lightyear update --stable` volta para a estável.
 
+## [1.3.0-canary.30] — 2026-10-09
+
+- Editor: no Linux sem clangd (as máquinas da 42 com instalação nova não
+  têm, e lá não dá para usar sudo), o lightyear baixa o clangd oficial na
+  primeira vez que você abre um arquivo C ou C++. São 118 MB, só uma vez, e
+  a barra de status avisa enquanto baixa. Ele fica em `~/.cache/42cli`
+  (cerca de 160 MB: só o clangd e os headers que ele usa), e o download é
+  conferido pelo sha256. Com o clangd instalado no sistema, nada muda.
+
 ## [1.3.0-canary.29] — 2026-10-07
 
 - App: na aba Exam, clique no nome de um exercício para treinar só ele,
