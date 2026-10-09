@@ -146,7 +146,23 @@ var (
 	// "path/ft_split.c:12:".
 	normLine     = regexp.MustCompile(`\(line:\s*(\d+)`)
 	compilerLine = regexp.MustCompile(`([\w./-]+\.(?:c|h|py)):(\d+):`)
+	traceLine    = regexp.MustCompile(`File "([^"]+\.py)", line (\d+)`)
+	pythonGroup  = regexp.MustCompile(`^(ex\d+) (\S+)$`)
 )
+
+// inRoot maps a file named in an error to the project: the tests run on a
+// copy (…/proj/ex0/x.py), and compilers print relative or bare names.
+func inRoot(root, name string) string {
+	if i := strings.LastIndex(name, "/proj/"); i >= 0 {
+		name = name[i+len("/proj/"):]
+	}
+	for _, candidate := range []string{filepath.Join(root, name), filepath.Join(root, filepath.Base(name))} {
+		if fileExists(candidate) {
+			return candidate
+		}
+	}
+	return ""
+}
 
 // locate is where a failure points: the file a compiler error names, the
 // file norminette checked, the Makefile, the README, or the function's own
@@ -156,10 +172,18 @@ func locate(root string, c tester.Case, detail string) (string, int) {
 	if detail == "" {
 		detail = c.Detail
 	}
-	if m := compilerLine.FindStringSubmatch(detail); m != nil {
-		if path := filepath.Join(root, filepath.Base(m[1])); fileExists(path) {
-			line, _ := strconv.Atoi(m[2])
-			return path, line
+	for _, re := range []*regexp.Regexp{traceLine, compilerLine} {
+		if m := re.FindStringSubmatch(detail); m != nil {
+			if path := inRoot(root, m[1]); path != "" {
+				line, _ := strconv.Atoi(m[2])
+				return path, line
+			}
+		}
+	}
+	// "ex2 ft_plot_area": the exercise's file.
+	if m := pythonGroup.FindStringSubmatch(c.Group); m != nil {
+		if path := filepath.Join(root, m[1], m[2]+".py"); fileExists(path) {
+			return path, 0
 		}
 	}
 	line := 0

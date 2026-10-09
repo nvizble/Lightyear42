@@ -2,6 +2,7 @@ package tester
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -30,6 +31,9 @@ var libft = Project{
 }
 
 func runLibft(ctx context.Context, r *runner) error {
+	if _, err := lookPath(r.opts.CC); err != nil {
+		return fmt.Errorf("compilador %q não encontrado: %w", r.opts.CC, err)
+	}
 	r.readme("README.md")
 	r.norminette(ctx, "norminette")
 	r.libftFiles("arquivos")

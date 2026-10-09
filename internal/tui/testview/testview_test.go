@@ -263,6 +263,8 @@ func TestLocate(t *testing.T) {
 		{tester.Case{Group: "funções permitidas", Name: "x"}, "", 0},
 		{tester.Case{Group: "norminette", Name: "ft_split.c", Detail: "Error: A (line: 1, col: 1): a\nError: B (line: 7, col: 2): b"}, "ft_split.c", 1},
 		{tester.Case{Group: "ft_nothing", Name: "x"}, "", 0},
+		{tester.Case{Group: "flake8", Name: "x", Detail: "utils/helpers.c:3:1: E302 expected 2 blank lines"}, "utils/helpers.c", 3},
+		{tester.Case{Group: "ex0 x", Name: "x", Detail: "File \"/tmp/lightyear-test-1/proj/utils/helpers.c.py\", line 2"}, "", 0},
 	}
 	if path, line := locate(root, tests[0].c, "Error: B (line: 7, col: 2): b"); line != 7 || filepath.Base(path) != "ft_split.c" {
 		t.Errorf("a linha clicada deveria valer: %s:%d", path, line)

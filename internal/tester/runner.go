@@ -21,7 +21,7 @@ import (
 	"github.com/charmbracelet/x/ansi"
 )
 
-//go:embed c
+//go:embed c py sh
 var suitesFS embed.FS
 
 var lookPath = exec.LookPath
@@ -43,12 +43,15 @@ type runner struct {
 	cases []Case
 }
 
-func newRunner(src string, opts Options) (*runner, error) {
+func newRunner(src string, opts Options, copy bool) (*runner, error) {
 	work, err := os.MkdirTemp("", "lightyear-test-*")
 	if err != nil {
 		return nil, fmt.Errorf("criar diretório temporário: %w", err)
 	}
 	r := &runner{src: src, work: work, proj: filepath.Join(work, "proj"), opts: opts}
+	if !copy {
+		return r, nil
+	}
 	if err := copyProject(src, r.proj); err != nil {
 		r.close()
 		return nil, fmt.Errorf("copiar o projeto: %w", err)
@@ -330,7 +333,7 @@ func (r *runner) runSuites(ctx context.Context, suites []suite, includes []strin
 	return r.runBinary(ctx, bin)
 }
 
-// runBinary runs the linked suites and turns their result lines into cases.
+// runBinary runs the linked suites.
 func (r *runner) runBinary(ctx context.Context, bin string) error {
 	ctx, cancel := context.WithTimeout(ctx, suiteTimeout)
 	defer cancel()
@@ -340,6 +343,12 @@ func (r *runner) runBinary(ctx context.Context, bin string) error {
 	if r.opts.Timeout > 0 {
 		cmd.Env = append(cmd.Env, fmt.Sprintf("LT_TIMEOUT=%d", max(int(r.opts.Timeout.Seconds()), 1)))
 	}
+	return r.collect(ctx, cmd)
+}
+
+// collect runs cmd and turns its result lines ("R\tgroup\tname\tstatus\tdetail")
+// into cases.
+func (r *runner) collect(ctx context.Context, cmd *exec.Cmd) error {
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
 		return err
@@ -357,7 +366,7 @@ func (r *runner) runBinary(ctx context.Context, bin string) error {
 		if len(f) != 5 || f[0] != "R" {
 			continue
 		}
-		r.add(f[1], f[2], Status(f[3]), f[4])
+		r.add(f[1], f[2], Status(f[3]), strings.ReplaceAll(f[4], " ⏎ ", "\n"))
 	}
 	_, _ = io.Copy(io.Discard, stdout)
 	err = cmd.Wait()
@@ -369,14 +378,14 @@ func (r *runner) runBinary(ctx context.Context, bin string) error {
 		return ctx.Err()
 	}
 	if err != nil {
-		r.add("testes", "o executável dos testes terminou bem", KO, fmt.Sprintf("%v\n%s", err, tail(stderr.String(), 5)))
+		r.add("testes", "os testes terminaram bem", KO, fmt.Sprintf("%v\n%s", err, tail(stderr.String(), 8)))
 	}
 	return nil
 }
 
-// writeEmbedded writes the runtime and suites under dir/c.
+// writeEmbedded writes the runtimes and suites under dir (c/ and py/).
 func writeEmbedded(dir string) error {
-	return fs.WalkDir(suitesFS, "c", func(path string, d fs.DirEntry, err error) error {
+	return fs.WalkDir(suitesFS, ".", func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}

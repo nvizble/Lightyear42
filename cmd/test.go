@@ -30,9 +30,11 @@ func newTestCmd() *cobra.Command {
 		Long: `Abre o editor do lightyear na pasta do projeto, com os arquivos numa árvore
 à esquerda e um botão ▶ Rodar testes em cima. Rode na raiz do projeto.
 
-Os testes seguem o subject: README, norminette (se instalada), as regras do
-Makefile (sem relink, flags), funções proibidas e variáveis globais e, para
-cada função, vários casos — inclusive os de borda. Cada caso roda isolado:
+Os testes seguem o subject. Projetos em C: README, norminette (se instalada),
+as regras do Makefile (sem relink, flags), funções proibidas e variáveis
+globais e, para cada função, vários casos — inclusive os de borda. Módulos de
+Python: arquivos entregues, flake8, mypy, type hints, funções autorizadas e o
+comportamento de cada exercício, com os exemplos do subject e casos de borda. Cada caso roda isolado:
 segfault, loop infinito, vazamento de memória, double free, escrita além do
 malloc e malloc sem proteção (cada malloc falhando, um de cada vez) aparecem
 como falha daquele caso. Nada é compilado na sua pasta: o lightyear usa uma cópia.
@@ -43,8 +45,15 @@ No editor:
   Space t   resultados (enter num erro abre o código dele)
 O mouse funciona em tudo: clique no botão, nos arquivos e nos erros.
 
+O born2beroot é diferente: rode dentro da VM avaliada, como root (sudo). Ele
+checa a máquina (LVM criptografado, SSH na 4242 sem root, UFW, hostname,
+grupos, política de senha, sudo e o monitoring.sh, conferindo cada valor que
+ele mostra) e imprime no terminal.
+
 Projetos: ` + strings.Join(projectNames(), ", ") + `.`,
 		Example: `  cd ~/libft && lightyear test libft
+  cd ~/python00 && lightyear test python-module-00
+  sudo lightyear test born2beroot             # dentro da VM avaliada
   lightyear test libft --run                  # sem editor, só o resultado
   lightyear test libft --run --only ft_split  # só uma função`,
 		Args: cobra.ExactArgs(1),
@@ -68,7 +77,7 @@ Projetos: ` + strings.Join(projectNames(), ", ") + `.`,
 			}
 			opts := tester.DefaultOptions()
 			opts.Only = only
-			if run {
+			if run || project.Machine {
 				return runTests(cmd, project, root, opts, all)
 			}
 			return openTestView(cmd, project, root, opts)
@@ -78,6 +87,22 @@ Projetos: ` + strings.Join(projectNames(), ", ") + `.`,
 	cmd.Flags().BoolVar(&all, "all", false, "com --run, lista também os casos que passaram")
 	cmd.Flags().StringSliceVar(&only, "only", nil, "testa só essas funções (ex.: --only ft_split,ft_itoa)")
 	return cmd
+}
+
+// firstFile is what the editor shows first: the first marker (the
+// Makefile), or the first file in it when it is a folder (ex0/).
+func firstFile(root string, project tester.Project) string {
+	first := filepath.Join(root, project.Markers[0])
+	entries, err := os.ReadDir(first)
+	if err != nil {
+		return first
+	}
+	for _, e := range entries {
+		if !e.IsDir() && !strings.HasPrefix(e.Name(), ".") {
+			return filepath.Join(first, e.Name())
+		}
+	}
+	return filepath.Join(root, "README.md")
 }
 
 func projectNames() []string {
@@ -107,8 +132,7 @@ func runTests(cmd *cobra.Command, project tester.Project, root string, opts test
 }
 
 func openTestView(cmd *cobra.Command, project tester.Project, root string, opts tester.Options) error {
-	first := filepath.Join(root, project.Markers[0])
-	ed, err := editor.Open(first)
+	ed, err := editor.Open(firstFile(root, project))
 	if err != nil {
 		return err
 	}

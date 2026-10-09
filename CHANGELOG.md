@@ -25,6 +25,20 @@ canal canary e `lightyear update --stable` volta para a estável.
   usam uma cópia.
 - `lightyear test libft --run` roda direto no terminal, sem editor, e sai
   com erro se algum caso falhar (`--only ft_split` testa só uma função).
+- Módulos de Python 00 a 04: `lightyear test python-module-00` (até `-04`),
+  na pasta com `ex0/`, `ex1/`… São de 77 a 130 casos por módulo: arquivos
+  entregues, flake8, mypy, type hints, só as funções autorizadas, os
+  exemplos do subject e os casos de borda de cada exercício (entrada
+  inválida, arquivo que não existe, sem permissão, exceções do tipo certo,
+  `finally`, geradores…). O flake8 e o mypy são pulados se não estiverem
+  instalados.
+- Born2beroot: `sudo lightyear test born2beroot`, dentro da VM avaliada,
+  confere a máquina e imprime no terminal: sem interface gráfica, LVM
+  criptografado, AppArmor/SELinux, SSH na 4242 sem root, UFW/firewalld só
+  com a 4242, hostname, usuário nos grupos `sudo` e `user42`, política de
+  senha (login.defs, `chage` e pwquality), regras do sudo e o
+  `monitoring.sh` no cron, rodando cada valor que ele mostra contra os da
+  máquina (vCPUs, memória, último boot, LVM, IP e MAC…).
 
 ## [1.3.0-canary.31] — 2026-10-09
 

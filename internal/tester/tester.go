@@ -138,10 +138,17 @@ type Project struct {
 	Subject string
 	// Markers are files that must be at the project root.
 	Markers []string
+	// Machine projects check the computer they run on (born2beroot's VM),
+	// not a folder: no copy, and the results print in the terminal.
+	Machine bool
 	run     func(ctx context.Context, r *runner) error
 }
 
-var projects = []Project{libft}
+var projects = []Project{
+	libft,
+	pythonModule("00"), pythonModule("01"), pythonModule("02"), pythonModule("03"), pythonModule("04"),
+	born2beroot,
+}
 
 // Projects lists the testable projects.
 func Projects() []Project { return slices.Clone(projects) }
@@ -188,10 +195,7 @@ func (p Project) Run(ctx context.Context, dir string, opts Options) (Report, err
 	if opts.CC == "" {
 		opts.CC = "cc"
 	}
-	if _, err := lookPath(opts.CC); err != nil {
-		return Report{}, fmt.Errorf("compilador %q não encontrado: %w", opts.CC, err)
-	}
-	r, err := newRunner(dir, opts)
+	r, err := newRunner(dir, opts, !p.Machine)
 	if err != nil {
 		return Report{}, err
 	}
