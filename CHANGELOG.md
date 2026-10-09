@@ -7,6 +7,17 @@ Mudanças visíveis do lightyear, da mais nova para a mais antiga. O
 Versões `-canary.N` são pre-releases: `lightyear update --canary` entra no
 canal canary e `lightyear update --stable` volta para a estável.
 
+## [1.3.0-canary.31] — 2026-10-09
+
+- Editor: Python passa a ter language server mesmo sem nada instalado.
+  Sem pyright nem pylsp, o lightyear baixa o ty (o type checker da Astral,
+  um binário só, sem Node nem pip) na primeira vez que você abre um `.py`:
+  14 MB, em `~/.cache/42cli`, conferido pelo sha256. Ele aponta erros de
+  tipo e nomes não definidos, e o hover, o `gd` e o autocomplete
+  funcionam. Vale no Linux (como nas máquinas da 42) e no macOS.
+- Editor: a barra de status mostra qual servidor está rodando (`ty`,
+  `pylsp`, `pyright`, `clangd`…).
+
 ## [1.3.0-canary.30] — 2026-10-09
 
 - Editor: no Linux sem clangd (as máquinas da 42 com instalação nova não

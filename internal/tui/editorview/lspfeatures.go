@@ -90,7 +90,7 @@ func (st *lspState) request(f func(context.Context, *lsp.Client) tea.Msg) vim.Re
 	c := st.srv.client
 	if c == nil {
 		if st.srv.starting {
-			return vim.Result{Message: "o " + st.srv.server.Name + " ainda está iniciando"}
+			return vim.Result{Message: "o " + st.srv.program + " ainda está iniciando"}
 		}
 		return vim.Result{Message: "sem language server", Err: true}
 	}

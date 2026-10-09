@@ -1,8 +1,10 @@
 package lsp
 
 import (
+	"archive/tar"
 	"archive/zip"
 	"bytes"
+	"compress/gzip"
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
@@ -50,7 +52,7 @@ func TestDownload(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	d := &Download{URL: srv.URL + "/fake-linux-1.zip", SHA256: hex.EncodeToString(sum[:]),
+	d := &Download{URL: srv.URL + "/fake-linux-1.zip", SHA256: hex.EncodeToString(sum[:]), Dir: "fake-linux-1",
 		Keep: []string{"fake_1/bin/clangd", "fake_1/lib/clang/1/include/"}, Binary: "fake_1/bin/clangd"}
 	s := Server{Name: "fake", Commands: [][]string{{"lightyear-no-such-server"}}, Hint: "instale o fake", Download: d}
 	if !s.WillDownload() {
@@ -93,7 +95,7 @@ func TestDownload(t *testing.T) {
 
 	// A file that doesn't match the sha256 is refused, and nothing stays.
 	bad := *d
-	bad.URL = srv.URL + "/fake-linux-2.zip"
+	bad.URL, bad.Dir = srv.URL+"/fake-linux-2.zip", "fake-linux-2"
 	bad.SHA256 = strings.Repeat("0", 64)
 	s.Download = &bad
 	if _, err := s.command(context.Background()); err == nil || !strings.Contains(err.Error(), "sha256") || !strings.Contains(err.Error(), "instale o fake") {
@@ -104,5 +106,46 @@ func TestDownload(t *testing.T) {
 	}
 	if entries, _ := os.ReadDir(filepath.Join(cache, "42cli")); len(entries) != 1 {
 		t.Fatalf("sobrou lixo no cache: %v", entries)
+	}
+}
+
+func TestDownloadTarGz(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	t.Setenv("XDG_CACHE_HOME", "")
+	var archive bytes.Buffer
+	gz := gzip.NewWriter(&archive)
+	tw := tar.NewWriter(gz)
+	for name, mode := range map[string]int64{"tool-x/tool": 0o755, "tool-x/README.md": 0o644, "../tool": 0o755} {
+		body := "#!/bin/sh\n# " + name + "\n"
+		if err := tw.WriteHeader(&tar.Header{Name: name, Mode: mode, Size: int64(len(body)), Typeflag: tar.TypeReg}); err != nil {
+			t.Fatal(err)
+		}
+		_, _ = tw.Write([]byte(body))
+	}
+	_ = tw.Close()
+	_ = gz.Close()
+	sum := sha256.Sum256(archive.Bytes())
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { _, _ = w.Write(archive.Bytes()) }))
+	defer srv.Close()
+
+	d := &Download{URL: srv.URL + "/tool-x.tar.gz", SHA256: hex.EncodeToString(sum[:]), Dir: "tool-1",
+		Keep: []string{"tool-x/tool"}, Binary: "tool-x/tool", Args: []string{"server"}}
+	s := Server{Name: "pyright", Commands: [][]string{{"lightyear-no-such-server"}}, Download: d}
+	if s.Program() != "tool" {
+		t.Fatalf("o programa é o que vai ser baixado: %s", s.Program())
+	}
+	argv, err := s.command(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	cache, _ := os.UserCacheDir()
+	if want := filepath.Join(cache, "42cli", "tool-1", "tool-x", "tool"); len(argv) != 2 || argv[0] != want || argv[1] != "server" {
+		t.Fatalf("comando: %v", argv)
+	}
+	if entries, _ := os.ReadDir(filepath.Join(cache, "42cli", "tool-1", "tool-x")); len(entries) != 1 {
+		t.Fatalf("só o binário: %v", entries)
+	}
+	if info, err := os.Stat(argv[0]); err != nil || info.Mode().Perm()&0o100 == 0 {
+		t.Fatalf("o binário fica executável: %v %v", info, err)
 	}
 }
