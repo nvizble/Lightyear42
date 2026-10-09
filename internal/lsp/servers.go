@@ -55,9 +55,10 @@ var (
 		},
 		".py": {
 			Name: "pyright", LanguageID: "python",
-			Commands:    [][]string{{"pyright-langserver", "--stdio"}, {"pylsp"}},
+			Commands:    [][]string{{"pyright-langserver", "--stdio"}, {"pylsp"}, {"ty", "server"}},
 			Hint:        "instale: npm i -g pyright (ou pip install python-lsp-server)",
 			RootMarkers: []string{"pyproject.toml", "setup.py", "setup.cfg", ".git"},
+			Download:    tyDownloads[runtime.GOOS+"/"+runtime.GOARCH],
 		},
 		".rs": {
 			Name: "rust-analyzer", LanguageID: "rust", Commands: [][]string{{"rust-analyzer"}},
@@ -85,9 +86,9 @@ func (s Server) command(ctx context.Context) ([]string, error) {
 	}
 	bin, err := s.Download.fetch(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("%s não encontrado, e baixá-lo falhou: %w — %s", s.Name, err, s.Hint)
+		return nil, fmt.Errorf("%s não encontrado, e baixar o %s falhou: %w — %s", s.Name, s.Download.name(), err, s.Hint)
 	}
-	return []string{bin}, nil
+	return append([]string{bin}, s.Download.Args...), nil
 }
 
 // installed is the command of an installed server (nil when none).
@@ -101,6 +102,18 @@ func (s Server) installed() []string {
 		}
 	}
 	return nil
+}
+
+// Program names what runs for s: the server installed, or the one it
+// downloads ("clangd", "pyright", "pylsp", "ty").
+func (s Server) Program() string {
+	name := s.Name
+	if argv := s.installed(); argv != nil {
+		name = filepath.Base(argv[0])
+	} else if s.Download != nil {
+		name = s.Download.name()
+	}
+	return strings.TrimSuffix(name, "-langserver")
 }
 
 // WillDownload reports that starting s downloads it first: it isn't

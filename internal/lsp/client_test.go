@@ -6,8 +6,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -449,13 +449,19 @@ func TestClangdFeatures(t *testing.T) {
 // the test (strict).
 func needClangd(t *testing.T) (strict bool) {
 	t.Helper()
-	if _, err := exec.LookPath("clangd"); err == nil {
+	return needServer(t, serverC)
+}
+
+// needServer is needClangd for any server.
+func needServer(t *testing.T, s Server) (strict bool) {
+	t.Helper()
+	if s.installed() != nil {
 		return false
 	}
-	if os.Getenv("LIGHTYEAR_TEST_DOWNLOAD") != "" && serverC.Download != nil {
+	if os.Getenv("LIGHTYEAR_TEST_DOWNLOAD") != "" && s.Download != nil {
 		return true
 	}
-	t.Skip("clangd não instalado")
+	t.Skipf("%s não instalado", s.Name)
 	return false
 }
 
@@ -545,5 +551,37 @@ func TestClangdEdits(t *testing.T) {
 	}
 	if f, err := c.Format(ctx, path, 4); err != nil || len(f) == 0 {
 		t.Fatalf("format com .clang-format: %+v %v", f, err)
+	}
+}
+
+// The real Python server (ty when lightyear downloads it): a type error,
+// hover and completion.
+func TestPython(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "main.py")
+	s, _ := ServerFor(path)
+	strict := needServer(t, s)
+	c, err := open(s, path, "def add(a: int, b: int) -> int:\n    return a + b\n\n\ncount: int = \"x\"\nprint(add(1, 2))\n")
+	if err != nil {
+		clangdFailed(t, strict, err)
+	}
+	defer c.Close()
+	for found := false; !found; {
+		ev := next(t, c)
+		if ev.Err != nil {
+			t.Fatal(ev.Err)
+		}
+		for _, d := range ev.Diagnostics {
+			found = found || (d.Start.Line == 4 && d.Severity == Error)
+		}
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	// Line 5 is "print(add(1, 2))": "add" starts at rune 6.
+	if h, err := c.Hover(ctx, path, Pos{5, 7}); err != nil || !strings.Contains(h, "a: int") {
+		t.Fatalf("hover: %q %v", h, err)
+	}
+	items, err := c.Completion(ctx, path, Pos{5, 9})
+	if err != nil || !slices.ContainsFunc(items, func(it Item) bool { return it.Label == "add" }) {
+		t.Fatalf("completion: %d itens %v", len(items), err)
 	}
 }

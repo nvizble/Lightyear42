@@ -543,14 +543,14 @@ func (m Model) statusLine() string {
 	}
 	lang := styleStatus.Render(" │ " + language(m.ed.Path()))
 	if m.lsp != nil && m.lsp.srv.starting {
-		label := m.lsp.srv.server.Name + "…"
-		if s := m.lsp.srv.server; m.lsp.srv.fetching {
-			label = fmt.Sprintf("baixando o %s (só na 1ª vez, %d MB)…", s.Name, s.Download.MB)
+		label := m.lsp.srv.program + "…"
+		if m.lsp.srv.fetching {
+			label = fmt.Sprintf("baixando o %s (só na 1ª vez, %d MB)…", m.lsp.srv.program, m.lsp.srv.server.Download.MB)
 		}
 		lang += styleStatus.Render(" · " + label)
 	}
 	if m.lsp != nil && m.lsp.srv.client != nil {
-		lang += styleStatus.Render(" · " + m.lsp.srv.server.Name)
+		lang += styleStatus.Render(" · " + m.lsp.srv.program)
 		if n := m.count(lsp.Error); n > 0 {
 			lang += severityStyles[lsp.Error].Render(fmt.Sprintf(" ✖ %d", n))
 		}
