@@ -136,7 +136,7 @@ func TestLibftCatchesBugs(t *testing.T) {
 			[]edit{{"part1.c", "\tchar\t*d = malloc(n);", "\tchar\t*d = malloc(n);\n\tchar\t*leak = malloc(1);\n\n\t(void)leak;"}},
 			"ft_strdup", KO, "vazamento"},
 		{"lstdelone frees twice",
-			[]edit{{"bonus.c", "\tdel(lst->content);\n\tfree(lst);", "\tdel(lst->content);\n\tfree(lst);\n\tfree(lst);"}},
+			[]edit{{"bonus.c", "\tdel(lst->content);\n\tfree(lst);", "\tt_list\t*volatile again = lst;\n\n\tdel(lst->content);\n\tfree(lst);\n\tfree(again);"}},
 			"ft_lstdelone", KO, "double free"},
 		{"lstmap forgets del on failure",
 			[]edit{{"bonus.c", "\t\t\tdel(c);\n", ""}},
