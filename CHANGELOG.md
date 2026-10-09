@@ -7,6 +7,25 @@ Mudanças visíveis do lightyear, da mais nova para a mais antiga. O
 Versões `-canary.N` são pre-releases: `lightyear update --canary` entra no
 canal canary e `lightyear update --stable` volta para a estável.
 
+## [1.3.0-canary.32] — 2026-10-09
+
+- Novo: `lightyear test libft`, na raiz do seu projeto, abre o editor do
+  lightyear com os arquivos numa árvore à esquerda e um botão ▶ Rodar
+  testes em cima. São mais de 700 casos tirados do subject (versão 19):
+  README, norminette, as regras do Makefile (sem relink, com as flags, com
+  `ar`), funções proibidas, variáveis globais e cada uma das 43 funções,
+  com os casos de borda (overlap no memmove, INT_MIN no itoa, overflow no
+  calloc, split só com separadores…). Cada caso roda isolado, então
+  segfault, loop infinito, vazamento, double free, escrita além do malloc
+  e malloc sem proteção (cada malloc falhando, um de cada vez) aparecem
+  como falha daquele caso, com o esperado e o recebido.
+- Na tela de testes: `Space e` mostra e esconde os arquivos, `Space r`
+  roda (salva antes) e `Space t` mostra os resultados. Clicar num erro abre
+  o código dele, na linha certa. Nada é compilado na sua pasta: os testes
+  usam uma cópia.
+- `lightyear test libft --run` roda direto no terminal, sem editor, e sai
+  com erro se algum caso falhar (`--only ft_split` testa só uma função).
+
 ## [1.3.0-canary.31] — 2026-10-09
 
 - Editor: Python passa a ter language server mesmo sem nada instalado.

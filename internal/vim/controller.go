@@ -332,7 +332,8 @@ func (c *Controller) prefix(key string) (string, bool) {
 		st.find = key
 		st.Pending = append(st.Pending, key)
 		return "", false
-	case key == "g" || key == "[" || key == "]" || key == "ctrl+w" || ((key == "i" || key == "a") && (st.Operator != opNone || c.visual())):
+	case key == "g" || key == "[" || key == "]" || key == "ctrl+w" || ((key == "i" || key == "a") && (st.Operator != opNone || c.visual())),
+		key == " " && st.Operator == opNone && c.commandPrefix(" "): // a host's leader (Space e)
 		st.lead = key
 		st.Pending = append(st.Pending, key)
 		return "", false

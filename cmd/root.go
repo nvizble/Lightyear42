@@ -75,6 +75,7 @@ clicáveis, mouse e teclado); os subcomandos abaixo continuam iguais.`,
 	root.AddCommand(newDashboardCmd())
 	root.AddCommand(newFriendsCmd())
 	root.AddCommand(newExamCmd())
+	root.AddCommand(newTestCmd())
 	root.AddCommand(newEditCmd())
 	root.AddCommand(newCacheCmd())
 	root.Flags().BoolP("version", "v", false, "mostra a versão e as novidades dela")

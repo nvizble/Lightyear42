@@ -307,14 +307,9 @@ func (m Model) exCommands() map[string]func(string) vim.Result {
 	}
 	force := func(string) vim.Result { return vim.Result{Quit: true} }
 	saveAll := func(string) vim.Result {
-		n := 0
-		for _, b := range ses.bufs {
-			if b.ed.Dirty() {
-				if err := b.ed.Save(); err != nil {
-					return vim.Result{Message: err.Error(), Err: true}
-				}
-				n++
-			}
+		n, err := ses.saveAll()
+		if err != nil {
+			return vim.Result{Message: err.Error(), Err: true}
 		}
 		return vim.Result{Message: fmt.Sprintf("%d arquivo(s) salvo(s)", n)}
 	}
