@@ -43,7 +43,8 @@ internal/
   vim/         # Controller Vim-like do editor (modos, contadores, motions, operadores, Visual, registers, :w/:q)
   syntax/      # Syntax highlighting do editor com Tree-sitter (cgo): C, C++, Go, Python, Rust
   lsp/         # Cliente LSP do editor (stdlib): clangd, gopls, pyright/pylsp, rust-analyzer
-  tui/         # Bubble Tea
+  tester/      # lightyear test: checagens do subject + suítes em C (c/<projeto>/, um arquivo por função) com runtime próprio (fork por caso, malloc que acusa leak/double free/overflow e falha de propósito)
+  tui/         # Bubble Tea (tui/testview: editor + árvore + botão Rodar + resultados)
 pkg/           # Só APIs públicas exportáveis
 ```
 
@@ -110,6 +111,7 @@ lightyear friends     # lista local de amigos (add/remove/list/online)
 lightyear search
 lightyear dashboard
 lightyear exam        # simulador de provas offline (start/practice/grademe/status/finish/list)
+lightyear test <proj> # na raiz do projeto: editor com árvore (Space e), ▶ Rodar testes (Space r), resultados (Space t); --run sem editor
 lightyear update      # self-update via GitHub Releases (--check / --force / --yes / --canary / --stable)
 lightyear cache clear
 lightyear config
@@ -146,6 +148,7 @@ UX: progresso, tabelas, cores, loading — sem poluição visual.
 | 9 | Simulador de provas | `lightyear exam`: Exam Rank 02 completo, grader local com `cc` + solução de referência, sessão persistida, modo prática (**passos 1–2 concluídos**; próximo: TUI examshell, histórico/pontos fracos) |
 | 10 | App TUI | `lightyear` sozinho abre o app em tela cheia: abas clicáveis reaproveitando services e renderers dos comandos (**canary v1.3.0-canary.1**) |
 | 11 | Editor embutido | Editor modal estilo Vim dentro do app, em 8 fases (`internal/editor/DESIGN.md`). **As 8 fases estão concluídas** (core, edição modal, contadores × motions, Visual, registers, syntax com Tree-sitter, LSP, avançados: text objects, `f`/`t`, busca, `.`, macros, buffers, janelas, rename/references/code actions/format). Na aba Exam do app, `e` abre o editor com o subject só leitura ao lado da entrega (com clangd); `E` abre o `$EDITOR`. LSP: C/C++, Go, Python, Rust |
+| 12 | Testes de projeto | `lightyear test <projeto>`: checagens do subject (README, norminette, Makefile, funções proibidas, globais) e suítes em C com casos de borda, cada caso isolado. **libft, Python 00–04 e born2beroot (canary)**; próximos: ft_printf, get_next_line, push_swap, Python 05–10. Super+E para a árvore depende da migração para Bubble Tea v2 (hoje: Space e) |
 
 Chat (DM/fórum/relay): **parked** — sem DM na API pública; fórum ≠ chat; relay próprio fora de escopo.
 

@@ -7,6 +7,39 @@ Mudanças visíveis do lightyear, da mais nova para a mais antiga. O
 Versões `-canary.N` são pre-releases: `lightyear update --canary` entra no
 canal canary e `lightyear update --stable` volta para a estável.
 
+## [1.3.0-canary.32] — 2026-10-09
+
+- Novo: `lightyear test libft`, na raiz do seu projeto, abre o editor do
+  lightyear com os arquivos numa árvore à esquerda e um botão ▶ Rodar
+  testes em cima. São mais de 700 casos tirados do subject (versão 19):
+  README, norminette, as regras do Makefile (sem relink, com as flags, com
+  `ar`), funções proibidas, variáveis globais e cada uma das 43 funções,
+  com os casos de borda (overlap no memmove, INT_MIN no itoa, overflow no
+  calloc, split só com separadores…). Cada caso roda isolado, então
+  segfault, loop infinito, vazamento, double free, escrita além do malloc
+  e malloc sem proteção (cada malloc falhando, um de cada vez) aparecem
+  como falha daquele caso, com o esperado e o recebido.
+- Na tela de testes: `Space e` mostra e esconde os arquivos, `Space r`
+  roda (salva antes) e `Space t` mostra os resultados. Clicar num erro abre
+  o código dele, na linha certa. Nada é compilado na sua pasta: os testes
+  usam uma cópia.
+- `lightyear test libft --run` roda direto no terminal, sem editor, e sai
+  com erro se algum caso falhar (`--only ft_split` testa só uma função).
+- Módulos de Python 00 a 04: `lightyear test python-module-00` (até `-04`),
+  na pasta com `ex0/`, `ex1/`… São de 77 a 130 casos por módulo: arquivos
+  entregues, flake8, mypy, type hints, só as funções autorizadas, os
+  exemplos do subject e os casos de borda de cada exercício (entrada
+  inválida, arquivo que não existe, sem permissão, exceções do tipo certo,
+  `finally`, geradores…). O flake8 e o mypy são pulados se não estiverem
+  instalados.
+- Born2beroot: `sudo lightyear test born2beroot`, dentro da VM avaliada,
+  confere a máquina e imprime no terminal: sem interface gráfica, LVM
+  criptografado, AppArmor/SELinux, SSH na 4242 sem root, UFW/firewalld só
+  com a 4242, hostname, usuário nos grupos `sudo` e `user42`, política de
+  senha (login.defs, `chage` e pwquality), regras do sudo e o
+  `monitoring.sh` no cron, rodando cada valor que ele mostra contra os da
+  máquina (vCPUs, memória, último boot, LVM, IP e MAC…).
+
 ## [1.3.0-canary.31] — 2026-10-09
 
 - Editor: Python passa a ter language server mesmo sem nada instalado.

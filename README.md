@@ -144,6 +144,7 @@ lightyear dashboard        # TUI: perfil, ocupação, avaliações, calendário 
 lightyear exam start       # simulador de prova (Exam Rank 02), cronometrado, offline
 lightyear exam practice <ex>  # treina um exercício específico, sem tempo
 lightyear exam grademe     # corrige o exercício atual (status / finish / list)
+lightyear test libft       # testa o seu projeto (na raiz dele): editor + ▶ Rodar testes
 lightyear cache clear      # limpa o cache local de respostas da API
 lightyear update           # atualiza o binário pelo GitHub Releases (--check / -y)
 lightyear version          # versão e novidades dela (ou lightyear --version)
@@ -319,6 +320,36 @@ git push origin v0.1.0
 O workflow [Release](.github/workflows/release.yml) roda o GoReleaser e publica
 os binários em [Releases](https://github.com/nvizble/Lightyear42/releases).
 
+### Testes do projeto (canary)
+
+Rode na raiz do projeto; precisa de `cc`, `make` e `nm` (norminette é opcional).
+
+```bash
+cd ~/libft
+lightyear test libft                        # editor com a árvore de arquivos e o botão ▶ Rodar testes
+lightyear test libft --run                  # sem editor: imprime o resultado e sai com erro se falhar
+lightyear test libft --run --only ft_split  # só uma função
+```
+
+Os testes seguem o subject: README, norminette, Makefile (regras, flags, sem
+relink, `ar`), funções proibidas, variáveis globais e várias dezenas de casos
+por função. Cada caso roda num processo próprio, com um `malloc` do lightyear
+que acusa vazamento, double free, escrita além do bloco e malloc sem proteção
+(cada `malloc` falha, um de cada vez). Nada é compilado na sua pasta.
+
+No editor: `Space e` arquivos, `Space r` roda, `Space t` resultados; clique
+num erro para abrir o código na linha dele.
+
+Também: `lightyear test python-module-00` … `-04` (na pasta com `ex0/`,
+`ex1/`…; flake8 e mypy se instalados) e `sudo lightyear test born2beroot`,
+dentro da VM avaliada (sem editor: confere a máquina e o `monitoring.sh`).
+
+Os testes ficam em `internal/tester/`: `c/<projeto>/` (C, um arquivo por
+função), `py/moduleNN.py` (Python) e `sh/born2beroot.sh`. Cada suíte se testa
+contra uma solução de referência em `testdata/` (a da libft com bugs
+plantados, em `libft_test.go`). Próximos: ft_printf, get_next_line,
+push_swap e os módulos de Python 05–10.
+
 ## Roadmap
 
 1. **Bootstrap** (concluído) — Cobra, config, CI
@@ -330,6 +361,7 @@ os binários em [Releases](https://github.com/nvizble/Lightyear42/releases).
 7. **Self-update** (concluído) — `lightyear update` via GitHub Releases
 8. **Notificações** (concluído) — push no celular via ntfy (`lightyear notify`)
 9. **Simulador de provas** — `lightyear exam` (Exam Rank 02); próximo: TUI examshell
+10. **Testes de projeto** (canary) — `lightyear test` libft, Python 00–04, born2beroot; próximos: ft_printf, get_next_line, push_swap, Python 05–10
 
 Chat/DM no terminal: parked (API sem DMs públicos; fórum ≠ chat).
 
