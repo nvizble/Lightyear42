@@ -9,8 +9,12 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/mman.h>
+#include <sys/resource.h>
 #include <sys/wait.h>
 #include <unistd.h>
+#ifdef __linux__
+# include <sys/prctl.h>
+#endif
 
 /* ---- shared state between a test's child and the runner ---------------- */
 
@@ -46,6 +50,12 @@ void	lt_init(int argc, char **argv)
 		exit(2);
 	}
 	signal(SIGPIPE, SIG_IGN);
+	/* A crashing case must not dump core: with the arena mapped, writing it
+	** out (or handing it to systemd-coredump/apport) takes minutes. */
+	setrlimit(RLIMIT_CORE, &(struct rlimit){0, 0});
+#ifdef __linux__
+	prctl(PR_SET_DUMPABLE, 0, 0, 0, 0);
+#endif
 }
 
 void	lt_group(const char *group)
@@ -378,6 +388,9 @@ static int	arena_init(void)
 
 		if (p != MAP_FAILED)
 		{
+#ifdef MADV_DONTDUMP
+			madvise(p, sizes[i], MADV_DONTDUMP);
+#endif
 			g_arena = p;
 			g_top = p;
 			g_end = g_arena + sizes[i];

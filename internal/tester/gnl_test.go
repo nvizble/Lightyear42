@@ -50,7 +50,7 @@ func TestGNLCatchesBugs(t *testing.T) {
 			"BUFFER_SIZE=42", Timeout, "esperou o fim do arquivo"},
 		{"doesn't check malloc",
 			[]edit{{"get_next_line_utils.c", "\tr = malloc(len + 1);\n\tif (!r)\n\t\treturn (NULL);\n", "\tr = malloc(len + 1);\n"}},
-			"BUFFER_SIZE=42", Crash, "malloc devolvendo NULL"},
+			"BUFFER_SIZE=42", Crash, "º malloc"},
 		{"drops the newline",
 			[]edit{{"get_next_line.c", "\t\tlen = (size_t)(nl - *stash) + 1;", "\t\tlen = (size_t)(nl - *stash);"}},
 			"BUFFER_SIZE=42", KO, "linha 1"},
