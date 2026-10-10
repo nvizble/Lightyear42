@@ -21,6 +21,22 @@ type SlotScaleTeam struct {
 	ID int `json:"id"`
 }
 
+// UnmarshalJSON tolerates the booked scale team being hidden as the string
+// "invisible": the slot is still booked, only the id is unknown.
+func (st *SlotScaleTeam) UnmarshalJSON(data []byte) error {
+	if bytes.Equal(data, invisible) {
+		*st = SlotScaleTeam{}
+		return nil
+	}
+	type plain SlotScaleTeam
+	var v plain
+	if err := json.Unmarshal(data, &v); err != nil {
+		return err
+	}
+	*st = SlotScaleTeam(v)
+	return nil
+}
+
 // Booked reports whether the slot already has a scheduled evaluation.
 func (s *Slot) Booked() bool {
 	return s.ScaleTeam != nil
