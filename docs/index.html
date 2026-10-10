@@ -293,8 +293,8 @@
     <div class="install">
       <div class="term-bar">
         <div class="tabs" role="tablist" aria-label="Sistema">
-          <button class="tab" role="tab" aria-selected="true" data-install="mac">macOS</button>
-          <button class="tab" role="tab" aria-selected="false" data-install="linux">Linux (sem sudo)</button>
+          <button class="tab" role="tab" aria-selected="true" data-install="one">Um comando (sem sudo)</button>
+          <button class="tab" role="tab" aria-selected="false" data-install="mac">macOS</button>
           <button class="tab" role="tab" aria-selected="false" data-install="deb">Ubuntu / Debian</button>
           <button class="tab" role="tab" aria-selected="false" data-install="go">Go</button>
         </div>
@@ -451,15 +451,9 @@ VER=${ver}
 curl -sL "${url("Darwin_arm64.tar.gz")}" | tar -xz lightyear
 sudo mv lightyear /usr/local/bin/
 lightyear version`,
-      linux:
-`VER=${ver}
-mkdir -p ~/.local/bin
-curl -sL "${url("Linux_x86_64.tar.gz")}" | tar -xz -C ~/.local/bin lightyear
-<span class="c"># põe o ~/.local/bin no PATH: no rc do seu shell (uma vez só) e neste terminal</span>
-rc="$HOME/.$(basename "$SHELL")rc"
-grep -qs '.local/bin' "$rc" || echo 'export PATH="$HOME/.local/bin:$PATH"' &gt;&gt; "$rc"
-export PATH="$HOME/.local/bin:$PATH"
-lightyear version`,
+      one:
+`<span class="c"># Linux (como nas máquinas da 42) e macOS: instala em ~/.local/bin e põe no PATH</span>
+curl -fsSL https://nvizble.github.io/Lightyear42/install.sh | sh${chan === "canary" ? " -s -- --canary" : ""}`,
       deb:
 `VER=${ver}
 curl -sLO "${url("linux_amd64.deb")}"
@@ -478,7 +472,7 @@ go install github.com/nvizble/Lightyear42/cmd/lightyear@${chan === "canary" ? "v
   const code = document.getElementById("install-code");
   const installTabs = [...document.querySelectorAll("[data-install]")];
   const chanTabs = [...document.querySelectorAll("[data-channel]")];
-  let current = "mac";
+  let current = "one";
   function snippet() { return installs(versions[channel], channel)[current]; }
   function showInstall(k) {
     current = k;
@@ -493,7 +487,7 @@ go install github.com/nvizble/Lightyear42/cmd/lightyear@${chan === "canary" ? "v
   installTabs.forEach(t => t.addEventListener("click", () => { selectTab(installTabs, t); showInstall(t.dataset.install); }));
   chanTabs.forEach(t => t.addEventListener("click", () => pickChannel(t.dataset.channel)));
   document.querySelectorAll("[data-pick-channel]").forEach(a => a.addEventListener("click", () => pickChannel(a.dataset.pickChannel)));
-  showInstall("mac");
+  showInstall("one");
 
   // Semver comparison (1.2.1 < 1.3.0-canary.2 < 1.3.0-canary.10 < 1.3.0).
   function cmpVer(a, b) {
