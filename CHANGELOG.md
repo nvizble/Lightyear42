@@ -7,6 +7,16 @@ Mudanças visíveis do lightyear, da mais nova para a mais antiga. O
 Versões `-canary.N` são pre-releases: `lightyear update --canary` entra no
 canal canary e `lightyear update --stable` volta para a estável.
 
+## [1.3.0-canary.33] — 2026-10-10
+
+- `lightyear test born2beroot` acusava erro em scripts certos: a memória
+  total do `monitoring.sh` agora vale em MiB (`free -m`), MB (`free --mega`)
+  ou GB, e o percentual é conferido com o usado/total da própria linha. As
+  CPUs físicas valem contadas pelos ids distintos ou pelas linhas de
+  `physical id` (como a maioria dos guias faz).
+- Quando não existe o usuário com o login (tirado do hostname) mas existe
+  outro, como `login42`, o teste diz qual é e confere os grupos dele.
+
 ## [1.3.0-canary.32] — 2026-10-09
 
 - Novo: `lightyear test libft`, na raiz do seu projeto, abre o editor do
