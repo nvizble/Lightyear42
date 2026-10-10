@@ -303,6 +303,22 @@ const char	*lt_captured(size_t *len)
 	return (buf);
 }
 
+int	lt_stdout_begin(void)
+{
+	int	saved;
+
+	saved = dup(1);
+	dup2(lt_capture(), 1);
+	return (saved);
+}
+
+const char	*lt_stdout_end(int saved, size_t *len)
+{
+	dup2(saved, 1);
+	close(saved);
+	return (lt_captured(len));
+}
+
 int	lt_tmpfile(const char *content, size_t len)
 {
 	int		fd;
@@ -396,7 +412,9 @@ static void	*alloc(size_t size, size_t align)
 	h->magic = MAGIC;
 	h->state = LIVE;
 	h->tracked = (unsigned char)g_tracking;
-	memset((char *)payload, 0xbe, size);
+	/* Garbage shows a missing '\0'; past 64 KB it only costs time (a
+	** BUFFER_SIZE of 10000000 allocates 10 MB per call). */
+	memset((char *)payload, 0xbe, size < (1 << 16) ? size : (1 << 16));
 	memset((char *)payload + size, 0xcd, CANARY);
 	g_top = (char *)((payload + size + CANARY + 15) & ~(uintptr_t)15);
 	if (g_tracking)

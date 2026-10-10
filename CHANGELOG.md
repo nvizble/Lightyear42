@@ -7,6 +7,26 @@ Mudanças visíveis do lightyear, da mais nova para a mais antiga. O
 Versões `-canary.N` são pre-releases: `lightyear update --canary` entra no
 canal canary e `lightyear update --stable` volta para a estável.
 
+## [1.3.0-canary.34] — 2026-10-10
+
+- `lightyear test ft_printf`: README, norminette, Makefile, funções
+  permitidas e cada conversão (`cspdiuxX%`) comparada com o `printf` de
+  verdade, saída e retorno, com os casos de borda (`INT_MIN`, `%c` com 0,
+  `%s` NULL, `%p` NULL, `UINT_MAX`…). Também confere que não há buffer (a
+  saída sai na hora, intercalada com `write`) e que devolve -1 quando o
+  `write` falha. O bônus é testado em duas partes (`-0.` com largura, e
+  `# +`), com milhares de combinações de flags, largura e precisão; uma
+  parte não feita aparece como pulada, porque o subject não pede todas.
+- `lightyear test get_next_line`: compila com `-Wall -Wextra -Werror` com e
+  sem `-D BUFFER_SIZE`, confere as funções permitidas (sem `lseek`) e
+  variáveis globais, e roda cerca de 30 casos com cada `BUFFER_SIZE` (1, 2,
+  5, 42, 1000 e 10000000): arquivo vazio, só `\n`, linhas do tamanho do
+  buffer, linha de 100000 caracteres, entrada padrão, pipe que chega aos
+  pedaços, fd inválido, diretório, erro de leitura no meio, sem vazamento
+  no fim e cada malloc falhando. Também acusa quem lê o arquivo inteiro
+  antes de devolver a linha. Com o bônus: vários fds ao mesmo tempo e só
+  uma variável `static`.
+
 ## [1.3.0-canary.33] — 2026-10-10
 
 - `lightyear test born2beroot` acusava erro em scripts certos: a memória
