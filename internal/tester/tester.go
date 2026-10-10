@@ -146,6 +146,8 @@ type Project struct {
 
 var projects = []Project{
 	libft,
+	ftPrintf,
+	getNextLine,
 	pythonModule("00"), pythonModule("01"), pythonModule("02"), pythonModule("03"), pythonModule("04"),
 	born2beroot,
 }

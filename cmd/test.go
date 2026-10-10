@@ -52,6 +52,8 @@ ele mostra) e imprime no terminal.
 
 Projetos: ` + strings.Join(projectNames(), ", ") + `.`,
 		Example: `  cd ~/libft && lightyear test libft
+  cd ~/ft_printf && lightyear test ft_printf
+  cd ~/gnl && lightyear test get_next_line
   cd ~/python00 && lightyear test python-module-00
   sudo lightyear test born2beroot             # dentro da VM avaliada
   lightyear test libft --run                  # sem editor, só o resultado

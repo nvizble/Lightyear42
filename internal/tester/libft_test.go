@@ -29,8 +29,14 @@ type edit struct{ file, old, new string }
 // fixture copies the reference libft into a temp dir and applies edits to it.
 func fixture(t *testing.T, edits ...edit) string {
 	t.Helper()
+	return fixtureOf(t, "libft", edits...)
+}
+
+// fixtureOf copies testdata/<project> into a temp dir and applies edits.
+func fixtureOf(t *testing.T, project string, edits ...edit) string {
+	t.Helper()
 	dir := t.TempDir()
-	if err := copyProject(filepath.Join("testdata", "libft"), dir); err != nil {
+	if err := copyProject(filepath.Join("testdata", project), dir); err != nil {
 		t.Fatal(err)
 	}
 	for _, e := range edits {

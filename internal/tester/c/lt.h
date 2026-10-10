@@ -42,6 +42,12 @@ void		lt_alloc_fails(void *(*call)(void), void (*release)(void *));
 int			lt_capture(void);
 const char	*lt_captured(size_t *len);
 
+/* What a call writes to stdout: lt_stdout_begin() points fd 1 at a
+** temporary file, lt_stdout_end() puts it back and returns what was written
+** (static buffer). */
+int			lt_stdout_begin(void);
+const char	*lt_stdout_end(int saved, size_t *len);
+
 /* Temporary file with the given content, opened for reading. */
 int			lt_tmpfile(const char *content, size_t len);
 

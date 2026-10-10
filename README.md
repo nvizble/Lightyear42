@@ -338,6 +338,10 @@ que acusa vazamento, double free, escrita além do bloco e malloc sem proteção
 No editor: `Space e` arquivos, `Space r` roda, `Space t` resultados; clique
 num erro para abrir o código na linha dele.
 
+`lightyear test ft_printf` e `lightyear test get_next_line` funcionam igual
+(na raiz do projeto); o get_next_line roda com vários `BUFFER_SIZE`, de 1 a
+10000000, e testa o bônus se houver os arquivos `_bonus`.
+
 Também: `lightyear test python-module-00` … `-04` (na pasta com `ex0/`,
 `ex1/`…; flake8 e mypy se instalados) e `sudo lightyear test born2beroot`,
 dentro da VM avaliada (sem editor: confere a máquina e o `monitoring.sh`).
@@ -345,8 +349,8 @@ dentro da VM avaliada (sem editor: confere a máquina e o `monitoring.sh`).
 Os testes ficam em `internal/tester/`: `c/<projeto>/` (C, um arquivo por
 função), `py/moduleNN.py` (Python) e `sh/born2beroot.sh`. Cada suíte se testa
 contra uma solução de referência em `testdata/` (a da libft com bugs
-plantados, em `libft_test.go`). Próximos: ft_printf, get_next_line,
-push_swap e os módulos de Python 05–10.
+plantados, em `libft_test.go`). Próximos: push_swap e os módulos de Python
+05–10.
 
 ## Roadmap
 
@@ -359,7 +363,7 @@ push_swap e os módulos de Python 05–10.
 7. **Self-update** (concluído) — `lightyear update` via GitHub Releases
 8. **Notificações** (concluído) — push no celular via ntfy (`lightyear notify`)
 9. **Simulador de provas** — `lightyear exam` (Exam Rank 02); próximo: TUI examshell
-10. **Testes de projeto** (canary) — `lightyear test` libft, Python 00–04, born2beroot; próximos: ft_printf, get_next_line, push_swap, Python 05–10
+10. **Testes de projeto** (canary) — `lightyear test` libft, ft_printf, get_next_line, Python 00–04, born2beroot; próximos: push_swap, Python 05–10
 
 Chat/DM no terminal: parked (API sem DMs públicos; fórum ≠ chat).
 

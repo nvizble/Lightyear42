@@ -9,8 +9,12 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/mman.h>
+#include <sys/resource.h>
 #include <sys/wait.h>
 #include <unistd.h>
+#ifdef __linux__
+# include <sys/prctl.h>
+#endif
 
 /* ---- shared state between a test's child and the runner ---------------- */
 
@@ -46,6 +50,12 @@ void	lt_init(int argc, char **argv)
 		exit(2);
 	}
 	signal(SIGPIPE, SIG_IGN);
+	/* A crashing case must not dump core: with the arena mapped, writing it
+	** out (or handing it to systemd-coredump/apport) takes minutes. */
+	setrlimit(RLIMIT_CORE, &(struct rlimit){0, 0});
+#ifdef __linux__
+	prctl(PR_SET_DUMPABLE, 0, 0, 0, 0);
+#endif
 }
 
 void	lt_group(const char *group)
@@ -170,7 +180,8 @@ int	lt_end(void)
 	live = lt_live();
 	g_tracking = 0;
 	if (live)
-		lt_fail("vazamento de memória: %zu bloco(s) alocado(s) e não liberado(s)", live);
+		lt_fail("vazamento de memória: %zu bloco(s) alocado(s) e não liberado(s) no fim"
+			" (o que ficou guardado numa static também conta: tudo tem que ser liberado)", live);
 	_exit(0);
 }
 
@@ -303,6 +314,22 @@ const char	*lt_captured(size_t *len)
 	return (buf);
 }
 
+int	lt_stdout_begin(void)
+{
+	int	saved;
+
+	saved = dup(1);
+	dup2(lt_capture(), 1);
+	return (saved);
+}
+
+const char	*lt_stdout_end(int saved, size_t *len)
+{
+	dup2(saved, 1);
+	close(saved);
+	return (lt_captured(len));
+}
+
 int	lt_tmpfile(const char *content, size_t len)
 {
 	int		fd;
@@ -361,6 +388,9 @@ static int	arena_init(void)
 
 		if (p != MAP_FAILED)
 		{
+#ifdef MADV_DONTDUMP
+			madvise(p, sizes[i], MADV_DONTDUMP);
+#endif
 			g_arena = p;
 			g_top = p;
 			g_end = g_arena + sizes[i];
@@ -396,7 +426,9 @@ static void	*alloc(size_t size, size_t align)
 	h->magic = MAGIC;
 	h->state = LIVE;
 	h->tracked = (unsigned char)g_tracking;
-	memset((char *)payload, 0xbe, size);
+	/* Garbage shows a missing '\0'; past 64 KB it only costs time (a
+	** BUFFER_SIZE of 10000000 allocates 10 MB per call). */
+	memset((char *)payload, 0xbe, size < (1 << 16) ? size : (1 << 16));
 	memset((char *)payload + size, 0xcd, CANARY);
 	g_top = (char *)((payload + size + CANARY + 15) & ~(uintptr_t)15);
 	if (g_tracking)
