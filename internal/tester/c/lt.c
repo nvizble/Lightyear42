@@ -170,7 +170,8 @@ int	lt_end(void)
 	live = lt_live();
 	g_tracking = 0;
 	if (live)
-		lt_fail("vazamento de memória: %zu bloco(s) alocado(s) e não liberado(s)", live);
+		lt_fail("vazamento de memória: %zu bloco(s) alocado(s) e não liberado(s) no fim"
+			" (o que ficou guardado numa static também conta: tudo tem que ser liberado)", live);
 	_exit(0);
 }
 
