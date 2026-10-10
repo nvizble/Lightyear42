@@ -207,16 +207,29 @@ if printf '%s' "$HOST" | grep -qE '42$'; then ok "hostname termina em 42 ($HOST)
 if [ -n "$1" ]; then
 	if [ "$HOST" = "${1}42" ]; then ok "hostname é ${1}42"; else ko "hostname é ${1}42" "hostname: $HOST"; fi
 fi
-if id "$LOGIN" >/dev/null 2>&1; then
-	ok "usuário $LOGIN existe"
-	groups_of=$(id -nG "$LOGIN")
-	sudo_group=sudo
+check_groups() { # user
+	local groups_of sudo_group=sudo g
+	groups_of=$(id -nG "$1")
 	[ "$ROCKY" = 1 ] && sudo_group=wheel
 	for g in user42 "$sudo_group"; do
-		if printf ' %s ' "$groups_of" | grep -q " $g "; then ok "$LOGIN está no grupo $g"; else ko "$LOGIN está no grupo $g" "grupos de $LOGIN: $groups_of"; fi
+		if printf ' %s ' "$groups_of" | grep -q " $g "; then ok "$1 está no grupo $g"; else ko "$1 está no grupo $g" "grupos de $1: $groups_of"; fi
 	done
+}
+if id "$LOGIN" >/dev/null 2>&1; then
+	ok "usuário $LOGIN existe"
+	check_groups "$LOGIN"
 else
-	ko "usuário $LOGIN existe" "não há usuário $LOGIN (o login vem do hostname; passe outro: bash born2beroot.sh <login>)"
+	# A common slip: the user named like the hostname (login42), or some
+	# other name; say who is there and still check their groups.
+	alt=""
+	id "$HOST" >/dev/null 2>&1 && alt="$HOST"
+	[ -z "$alt" ] && alt=$(getent group user42 | cut -d: -f4 | cut -d, -f1)
+	if [ -n "$alt" ]; then
+		ko "usuário $LOGIN existe" "não há usuário $LOGIN, mas existe $alt: o subject pede um usuário com o login (sem o 42). Se o login não for $LOGIN, passe o certo: bash born2beroot.sh <login>"
+		check_groups "$alt"
+	else
+		ko "usuário $LOGIN existe" "não há usuário $LOGIN (o login vem do hostname; passe outro: bash born2beroot.sh <login>)"
+	fi
 fi
 if getent group user42 >/dev/null; then ok "grupo user42 existe"; else ko "grupo user42 existe" "getent group user42 não achou"; fi
 
@@ -332,14 +345,45 @@ else
 		# Each item: label pattern, then what must be in that line.
 		l=$(line 'arch'); if printf '%s' "$l" | grep -qF "$(uname -r)" && printf '%s' "$l" | grep -qF "$(uname -m)"; then ok "arquitetura e kernel"; else ko "arquitetura e kernel" "esperado $(uname -r) e $(uname -m), recebido: ${l:-nada}"; fi
 		pcpu=$(grep 'physical id' /proc/cpuinfo | sort -u | wc -l)
-		want="$pcpu"
+		plines=$(grep -c 'physical id' /proc/cpuinfo)
+		# Distinct ids is the right count, but most guides count the
+		# "physical id" lines (one per vCPU); both are accepted.
+		want="($pcpu|$plines)"
 		[ "$pcpu" = 0 ] && want="[01]" # no "physical id" in /proc/cpuinfo: 0 or 1 are both fair
-		l=$(line 'physical'); if printf '%s' "$l" | grep -qE "(^|[^0-9])$want([^0-9]|$)"; then ok "CPUs físicas ($pcpu)"; else ko "CPUs físicas" "esperado $pcpu, recebido: ${l:-nada}"; fi
+		l=$(line 'physical'); if printf '%s' "$l" | grep -qE "(^|[^0-9])$want([^0-9]|$)"; then ok "CPUs físicas ($pcpu)"; else
+			expect="$pcpu (ou $plines, contando as linhas de physical id)"
+			[ "$pcpu" = 0 ] && expect="0 ou 1 (o /proc/cpuinfo não tem physical id)"
+			ko "CPUs físicas" "esperado $expect, recebido: ${l:-nada}"
+		fi
 		vcpu=$(grep -c '^processor' /proc/cpuinfo)
 		l=$(line 'vcpu|virtual'); if printf '%s' "$l" | grep -qE "(^|[^0-9])$vcpu([^0-9]|$)"; then ok "vCPUs ($vcpu)"; else ko "vCPUs" "esperado $vcpu, recebido: ${l:-nada}"; fi
 		l=$(line 'mem|ram'); if printf '%s' "$l" | grep -qE '[0-9]+(\.[0-9]+)?%'; then ok "uso de memória (com %)"; else ko "uso de memória (com %)" "recebido: ${l:-nada}"; fi
-		total=$(free -m | awk '/^Mem:/ {print $2}')
-		if printf '%s' "$l" | grep -qE "(^|[^0-9])$total([^0-9]|$)|(^|[^0-9])$((total - 1))([^0-9]|$)|(^|[^0-9])$((total + 1))([^0-9]|$)"; then ok "memória total ($total MB)"; else ko "memória total" "esperado $total MB (free -m), recebido: ${l:-nada}"; fi
+		# The total in any unit a script may use: MiB (free -m), MB (free
+		# --mega), GiB or GB with decimals (free -h); 2% of slack for rounding.
+		kib=$(awk '/^MemTotal:/ {print $2}' /proc/meminfo)
+		units=$(awk -v k="$kib" 'BEGIN {printf "%.0f MiB, %.0f MB, %.1f GiB", k/1024, k*1024/1e6, k/1048576}')
+		if printf '%s' "$l" | tr -c '0-9.\n' ' ' | awk -v k="$kib" '
+			{ for (i = 1; i <= NF; i++) {
+				n = $i + 0
+				split(k/1024 " " k*1024/1e6 " " k/1048576 " " k*1024/1e9, c, " ")
+				for (j in c) if (n > 0 && (n - c[j])^2 <= (c[j] * 0.02)^2 + (j > 2 ? 0.01 : 0)) found = 1
+			} }
+			END { exit !found }'; then
+			ok "memória total ($units)"
+		else
+			ko "memória total" "esperado $units, recebido: ${l:-nada}"
+		fi
+		# The percentage must match the used/total the script itself prints.
+		pct=$(printf '%s' "$l" | awk '{
+			if (match($0, /[0-9.]+ *\/ *[0-9.]+/)) { split(substr($0, RSTART, RLENGTH), f, "/"); u = f[1] + 0; t = f[2] + 0 }
+			if (match($0, /[0-9.]+ *%/)) p = substr($0, RSTART, RLENGTH) + 0
+			if (t > 0 && p != "") { d = u / t * 100 - p; print (d < 0 ? -d : d) <= 1 ? "ok" : sprintf("%.2f", u / t * 100) }
+		}')
+		case "$pct" in
+			ok) ok "o percentual de memória bate com usado/total" ;;
+			"") skip "o percentual de memória bate com usado/total" "não achei usado/total (N%) na linha" ;;
+			*) ko "o percentual de memória bate com usado/total" "pelos números da linha daria $pct%, recebido: $l" ;;
+		esac
 		l=$(line 'disk|storage'); if printf '%s' "$l" | grep -qE '[0-9]+(\.[0-9]+)?%'; then ok "uso de disco (com %)"; else ko "uso de disco (com %)" "recebido: ${l:-nada}"; fi
 		l=$(line 'cpu load|cpu usage|load'); if printf '%s' "$l" | grep -qE '[0-9]+(\.[0-9]+)?%'; then ok "uso de CPU (com %)"; else ko "uso de CPU (com %)" "recebido: ${l:-nada}"; fi
 		boot=$(who -b 2>/dev/null | awk '{print $3" "$4}')
