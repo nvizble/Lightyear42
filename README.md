@@ -21,6 +21,18 @@ CLI moderna, open source, para a [42 Network](https://www.42network.org/), inspi
 > **Campus 42:** o Go do campus costuma ser **1.23**, enquanto o lightyear exige **1.25+**.
 > Prefira o binário do Release ou o `.deb` — não depende do Go instalado.
 
+### Um comando (Linux e macOS, sem sudo)
+
+```bash
+curl -fsSL https://nvizble.github.io/Lightyear42/install.sh | sh
+```
+
+Baixa o release do seu sistema (Linux ou macOS, x86_64 ou arm64), confere o
+sha256, instala em `~/.local/bin` e põe essa pasta no PATH no rc do seu shell
+(abra um terminal novo depois). Funciona nas máquinas da 42, sem sudo. Sem
+curl, troque por `wget -qO- … | sh`. Opções: `| sh -s -- --canary` (a canary
+mais nova), `--version 1.2.1`, `--dir ~/bin`.
+
 ### Ubuntu / Debian (`.deb`)
 
 ```bash
@@ -30,21 +42,7 @@ curl -sLO "https://github.com/nvizble/Lightyear42/releases/download/v${VER}/ligh
 sudo apt install "./lightyear_${VER}_linux_amd64.deb"
 lightyear version
 ```
-(Para ARM64: `linux_arm64.deb`. Sem `sudo`, use o tarball em `~/.local/bin` — veja abaixo.)
-
-Sem sudo
-```bash
-# amd64 (x86_64) — ajuste a versão/arch se necessário
-VER=1.2.0
-mkdir -p ~/.local/bin
-curl -sL "https://github.com/nvizble/Lightyear42/releases/download/v${VER}/lightyear_${VER}_Linux_x86_64.tar.gz" \
-  | tar -xz -C ~/.local/bin lightyear
-# põe o ~/.local/bin no PATH: no rc do seu shell (uma vez só) e neste terminal
-rc="$HOME/.$(basename "$SHELL")rc"
-grep -qs '.local/bin' "$rc" || echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$rc"
-export PATH="$HOME/.local/bin:$PATH"
-lightyear version
-```
+(Para ARM64: `linux_arm64.deb`. Sem `sudo`, use o comando de cima.)
 
 ### Binário (macOS / Linux / Windows)
 
