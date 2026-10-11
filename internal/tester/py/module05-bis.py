@@ -600,7 +600,7 @@ atexit.register(shutil.rmtree, tmp, True)
 """
 
 DEV = {"MATRIX_MODE": "development", "DATABASE_URL": "postgresql://localhost:5432/zion",
-       "API_KEY": "lt-secret-4242-xyz", "LOG_LEVEL": "DEBUG", "ZION_ENDPOINT": "https://zion.example.com/api"}
+       "API_KEY": "fake-api-key-for-tests", "LOG_LEVEL": "DEBUG", "ZION_ENDPOINT": "https://zion.example.com/api"}
 WARN = ("missing", "not set", "warn", "default", "not found", "not configured", "unset", "no .env", "not defined")
 
 
