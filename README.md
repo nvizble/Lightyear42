@@ -2,6 +2,8 @@
 
 CLI moderna, open source, para a [42 Network](https://www.42network.org/), inspirada em ferramentas como `gh`, `docker` e `kubectl`.
 
+**Site:** [nvizble.github.io/Lightyear42](https://nvizble.github.io/Lightyear42/) · **Wiki:** [nvizble.github.io/Lightyear42/wiki](https://nvizble.github.io/Lightyear42/wiki/) · **Instalar:** `curl -fsSL https://tinyurl.com/lightyear42 | sh`
+
 > Binário/comando: **`lightyear`** (antes `42`).
 
 **Site:** [nvizble.github.io/Lightyear42](https://nvizble.github.io/Lightyear42/)

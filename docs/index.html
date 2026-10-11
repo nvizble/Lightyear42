@@ -4,180 +4,153 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>lightyear: a 42 inteira, direto do terminal</title>
-<meta name="description" content="CLI open source para a 42 Network: perfil, avaliações, notificações no celular, mapa do campus, slots e um simulador de provas offline com os 56 exercícios do Exam Rank 02.">
+<meta name="description" content="CLI open source para a 42 Network: perfil, avaliações, notificações no celular, mapa do campus, slots, simulador de provas offline e testes automáticos dos seus projetos.">
 <meta property="og:title" content="lightyear: a 42 inteira, direto do terminal">
-<meta property="og:description" content="CLI open source para a 42 Network, com simulador de provas offline.">
+<meta property="og:description" content="CLI open source para a 42 Network, com simulador de provas offline e testes dos seus projetos.">
 <meta property="og:type" content="website">
-<meta name="theme-color" content="#0b0b0c">
+<meta name="theme-color" content="#0a0a0b">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;800;900&family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Inter+Tight:wght@600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/site.css">
 <style>
-  :root {
-    --bg: #0b0b0c; --panel: #121214; --panel-2: #161616; --line: #2a2a2a; --line-soft: #1c1c1c;
-    --text: #f3f3f3; --text-2: #cfcfcf; --muted: #9a9a9a; --dim: #858585;
-    --green: #0ecb81; --red: #f6465d; --blue: #39a0ff; --orange: #ffaf00;
-    --sans: "DM Sans", system-ui, sans-serif; --head: "Archivo", system-ui, sans-serif;
-    --mono: "DM Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
-  }
-  * { box-sizing: border-box; }
-  [hidden] { display: none !important; }
-  html { scroll-behavior: smooth; }
-  body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.6 var(--sans); -webkit-font-smoothing: antialiased; }
-  a { color: inherit; }
-  :focus-visible { outline: 2px solid var(--green); outline-offset: 3px; border-radius: 4px; }
-  .wrap { max-width: 1120px; margin: 0 auto; padding: 0 24px; }
-  .mono { font-family: var(--mono); }
-  .eyebrow { font: 500 12px/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--dim); }
-
-  /* nav */
-  nav { position: sticky; top: 0; z-index: 10; background: rgba(11,11,12,.82); backdrop-filter: blur(10px); border-bottom: 1px solid var(--line-soft); }
-  nav .wrap { display: flex; align-items: center; gap: 28px; height: 60px; }
-  .logo { font: 500 16px var(--mono); text-decoration: none; display: flex; align-items: center; gap: 8px; }
-  .logo b { color: var(--green); font-weight: 500; }
-  nav .links { display: flex; gap: 22px; margin-left: auto; font-size: 14px; color: var(--muted); }
-  nav .links a { text-decoration: none; }
-  nav .links a:hover { color: var(--text); }
-  .btn { display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 16px; border-radius: 8px; font: 500 14px var(--sans); text-decoration: none; border: 1px solid var(--line); background: var(--panel-2); color: var(--text); cursor: pointer; transition: border-color .15s, background .15s; }
-  .btn:hover { border-color: #444; background: #1c1c1c; }
-  .btn.primary { background: var(--text); color: var(--bg); border-color: var(--text); }
-  .btn.primary:hover { background: #fff; }
-
   /* hero */
-  header.hero { padding: 88px 0 56px; }
-  .hero h1 { font: 900 clamp(40px, 7vw, 76px)/1.02 var(--head); letter-spacing: -.03em; margin: 18px 0 20px; max-width: 14ch; }
-  .hero h1 span { color: var(--green); }
-  .hero p.lead { font-size: 19px; color: var(--text-2); max-width: 60ch; margin: 0 0 32px; }
-  .cta { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
-  .copyline { display: inline-flex; align-items: center; gap: 10px; height: 40px; padding: 0 6px 0 14px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); font: 13px var(--mono); color: var(--text-2); }
-  .copyline .p { color: var(--green); }
+  .hero { position: relative; padding: 96px 0 40px; overflow: hidden; }
+  .hero::before { content: ""; position: absolute; inset: -40% -10% auto; height: 640px; background: radial-gradient(50% 50% at 50% 50%, rgba(16, 201, 138, .14), transparent 70%); pointer-events: none; }
+  .hero .wrap { position: relative; }
+  .hero h1 { font: 800 clamp(42px, 6.6vw, 72px)/1.03 var(--head); letter-spacing: -.035em; margin: 22px 0 20px; max-width: 15ch; }
+  .hero h1 em { font-style: normal; color: var(--green); }
+  .hero .lead { font-size: 19px; color: var(--text-2); max-width: 58ch; margin: 0 0 36px; }
+  .hero-install { display: grid; gap: 12px; max-width: 680px; }
+  .hero-install .row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .hero-install .note { font-size: 13.5px; color: var(--dim); }
+  .hero-install .note a { color: var(--muted); }
+  .hero-actions { display: flex; gap: 10px; margin-top: 28px; flex-wrap: wrap; }
+  .hero .term { margin-top: 64px; }
+  .hero .term pre { min-height: 340px; }
 
-  /* terminal */
-  .term { margin-top: 56px; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); overflow: hidden; box-shadow: 0 30px 80px -30px rgba(14,203,129,.18); }
-  .term-bar { display: flex; align-items: center; gap: 14px; padding: 0 12px; height: 46px; border-bottom: 1px solid var(--line-soft); background: var(--panel-2); overflow-x: auto; }
-  .dots { display: flex; gap: 6px; flex: none; }
-  .dots i { width: 11px; height: 11px; border-radius: 50%; background: #2f2f33; display: block; }
-  .tabs { display: flex; gap: 4px; }
-  .tab { font: 12px var(--mono); color: var(--muted); background: none; border: 1px solid transparent; border-radius: 6px; padding: 6px 10px; cursor: pointer; white-space: nowrap; }
-  .tab:hover { color: var(--text); }
-  .tab[aria-selected="true"] { color: var(--text); background: #1f1f22; border-color: var(--line); }
-  .term pre { margin: 0; padding: 22px 24px 28px; min-height: 380px; font: 13.5px/1.6 var(--mono); color: var(--text-2); overflow-x: auto; white-space: pre; }
-  .term .cmd { color: var(--text); }
-  .term .pr { color: var(--green); }
-  .g { color: var(--green); } .r { color: var(--red); } .b { color: var(--blue); font-weight: 500; } .o { color: var(--orange); font-weight: 500; } .d { color: var(--dim); }
-  .caret { display: inline-block; width: 8px; height: 1.1em; background: var(--text); vertical-align: -2px; animation: blink 1s steps(1) infinite; }
-  @keyframes blink { 50% { opacity: 0; } }
-
-  /* strip */
-  .strip { display: grid; grid-template-columns: repeat(4, 1fr); border-top: 1px solid var(--line-soft); border-bottom: 1px solid var(--line-soft); margin-top: 72px; }
-  .strip div { padding: 26px 24px; border-right: 1px solid var(--line-soft); }
-  .strip div:last-child { border-right: 0; }
-  .strip b { display: block; font: 800 30px/1.1 var(--head); letter-spacing: -.02em; }
-  .strip span { font: 12px var(--mono); color: var(--dim); text-transform: uppercase; letter-spacing: .08em; }
+  /* stats */
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); margin-top: 56px; border: 1px solid var(--line-soft); border-radius: var(--radius); overflow: hidden; }
+  .stats div { padding: 22px 24px; border-right: 1px solid var(--line-soft); background: var(--bg); }
+  .stats div:last-child { border-right: 0; }
+  .stats b { display: block; font: 700 28px/1.1 var(--head); letter-spacing: -.02em; }
+  .stats span { font-size: 13px; color: var(--dim); }
 
   /* sections */
-  section { padding: 96px 0 0; }
-  h2 { font: 800 clamp(30px, 4.4vw, 46px)/1.08 var(--head); letter-spacing: -.025em; margin: 14px 0 16px; max-width: 22ch; }
-  .sub { color: var(--muted); max-width: 62ch; margin: 0 0 40px; font-size: 17px; }
-  .grid { display: grid; grid-template-columns: repeat(3, 1fr); border: 1px solid var(--line-soft); border-radius: 12px; overflow: hidden; }
-  .card { padding: 26px; border-right: 1px solid var(--line-soft); border-bottom: 1px solid var(--line-soft); background: var(--bg); transition: background .15s; }
-  .card:hover { background: var(--panel); }
-  .grid .card:nth-child(3n) { border-right: 0; }
-  .grid .card:nth-last-child(-n+3) { border-bottom: 0; }
-  .card code { font: 500 13px var(--mono); color: var(--green); }
-  .card h3 { font: 700 18px/1.3 var(--sans); margin: 12px 0 6px; }
-  .card p { margin: 0; color: var(--muted); font-size: 15px; }
-  .tag.canary, .eyebrow .tag { background: var(--orange); }
-  .eyebrow a { color: var(--orange); text-decoration: none; }
-  .eyebrow a:hover { text-decoration: underline; }
-  .channels { display: inline-flex; gap: 4px; padding: 4px; margin-bottom: 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); }
-  .chan { font: 500 13px var(--sans); color: var(--muted); background: none; border: 0; border-radius: 7px; padding: 8px 14px; cursor: pointer; }
-  .chan .mono { font-size: 12px; margin-left: 6px; color: var(--dim); }
-  .chan[aria-selected="true"] { color: var(--bg); background: var(--text); }
-  .chan[aria-selected="true"] .mono { color: #444; }
-  .chan[data-channel="canary"][aria-selected="true"] { background: var(--orange); }
-  #app-screen { min-height: 0; }
-  #theme-screen { min-height: 0; }
+  section { padding: 112px 0 0; }
+  .sec-head { max-width: 720px; margin-bottom: 44px; }
+  h2 { font: 800 clamp(30px, 4.2vw, 44px)/1.1 var(--head); letter-spacing: -.028em; margin: 14px 0 14px; }
+  .sub { color: var(--muted); font-size: 17.5px; margin: 0; }
+
+  /* function index */
+  .index { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+  .index a { display: block; padding: 16px 18px; border: 1px solid var(--line-soft); border-radius: 10px; background: var(--bg-2); text-decoration: none; transition: border-color .15s, background .15s; }
+  .index a:hover { border-color: var(--line); background: var(--panel); }
+  .index b { display: block; font: 600 15px var(--sans); margin-bottom: 2px; }
+  .index span { font: 12px var(--mono); color: var(--dim); }
+  .index .tag { margin-left: 6px; }
+
+  /* one section per function */
+  .feature { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 56px; align-items: center; padding: 72px 0; border-top: 1px solid var(--line-soft); }
+  .feature.flip { grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); }
+  .feature.flip .feature-text { order: 2; }
+  .feature-text .num { font: 600 12px var(--mono); color: var(--dim); letter-spacing: .1em; }
+  .feature-text h3 { font: 700 30px/1.15 var(--head); letter-spacing: -.02em; margin: 10px 0 12px; }
+  .feature-text p { color: var(--muted); margin: 0 0 18px; }
+  .feature-text ul { list-style: none; margin: 0 0 22px; padding: 0; display: grid; gap: 8px; }
+  .feature-text li { position: relative; padding-left: 22px; color: var(--text-2); font-size: 15px; }
+  .feature-text li::before { content: ""; position: absolute; left: 2px; top: .62em; width: 8px; height: 8px; border-radius: 2px; background: var(--green-soft); border: 1px solid rgba(16, 201, 138, .5); }
+  .cmds { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 20px; }
+  .cmds code { font: 12.5px var(--mono); color: var(--text); background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 3px 8px; }
+  .more { font-size: 14.5px; font-weight: 600; color: var(--green); text-decoration: none; }
+  .more:hover { text-decoration: underline; }
+  .tag { font: 600 10px var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--bg); background: var(--green); border-radius: 4px; padding: 2px 6px; vertical-align: 3px; }
+  .tag.canary { background: var(--orange); }
+  #app-screen, #theme-screen { min-height: 0; }
   #theme-screen.light { background: #fff; color: #1f2328; }
   #theme-screen.light .d { color: #8c959f; }
   .app-btn { all: unset; cursor: pointer; border-radius: 3px; }
   .app-btn:hover { background: #2a2a2e; }
   .app-btn:focus-visible { outline: 1px solid var(--green); }
-  .app-on { color: #0b0b0c; background: var(--green); font-weight: 500; }
+  .app-on { color: #0a0a0b; background: var(--green); font-weight: 500; }
   .app-on:hover { background: var(--green); }
   .app-key { color: var(--blue); font-weight: 500; }
-  .tag { font: 500 10px var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--bg); background: var(--green); border-radius: 4px; padding: 2px 6px; margin-left: 8px; vertical-align: 2px; }
-
-  .split { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: start; }
-  .steps { list-style: none; padding: 0; margin: 0; counter-reset: s; }
-  .steps li { counter-increment: s; position: relative; padding: 0 0 26px 52px; border-left: 1px solid var(--line); margin-left: 15px; }
-  .steps li:last-child { border-left-color: transparent; padding-bottom: 0; }
-  .steps li::before { content: counter(s); position: absolute; left: -16px; top: -2px; width: 31px; height: 31px; border-radius: 50%; display: grid; place-items: center; font: 500 13px var(--mono); background: var(--panel-2); border: 1px solid var(--line); }
-  .steps b { display: block; font-weight: 700; }
-  .steps code { font: 13px var(--mono); color: var(--green); }
-  .steps p { margin: 4px 0 0; color: var(--muted); font-size: 15px; }
-  .checks { list-style: none; padding: 0; margin: 0; display: grid; gap: 14px; }
-  .checks li { padding: 18px 20px; border: 1px solid var(--line-soft); border-radius: 10px; background: var(--panel); color: var(--text-2); font-size: 15px; }
-  .checks li b { color: var(--text); }
 
   /* install */
-  .install { border: 1px solid var(--line); border-radius: 12px; overflow: hidden; background: var(--panel); }
-  .install .term-bar { gap: 4px; }
-  .install pre { margin: 0; padding: 22px 24px; font: 13.5px/1.7 var(--mono); color: var(--text-2); overflow-x: auto; }
+  .install { border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; background: var(--bg-2); }
+  .install pre { margin: 0; padding: 22px 24px; font: 13.5px/1.75 var(--mono); color: var(--text-2); overflow-x: auto; }
   .install pre .c { color: var(--dim); }
   .install-foot { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 12px 16px 12px 24px; border-top: 1px solid var(--line-soft); font-size: 14px; color: var(--muted); flex-wrap: wrap; }
-  .copy { font: 500 12px var(--mono); }
+  .install-top { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 14px; flex-wrap: wrap; }
 
-  /* oss */
-  .oss { margin-top: 96px; border: 1px solid var(--line); border-radius: 16px; padding: 56px; background: radial-gradient(120% 140% at 100% 0%, rgba(14,203,129,.12), transparent 55%), var(--panel); }
-  .oss h2 { max-width: 18ch; }
-  .oss .cta { margin-top: 8px; }
-  .credits { margin-top: 28px; font-size: 14px; color: var(--dim); max-width: 70ch; }
+  /* cta */
+  .cta-box { margin-top: 112px; border: 1px solid var(--line); border-radius: 18px; padding: 56px; background: radial-gradient(90% 120% at 100% 0%, rgba(16, 201, 138, .13), transparent 55%), var(--panel); display: grid; grid-template-columns: 1.3fr 1fr; gap: 40px; align-items: center; }
+  .cta-box h2 { margin-top: 10px; }
+  .cta-box .actions { display: grid; gap: 10px; justify-items: start; }
+  .credits { margin-top: 28px; font-size: 13.5px; color: var(--dim); max-width: 80ch; }
+  .credits a { color: var(--muted); }
 
-  footer { margin-top: 96px; border-top: 1px solid var(--line-soft); padding: 28px 0 40px; color: var(--dim); font: 13px var(--mono); }
-  footer .wrap { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
-  footer a { text-decoration: none; } footer a:hover { color: var(--text); }
-
-  @media (max-width: 860px) {
-    nav .links a.hide-sm { display: none; }
-    .strip { grid-template-columns: repeat(2, 1fr); }
-    .strip div:nth-child(2) { border-right: 0; }
-    .strip div:nth-child(-n+2) { border-bottom: 1px solid var(--line-soft); }
-    .grid { grid-template-columns: 1fr; }
-    .grid .card { border-right: 0 !important; border-bottom: 1px solid var(--line-soft) !important; }
-    .grid .card:last-child { border-bottom: 0 !important; }
-    .split { grid-template-columns: 1fr; }
-    .oss { padding: 32px 24px; }
-    .term pre { font-size: 12px; min-height: 300px; }
+  @media (max-width: 960px) {
+    .feature, .feature.flip { grid-template-columns: 1fr; gap: 28px; }
+    .feature.flip .feature-text { order: 0; }
+    .index { grid-template-columns: repeat(2, 1fr); }
+    .cta-box { grid-template-columns: 1fr; padding: 36px 26px; }
   }
-  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } .caret { animation: none; } }
+  @media (max-width: 640px) {
+    .stats { grid-template-columns: repeat(2, 1fr); }
+    .stats div:nth-child(2) { border-right: 0; }
+    .stats div:nth-child(-n+2) { border-bottom: 1px solid var(--line-soft); }
+    .index { grid-template-columns: 1fr; }
+    .term pre { font-size: 11.5px; }
+  }
 </style>
 </head>
 <body>
+<a class="skip" href="#top">Pular para o conteúdo</a>
 
-<nav aria-label="Principal">
+<header class="nav">
   <div class="wrap">
-    <a class="logo" href="#top"><b>✦</b>lightyear</a>
-    <div class="links">
-      <a href="#recursos" class="hide-sm">Recursos</a>
-      <a href="#exam" class="hide-sm">Simulador</a>
-      <a href="#canary" class="hide-sm" data-canary-only>Canary</a>
-      <a href="#instalar">Instalar</a>
-      <a href="https://github.com/nvizble/Lightyear42">GitHub</a>
-    </div>
+    <a class="logo" href="#top"><span class="mark">✦</span>lightyear</a>
+    <span class="pill hide-sm" title="Versão estável"><i></i><span data-ver="stable">v1.2.1</span></span>
+    <nav class="links" aria-label="Principal">
+      <a href="#funcoes" class="hide-sm">Funções</a>
+      <a href="#instalar" class="hide-sm">Instalar</a>
+      <a href="wiki/">Wiki</a>
+      <a href="https://github.com/nvizble/Lightyear42" class="hide-sm">GitHub</a>
+      <a class="btn small primary" href="#instalar">Instalar</a>
+    </nav>
   </div>
-</nav>
+</header>
 
 <main id="top">
-<header class="hero">
+<section class="hero" style="padding-top:96px">
   <div class="wrap">
-    <div class="eyebrow"><span data-ver="stable">v1.2.1</span> estável<span data-canary-only> · <a href="#canary">canary <span data-ver="canary">v1.3.0-canary.3</span> →</a></span> · open source · MIT · feito por cadetes da 42</div>
-    <h1>A 42 inteira, direto do <span>terminal.</span></h1>
-    <p class="lead">Perfil, projetos, avaliações, notificação no celular, mapa do campus, slots, subjects e um simulador de provas com o Exam Rank 02 inteiro. Tudo numa CLI só, rápida, que você instala com um comando.</p>
-    <div class="cta">
-      <a class="btn primary" href="#instalar">Instalar o lightyear</a>
-      <a class="btn" href="https://github.com/nvizble/Lightyear42">★ Ver no GitHub</a>
-      <span class="copyline"><span class="p">$</span>lightyear exam start <button class="btn copy" style="height:28px;padding:0 10px" data-copy="lightyear exam start">copiar</button></span>
+    <span class="eyebrow">CLI open source para a 42 Network</span>
+    <h1>A 42 inteira, direto do <em>terminal.</em></h1>
+    <p class="lead">Perfil, avaliações, slots, mapa do campus, subjects, notificações no celular, um simulador de provas offline e testes automáticos dos seus projetos. Um binário só, sem dependências.</p>
+
+    <div class="hero-install" id="hero-install">
+      <div class="row">
+        <div class="seg" role="tablist" aria-label="Ferramenta">
+          <button role="tab" aria-selected="true" data-tool="curl">curl</button>
+          <button role="tab" aria-selected="false" data-tool="wget">wget</button>
+        </div>
+        <div class="seg" role="tablist" aria-label="Canal" data-canary-only>
+          <button role="tab" aria-selected="true" data-channel="stable">Estável <span data-ver="stable">v1.2.1</span></button>
+          <button role="tab" aria-selected="false" data-channel="canary">Canary <span data-ver="canary">v1.3.0-canary.3</span></button>
+        </div>
+      </div>
+      <div class="install-line">
+        <code><span class="p">$</span><span id="hero-cmd">curl -fsSL https://tinyurl.com/lightyear42 | sh</span></code>
+        <button type="button" id="hero-copy">Copiar</button>
+      </div>
+      <p class="note">Linux (como nas máquinas da 42) e macOS. Sem sudo: instala em <span class="mono">~/.local/bin</span>, confere o sha256 e põe no PATH. <a href="#instalar">Outras formas</a> · <a href="wiki/instalacao.html">Guia de instalação</a></p>
+    </div>
+
+    <div class="hero-actions">
+      <a class="btn primary" href="wiki/primeiros-passos.html">Primeiros passos</a>
+      <a class="btn" href="#funcoes">Ver as funções</a>
+      <a class="btn ghost" href="https://github.com/nvizble/Lightyear42">★ GitHub</a>
     </div>
 
     <div class="term" role="region" aria-label="Demonstração no terminal">
@@ -187,108 +160,346 @@
           <button class="tab" role="tab" aria-selected="true" data-demo="start">exam start</button>
           <button class="tab" role="tab" aria-selected="false" data-demo="fail">grademe ✗</button>
           <button class="tab" role="tab" aria-selected="false" data-demo="ok">grademe ✓</button>
-          <button class="tab" role="tab" aria-selected="false" data-demo="notify">notify</button>
+          <button class="tab" role="tab" aria-selected="false" data-demo="test">test libft</button>
           <button class="tab" role="tab" aria-selected="false" data-demo="help">--help</button>
         </div>
       </div>
       <pre id="screen" aria-live="polite"></pre>
     </div>
 
-    <div class="strip">
+    <div class="stats">
       <div><b>20+</b><span>comandos</span></div>
-      <div><b>56</b><span>exercícios do exam rank 02</span></div>
-      <div><b>EN · PT</b><span>enunciados</span></div>
-      <div><b>3 SOs</b><span>macOS · Linux · Windows</span></div>
-    </div>
-  </div>
-</header>
-
-<section id="recursos">
-  <div class="wrap">
-    <div class="eyebrow">Recursos</div>
-    <h2>Tudo que você abre a Intra para ver, agora num comando.</h2>
-    <p class="sub">Usa a API oficial da 42 com OAuth2. O token fica no keyring do sistema (Keychain, Secret Service ou Credential Manager) e é renovado sozinho.</p>
-    <div class="grid">
-      <article class="card"><code>lightyear me · profile · search</code><h3>Perfis</h3><p>Nível, wallet, pontos de avaliação e campus, seu ou de qualquer cadete. Busca por prefixo de login.</p></article>
-      <article class="card"><code>lightyear projects</code><h3>Projetos</h3><p>Status e nota de cada projeto, com a piscine opcional.</p></article>
-      <article class="card"><code>lightyear evaluations --open</code><h3>Avaliações</h3><p>Suas próximas avaliações, como avaliador ou avaliado. Com <span class="mono">--open</span>, abre direto na Intra.</p></article>
-      <article class="card"><code>lightyear notify</code><span class="tag">novo</span><h3>Push no celular</h3><p>Avisa no celular sempre que surge uma avaliação nova na sua agenda, via ntfy. Roda com <span class="mono">watch</span> ou no cron.</p></article>
-      <article class="card"><code>lightyear slots</code><h3>Slots</h3><p>Lista, abre e fecha sua disponibilidade para avaliar, sem passar pelo calendário da Intra.</p></article>
-      <article class="card"><code>lightyear campus --friends</code><h3>Mapa do campus</h3><p>Quem está online, cluster por cluster e posto por posto. Filtre só os seus amigos.</p></article>
-      <article class="card"><code>lightyear friends</code><h3>Amigos</h3><p>Uma lista local de logins favoritos, e onde cada um está sentado agora.</p></article>
-      <article class="card"><code>lightyear dashboard</code><h3>Dashboard ao vivo</h3><p>TUI em tempo real com perfil, ocupação dos clusters, avaliações, calendário de slots e amigos online.</p></article>
-      <article class="card"><code>lightyear subject</code><h3>Subjects</h3><p>Baixa e abre o PDF do subject de qualquer projeto, com catálogo de ~240 projetos embutido.</p></article>
-      <article class="card"><code>lightyear exam</code><span class="tag">novo</span><h3>Simulador de provas</h3><p>O Exam Rank 02 completo, corrigido na sua máquina, offline e sem login.</p></article>
-      <article class="card"><code>lightyear update</code><h3>Self-update</h3><p>Atualiza o próprio binário pelo GitHub Releases. Sem gerenciador de pacotes.</p></article>
-      <article class="card"><code>lightyear setup</code><h3>Pronto em 2 minutos</h3><p>Um guia cria a aplicação OAuth na Intra, faz o login e instala o autocomplete do seu shell.</p></article>
+      <div><b>56</b><span>exercícios do Exam Rank 02</span></div>
+      <div><b>20</b><span>projetos com testes automáticos</span></div>
+      <div><b>3</b><span>sistemas: macOS, Linux, Windows</span></div>
     </div>
   </div>
 </section>
 
-<section id="exam">
+<section id="funcoes">
   <div class="wrap">
-    <div class="eyebrow">Simulador de provas</div>
-    <h2>Treine o exam como ele é. Sem esperar o dia da prova.</h2>
-    <p class="sub">O lightyear simula o examshell no seu computador: sorteia o exercício, cronometra, corrige e sobe de nível. Funciona offline, só precisa de um compilador C.</p>
-    <div class="split">
-      <ol class="steps">
-        <li><b>Comece a prova</b><code>lightyear exam start</code><p>Nível 1, exercício sorteado, 3h no relógio (ou <span class="mono">--time 90m</span>).</p></li>
-        <li><b>Leia e escreva</b><code>~/lightyear-exam/subjects · rendu</code><p>Enunciado em inglês e português. Sua solução vai em <span class="mono">rendu/&lt;exercício&gt;/</span>, no editor que você quiser.</p></li>
-        <li><b>Peça a correção</b><code>lightyear exam grademe</code><p>Passou: próximo nível, 25 pontos cada. Falhou: o trace mostra o esperado × o recebido.</p></li>
-        <li><b>Ou só pratique</b><code>lightyear exam practice ft_split</code><p>Um exercício específico, sem tempo, quantas vezes quiser.</p></li>
-      </ol>
-      <ul class="checks">
-        <li><b>56 exercícios</b> dos 4 níveis do Exam Rank 02, de <span class="mono">first_word</span> a <span class="mono">sort_list</span>.</li>
-        <li><b>Correção de verdade:</b> compila com <span class="mono">cc -Wall -Wextra -Werror</span>, roda os mesmos testes no seu código e numa solução de referência e compara a saída.</li>
-        <li><b>Traces claros:</b> erro de compilação, saída diferente, crash ou timeout, cada um com a explicação certa.</li>
-        <li><b>Seu código nunca some:</b> ao começar outra prova, o <span class="mono">rendu</span> antigo vai para <span class="mono">history/</span>.</li>
-      </ul>
+    <div class="sec-head">
+      <span class="eyebrow">Funções</span>
+      <h2>Tudo que você abre a Intra para ver, e mais.</h2>
+      <p class="sub">Usa a API oficial da 42 com OAuth2; o token fica no keyring do sistema e é renovado sozinho. O simulador de provas e os testes funcionam offline, sem login.</p>
     </div>
-  </div>
-</section>
+    <nav class="index" aria-label="Funções">
+      <a href="#app"><b>App em tela cheia <span class="tag canary">canary</span></b><span>lightyear</span></a>
+      <a href="#perfis"><b>Perfis e busca</b><span>me · profile · search</span></a>
+      <a href="#projetos"><b>Projetos e subjects</b><span>projects · subject</span></a>
+      <a href="#avaliacoes"><b>Avaliações e slots</b><span>evaluations · slots</span></a>
+      <a href="#notificacoes"><b>Notificações no celular</b><span>notify</span></a>
+      <a href="#campus"><b>Campus e amigos</b><span>campus · friends · dashboard</span></a>
+      <a href="#simulador"><b>Simulador de provas</b><span>exam</span></a>
+      <a href="#testes"><b>Testes de projeto <span class="tag canary">canary</span></b><span>test</span></a>
+      <a href="#editor"><b>Editor embutido <span class="tag canary">canary</span></b><span>Vim · LSP · temas</span></a>
+      <a href="#atualizacao"><b>Atualização e canais</b><span>update</span></a>
+      <a href="#setup"><b>Configuração</b><span>setup · login · config</span></a>
+      <a href="wiki/comandos.html"><b>Todos os comandos</b><span>referência na wiki →</span></a>
+    </nav>
 
-<section id="canary" data-canary-only>
-  <div class="wrap">
-    <div class="eyebrow">Canary <span class="tag" data-ver="canary">v1.3.0-canary.3</span></div>
-    <h2>O próximo lightyear já pode ser testado.</h2>
-    <p class="sub">A canary recebe as novidades antes da versão estável. A grande da vez: rode só <span class="mono">lightyear</span> e ele abre um app em tela cheia, com abas clicáveis e mouse. Clique aqui embaixo para ver como é.</p>
-    <div class="term" role="region" aria-label="Demonstração do app (dados de exemplo)">
-      <div class="term-bar">
-        <div class="dots" aria-hidden="true"><i></i><i></i><i></i></div>
-        <span class="tab" style="cursor:default">~ $ lightyear</span>
-        <span class="eyebrow" style="margin-left:auto;font-size:11px">demo · dados de exemplo</span>
+    <article class="feature" id="app">
+      <div class="feature-text">
+        <span class="num">01</span>
+        <h3>App em tela cheia <span class="tag canary">canary</span></h3>
+        <p>Rode só <span class="mono">lightyear</span> e ele abre um app no terminal, com abas clicáveis e mouse: tudo o que os comandos mostram, num lugar só.</p>
+        <ul>
+          <li>Início, Avaliações, Projetos, Campus, Slots e Exam.</li>
+          <li>Na aba Exam, <span class="mono">e</span> abre o subject e a sua entrega lado a lado no editor do lightyear.</li>
+          <li>Com as notificações configuradas, avisa de avaliação nova enquanto está aberto.</li>
+        </ul>
+        <div class="cmds"><code>lightyear</code></div>
+        <a class="more" href="wiki/app.html">Como usar o app →</a>
       </div>
-      <pre id="app-screen"></pre>
-    </div>
-    <div class="grid" style="margin-top:24px">
-      <article class="card"><code>lightyear</code><span class="tag canary">canary</span><h3>App em tela cheia</h3><p>Início, Avaliações, Projetos, Campus, Slots e Exam em abas clicáveis. Rola com o mouse; atalhos no teclado.</p></article>
-      <article class="card"><code>e · aba Exam</code><span class="tag canary">canary</span><h3>Editor lado a lado</h3><p>O subject à esquerda e a sua entrega à direita, no editor estilo Vim do lightyear, com os erros do compilador e autocomplete (<span class="mono">E</span> abre o seu <span class="mono">$EDITOR</span>). Saiu com <span class="mono">:wq</span>, aperte <span class="mono">g</span> e corrige.</p></article>
-      <article class="card"><code>lightyear test libft</code><span class="tag canary">canary</span><h3>Testes do projeto</h3><p>Na raiz do projeto, abre o editor com a árvore de arquivos e um botão <span class="mono">▶ Rodar testes</span>: mais de 700 casos do subject, com leak, double free, segfault e malloc sem proteção acusados caso a caso. Clique num erro e vá direto à linha.</p></article>
-      <article class="card"><code>lightyear update --canary</code><span class="tag canary">canary</span><h3>Escolha o canal</h3><p>Na canary, o <span class="mono">lightyear update</span> continua trazendo canaries. Quer voltar? <span class="mono">lightyear update --stable</span>.</p></article>
-    </div>
-    <p class="sub" style="margin:56px 0 0">O editor também tem temas: <span class="mono">:colorscheme</span> troca as cores do código na hora (Tab completa o nome) e a escolha fica salva. Clique num tema:</p>
-    <div class="term" style="margin-top:20px" role="region" aria-label="Temas do editor">
-      <div class="term-bar">
-        <div class="dots" aria-hidden="true"><i></i><i></i><i></i></div>
-        <div class="tabs" role="tablist" aria-label="Tema" id="theme-tabs"></div>
+      <div class="term" role="region" aria-label="Demonstração do app (dados de exemplo)">
+        <div class="term-bar">
+          <div class="dots" aria-hidden="true"><i></i><i></i><i></i></div>
+          <span class="term-title">~ $ lightyear</span>
+          <span class="term-title" style="margin-left:auto">clique nas abas · dados de exemplo</span>
+        </div>
+        <pre id="app-screen"></pre>
       </div>
-      <pre id="theme-screen"></pre>
-    </div>
-    <div class="cta" style="margin-top:24px">
-      <a class="btn primary" href="#instalar" data-pick-channel="canary">Instalar a canary</a>
-      <a class="btn" data-release-link="canary" href="https://github.com/nvizble/Lightyear42/releases">Notas da release</a>
-    </div>
+    </article>
+
+    <article class="feature flip" id="perfis">
+      <div class="feature-text">
+        <span class="num">02</span>
+        <h3>Perfis e busca</h3>
+        <p>O seu perfil ou o de qualquer cadete: nível, wallet, pontos de avaliação, campus e onde está sentado agora.</p>
+        <ul>
+          <li>Busca por prefixo de login, com cache local para não gastar a API.</li>
+          <li>Saída limpa, pronta para o terminal.</li>
+        </ul>
+        <div class="cmds"><code>lightyear me</code><code>lightyear profile &lt;login&gt;</code><code>lightyear search &lt;prefixo&gt;</code></div>
+        <a class="more" href="wiki/comandos.html#perfil-e-busca">Na referência de comandos →</a>
+      </div>
+      <div class="term" role="region" aria-label="Exemplo do lightyear me">
+        <div class="term-bar"><div class="dots" aria-hidden="true"><i></i><i></i><i></i></div><span class="term-title">dados de exemplo</span></div>
+<pre id="me-screen"></pre>
+      </div>
+    </article>
+
+    <article class="feature" id="projetos">
+      <div class="feature-text">
+        <span class="num">03</span>
+        <h3>Projetos e subjects</h3>
+        <p>Status e nota de cada projeto, e o PDF do subject de qualquer um deles, aberto direto do terminal.</p>
+        <ul>
+          <li>Catálogo de mais de 240 subjects embutido.</li>
+          <li>O PDF fica em cache: abre na hora da próxima vez.</li>
+        </ul>
+        <div class="cmds"><code>lightyear projects</code><code>lightyear subject libft</code></div>
+        <a class="more" href="wiki/comandos.html#projetos-e-subjects">Na referência de comandos →</a>
+      </div>
+      <div class="term" role="region" aria-label="Exemplo do lightyear projects">
+        <div class="term-bar"><div class="dots" aria-hidden="true"><i></i><i></i><i></i></div><span class="term-title">dados de exemplo</span></div>
+<pre><span class="pr">~ $</span> <span class="cmd">lightyear projects</span>
+<span class="d">╭────────────────┬────────────────┬──────╮</span>
+<span class="d">│</span> <span class="b">PROJETO</span>        <span class="d">│</span> <span class="b">STATUS</span>         <span class="d">│</span> <span class="b">NOTA</span> <span class="d">│</span>
+<span class="d">├────────────────┼────────────────┼──────┤</span>
+<span class="d">│</span> Libft          <span class="d">│</span> <span class="g">✔ aprovado</span>     <span class="d">│</span> 125  <span class="d">│</span>
+<span class="d">│</span> get_next_line  <span class="d">│</span> <span class="g">✔ aprovado</span>     <span class="d">│</span> 115  <span class="d">│</span>
+<span class="d">│</span> ft_printf      <span class="d">│</span> <span class="g">✔ aprovado</span>     <span class="d">│</span> 100  <span class="d">│</span>
+<span class="d">│</span> Born2beroot    <span class="d">│</span> <span class="o">em andamento</span>   <span class="d">│</span>  —   <span class="d">│</span>
+<span class="d">╰────────────────┴────────────────┴──────╯</span>
+
+<span class="pr">~ $</span> <span class="cmd">lightyear subject born2beroot</span>
+<span class="d">Abrindo ~/.local/share/42cli/subjects/42next-born2beroot_en.pdf</span></pre>
+      </div>
+    </article>
+
+    <article class="feature flip" id="avaliacoes">
+      <div class="feature-text">
+        <span class="num">04</span>
+        <h3>Avaliações e slots</h3>
+        <p>Suas próximas avaliações, como avaliador ou avaliado, e a sua disponibilidade para avaliar, sem passar pelo calendário da Intra.</p>
+        <ul>
+          <li><span class="mono">--open</span> abre a avaliação direto na Intra.</li>
+          <li>Abra e feche slots de 15 em 15 minutos pelo terminal (scope <span class="mono">projects</span>).</li>
+        </ul>
+        <div class="cmds"><code>lightyear evaluations</code><code>lightyear slots list</code><code>lightyear slots open</code></div>
+        <a class="more" href="wiki/comandos.html#avaliacoes-e-slots">Na referência de comandos →</a>
+      </div>
+      <div class="term" role="region" aria-label="Exemplo do lightyear evaluations">
+        <div class="term-bar"><div class="dots" aria-hidden="true"><i></i><i></i><i></i></div><span class="term-title">dados de exemplo</span></div>
+<pre><span class="pr">~ $</span> <span class="cmd">lightyear evaluations</span>
+<span class="b">Próximas avaliações</span>
+
+hoje 14:30    <span class="o">você avalia</span>       ft_printf       <span class="d">em 2h</span>
+amanhã 10:00  <span class="g">você é avaliado</span>   get_next_line   <span class="d">em 21h</span>
+
+<span class="pr">~ $</span> <span class="cmd">lightyear slots list</span>
+hoje     14:00 → 16:00   <span class="g">livre</span>
+amanhã   09:00 → 10:00   <span class="o">reservado</span></pre>
+      </div>
+    </article>
+
+    <article class="feature" id="notificacoes">
+      <div class="feature-text">
+        <span class="num">05</span>
+        <h3>Notificações no celular</h3>
+        <p>Um push no celular sempre que surge uma avaliação nova na sua agenda, via <a class="more" href="https://ntfy.sh" style="font-weight:500">ntfy</a>: sem conta e sem app próprio.</p>
+        <ul>
+          <li><span class="mono">setup</span> gera o tópico e mostra como assinar.</li>
+          <li>Deixe rodando com <span class="mono">watch</span>, ou ponha <span class="mono">check</span> no cron.</li>
+        </ul>
+        <div class="cmds"><code>lightyear notify setup</code><code>lightyear notify test</code><code>lightyear notify watch</code></div>
+        <a class="more" href="wiki/notificacoes.html">Configurar as notificações →</a>
+      </div>
+      <div class="term" role="region" aria-label="Ajuda do lightyear notify">
+        <div class="term-bar"><div class="dots" aria-hidden="true"><i></i><i></i><i></i></div><span class="term-title">lightyear notify --help</span></div>
+<pre>Envia uma notificação push quando aparece uma avaliação nova na sua
+agenda — como avaliador ou como avaliado.
+
+A entrega usa o ntfy (https://ntfy.sh): instale o app no celular, assine o
+tópico gerado pelo "lightyear notify setup" e pronto.
+
+<span class="d">Fluxo típico:</span>
+
+  <span class="g">lightyear notify setup</span>    <span class="d"># gera o tópico e mostra como assinar</span>
+  <span class="g">lightyear notify test</span>     <span class="d"># confirma que chega no celular</span>
+  <span class="g">lightyear notify watch</span>    <span class="d"># deixa rodando; avisa a cada avaliação nova</span></pre>
+      </div>
+    </article>
+
+    <article class="feature flip" id="campus">
+      <div class="feature-text">
+        <span class="num">06</span>
+        <h3>Campus e amigos</h3>
+        <p>Quem está online, cluster por cluster e posto por posto, e um dashboard ao vivo com perfil, ocupação, avaliações e amigos online.</p>
+        <ul>
+          <li>Uma lista local de amigos, e onde cada um está sentado.</li>
+          <li><span class="mono">--friends</span> filtra o mapa só para eles.</li>
+        </ul>
+        <div class="cmds"><code>lightyear campus</code><code>lightyear friends add</code><code>lightyear dashboard</code></div>
+        <a class="more" href="wiki/comandos.html#campus-e-amigos">Na referência de comandos →</a>
+      </div>
+      <div class="term" role="region" aria-label="Exemplo do lightyear campus">
+        <div class="term-bar"><div class="dots" aria-hidden="true"><i></i><i></i><i></i></div><span class="term-title">dados de exemplo</span></div>
+<pre><span class="pr">~ $</span> <span class="cmd">lightyear campus</span>
+<span class="b">42 São Paulo</span><span class="d"> — 87 online</span>
+
+Cluster 1  <span class="g">█████████████████</span><span class="d">░░░░░░░</span>  41/60  68%
+Cluster 2  <span class="g">███████████</span><span class="d">░░░░░░░░░░░░░</span>  27/60  45%
+Cluster 3  <span class="g">███████</span><span class="d">░░░░░░░░░░░░░░░░░</span>  19/60  32%
+
+<span class="b">Cluster 1</span>  <span class="d">● ocupado</span>
+r1  <span class="g">●</span> <span class="g">●</span> · <span class="g">●</span> · · <span class="g">●</span> <span class="g">●</span> <span class="g">●</span> ·
+r2  · <span class="g">●</span> <span class="g">●</span> <span class="g">●</span> · <span class="g">●</span> · · <span class="g">●</span> <span class="g">●</span>
+r3  <span class="g">●</span> · · <span class="g">●</span> <span class="g">●</span> <span class="g">●</span> <span class="g">●</span> · <span class="g">●</span> ·</pre>
+      </div>
+    </article>
+
+    <article class="feature" id="simulador">
+      <div class="feature-text">
+        <span class="num">07</span>
+        <h3>Simulador de provas</h3>
+        <p>O examshell no seu computador: sorteia o exercício, cronometra, corrige e sobe de nível. Funciona offline, só precisa de um compilador C.</p>
+        <ul>
+          <li>Os 56 exercícios dos 4 níveis do Exam Rank 02, com enunciado em inglês e português.</li>
+          <li>Correção de verdade: <span class="mono">cc -Wall -Wextra -Werror</span>, os mesmos testes no seu código e numa solução de referência.</li>
+          <li>Trace claro de cada falha: compilação, saída diferente, crash ou timeout.</li>
+        </ul>
+        <div class="cmds"><code>lightyear exam start</code><code>lightyear exam grademe</code><code>lightyear exam practice ft_split</code></div>
+        <a class="more" href="wiki/simulador.html">Como o simulador funciona →</a>
+      </div>
+      <div class="term" role="region" aria-label="Exemplo do lightyear exam grademe">
+        <div class="term-bar"><div class="dots" aria-hidden="true"><i></i><i></i><i></i></div><span class="term-title">lightyear exam grademe</span></div>
+<pre><span class="pr">~ $</span> <span class="cmd">lightyear exam grademe</span>
+<span class="d">Corrigindo…</span>
+<span class="r">✗ FAILURE</span><span class="d">  first_word</span>
+
+first_word "   lorem,ipsum   "
+esperado: "lorem,ipsum\n"
+recebido: "\n"
+
+<span class="d">Trace salvo em ~/lightyear-exam/traces/first_word.trace</span></pre>
+      </div>
+    </article>
+
+    <article class="feature flip" id="testes">
+      <div class="feature-text">
+        <span class="num">08</span>
+        <h3>Testes de projeto <span class="tag canary">canary</span></h3>
+        <p>Na raiz do projeto, <span class="mono">lightyear test</span> abre o editor com a árvore de arquivos e um botão ▶ Rodar testes. Centenas de casos por projeto, tirados do subject.</p>
+        <ul>
+          <li>libft, ft_printf, get_next_line, os módulos de Python 00 a 10 (e 05/06 bis) e born2beroot.</li>
+          <li>Cada caso roda isolado: segfault, loop infinito, vazamento, double free e malloc sem proteção aparecem caso a caso.</li>
+          <li>Clique num erro e vá direto à linha. Ou rode sem editor com <span class="mono">--run</span>.</li>
+        </ul>
+        <div class="cmds"><code>lightyear test libft</code><code>lightyear test ft_printf --run</code><code>sudo lightyear test born2beroot</code></div>
+        <a class="more" href="wiki/testes.html">O que cada projeto testa →</a>
+      </div>
+      <div class="term" role="region" aria-label="Exemplo do lightyear test">
+        <div class="term-bar"><div class="dots" aria-hidden="true"><i></i><i></i><i></i></div><span class="term-title">lightyear test libft --run</span></div>
+<pre><span class="g">✓ Makefile</span> <span class="d">14</span>
+<span class="g">✓ funções permitidas</span> <span class="d">1</span>
+<span class="g">✓ ft_strlen</span> <span class="d">17</span>
+<span class="g">✓ ft_memmove</span> <span class="d">32</span>
+<span class="r">✗ ft_split</span> <span class="d">1 de 24 falharam</span>
+    <span class="r">✗</span> malloc falhando em cada alocação
+        <span class="d">o 3º malloc devolveu NULL e a função não liberou</span>
+        <span class="d">o que já tinha alocado (2 bloco(s))</span>
+<span class="r">✗ ft_itoa</span> <span class="d">1 de 25 falharam</span>
+    <span class="r">✗</span> ft_itoa(-2147483648)
+        <span class="d">esperado "-2147483648", recebido "-"</span>
+<span class="g">✓ ft_lstmap</span> <span class="d">4</span>
+
+<span class="b">libft:</span> <span class="g">734 passaram</span> · <span class="r">2 falharam</span> <span class="d">(4.1s)</span></pre>
+      </div>
+    </article>
+
+    <article class="feature" id="editor">
+      <div class="feature-text">
+        <span class="num">09</span>
+        <h3>Editor embutido <span class="tag canary">canary</span></h3>
+        <p>Um editor modal estilo Vim dentro do lightyear, com syntax highlighting do Tree-sitter e language server para C, C++, Go, Python e Rust.</p>
+        <ul>
+          <li>Erros do compilador na linha, <span class="mono">K</span>, <span class="mono">gd</span>, autocomplete, renomear e formatar.</li>
+          <li>Buffers, janelas, text objects, macros e <span class="mono">.</span> para repetir.</li>
+          <li>Temas com <span class="mono">:colorscheme</span>. Clique num aqui ao lado.</li>
+        </ul>
+        <div class="cmds"><code>:colorscheme dracula</code><code>gd</code><code>K</code><code>:Format</code></div>
+        <a class="more" href="wiki/editor.html">Atalhos do editor →</a>
+      </div>
+      <div class="term" role="region" aria-label="Temas do editor">
+        <div class="term-bar">
+          <div class="dots" aria-hidden="true"><i></i><i></i><i></i></div>
+          <div class="tabs" role="tablist" aria-label="Tema" id="theme-tabs"></div>
+        </div>
+        <pre id="theme-screen"></pre>
+      </div>
+    </article>
+
+    <article class="feature flip" id="atualizacao">
+      <div class="feature-text">
+        <span class="num">10</span>
+        <h3>Atualização e canais</h3>
+        <p>O lightyear se atualiza sozinho pelo GitHub Releases, sem gerenciador de pacotes. Escolha entre a versão estável e a canary, que recebe as novidades antes.</p>
+        <ul>
+          <li><span class="mono">--check</span> só verifica; <span class="mono">--yes</span> não pergunta.</li>
+          <li><span class="mono">--canary</span> entra no canal canary; <span class="mono">--stable</span> volta.</li>
+        </ul>
+        <div class="cmds"><code>lightyear update</code><code>lightyear update --canary</code><code>lightyear update --stable</code></div>
+        <a class="more" href="wiki/instalacao.html#atualizar">Atualizar e trocar de canal →</a>
+      </div>
+      <div class="term" role="region" aria-label="Exemplo do lightyear update">
+        <div class="term-bar"><div class="dots" aria-hidden="true"><i></i><i></i><i></i></div><span class="term-title">lightyear update --canary</span></div>
+<pre><span class="pr">~ $</span> <span class="cmd">lightyear update --canary --yes</span>
+Versão atual:  1.2.1
+Canal:         canary
+Última release: <span data-ver-plain="canary">1.3.0-canary.35</span>
+Asset:         lightyear_<span data-ver-plain="canary">1.3.0-canary.35</span>_Linux_x86_64.tar.gz
+Destino:       /home/marvin/.local/bin/lightyear
+Baixando e instalando…
+<span class="g">Atualizado para <span data-ver-plain="canary">1.3.0-canary.35</span>.</span> Rode: lightyear version</pre>
+      </div>
+    </article>
+
+    <article class="feature" id="setup">
+      <div class="feature-text">
+        <span class="num">11</span>
+        <h3>Configuração em dois minutos</h3>
+        <p>Um guia cria a aplicação OAuth na Intra, faz o login e instala o autocomplete do seu shell. O token fica no keyring do sistema.</p>
+        <ul>
+          <li>Keychain no macOS, Secret Service no Linux, Credential Manager no Windows.</li>
+          <li>Tudo o que fica no disco tem um caminho só: <span class="mono">lightyear config path</span>.</li>
+        </ul>
+        <div class="cmds"><code>lightyear setup</code><code>lightyear login</code><code>lightyear config show</code></div>
+        <a class="more" href="wiki/primeiros-passos.html">Primeiros passos →</a>
+      </div>
+      <div class="term" role="region" aria-label="Ajuda do lightyear">
+        <div class="term-bar"><div class="dots" aria-hidden="true"><i></i><i></i><i></i></div><span class="term-title">lightyear --help</span></div>
+<pre><span class="d">Available Commands:</span>
+  <span class="g">campus</span>      Mostra quem está online no campus, organizado como um mapa
+  <span class="g">evaluations</span> Lista suas próximas avaliações agendadas
+  <span class="g">exam</span>        Simulador de provas da 42 (exam rank), com correção local
+  <span class="g">notify</span>      Avisa no celular quando uma avaliação nova for agendada
+  <span class="g">projects</span>    Lista os projetos de um usuário da 42
+  <span class="g">setup</span>       Configura client_id e client_secret da aplicação OAuth na Intra
+  <span class="g">slots</span>       Gerencia seus slots de disponibilidade para avaliar
+  <span class="g">subject</span>     Baixa e abre o PDF do subject de um projeto
+  <span class="g">test</span>        Testa o seu projeto da 42 (libft…) com centenas de casos
+  <span class="g">update</span>      Atualiza o lightyear a partir do GitHub Releases
+  <span class="d">…</span></pre>
+      </div>
+    </article>
   </div>
 </section>
 
 <section id="instalar">
   <div class="wrap">
-    <div class="eyebrow">Instalar</div>
-    <h2>Um binário. Nenhuma dependência.</h2>
-    <p class="sub">No campus, prefira o binário ou o <span class="mono">.deb</span>: o Go das máquinas costuma ser mais antigo que o 1.25 que o lightyear exige.</p>
-    <div class="channels" role="tablist" aria-label="Canal" data-canary-only>
-      <button class="chan" role="tab" aria-selected="true" data-channel="stable">Estável<span class="mono" data-ver="stable">v1.2.1</span></button>
-      <button class="chan" role="tab" aria-selected="false" data-channel="canary">Canary<span class="mono" data-ver="canary">v1.3.0-canary.3</span></button>
+    <div class="sec-head">
+      <span class="eyebrow">Instalar</span>
+      <h2>Um binário. Nenhuma dependência.</h2>
+      <p class="sub">No campus, prefira o comando de uma linha ou o <span class="mono">.deb</span>: o Go das máquinas costuma ser mais antigo que o 1.25 que o lightyear exige.</p>
+    </div>
+    <div class="install-top">
+      <div class="seg" role="tablist" aria-label="Canal" data-canary-only>
+        <button role="tab" aria-selected="true" data-channel="stable">Estável <span data-ver="stable">v1.2.1</span></button>
+        <button role="tab" aria-selected="false" data-channel="canary">Canary <span data-ver="canary">v1.3.0-canary.3</span></button>
+      </div>
+      <a class="more" href="wiki/instalacao.html">Guia completo de instalação →</a>
     </div>
     <div class="install">
       <div class="term-bar">
@@ -302,31 +513,67 @@
       <pre id="install-code"></pre>
       <div class="install-foot">
         <span id="install-note"></span>
-        <button class="btn copy" id="install-copy">copiar</button>
+        <button class="btn small" id="install-copy">Copiar</button>
       </div>
     </div>
   </div>
 </section>
 
 <div class="wrap">
-  <div class="oss">
-    <div class="eyebrow">Open source</div>
-    <h2>Feito por cadetes, aberto para todo mundo.</h2>
-    <p class="sub" style="margin-bottom:28px">O lightyear é MIT e está inteiro no GitHub. Achou um bug, quer um comando novo ou quer adicionar os exercícios de outro rank? Abra uma issue ou mande um PR. Cada exercício do simulador é só uma pasta com enunciado, testes e solução de referência.</p>
-    <div class="cta">
-      <a class="btn primary" href="https://github.com/nvizble/Lightyear42">Contribuir no GitHub</a>
-      <a class="btn" href="https://github.com/nvizble/Lightyear42/issues/new">Abrir uma issue</a>
-      <a class="btn" href="https://github.com/nvizble/Lightyear42/releases">Releases</a>
+  <div class="cta-box">
+    <div>
+      <span class="eyebrow">Open source</span>
+      <h2>Feito por cadetes, aberto para todo mundo.</h2>
+      <p class="sub">O lightyear é MIT e está inteiro no GitHub. Achou um bug, quer um comando novo, mais exercícios do exam ou testes de outro projeto? Abra uma issue ou mande um PR.</p>
     </div>
-    <p class="credits">Créditos: o fluxo do simulador foi inspirado no <a href="https://github.com/vgomes-p/CodeSim">CodeSim</a> (vgomes-p), e a lista e as soluções base do Exam Rank 02 vêm do <a href="https://github.com/alexhiguera/Exam_Rank_02_42_School">Exam_Rank_02_42_School</a> (Alex Higuera, MIT). Os enunciados foram reescritos. O lightyear não é um projeto oficial da 42.</p>
+    <div class="actions">
+      <a class="btn primary" href="https://github.com/nvizble/Lightyear42">Contribuir no GitHub</a>
+      <a class="btn" href="wiki/contribuir.html">Guia para contribuir</a>
+      <a class="btn" href="https://github.com/nvizble/Lightyear42/issues/new">Abrir uma issue</a>
+    </div>
   </div>
+  <p class="credits">Créditos: o fluxo do simulador foi inspirado no <a href="https://github.com/vgomes-p/CodeSim">CodeSim</a> (vgomes-p), e a lista e as soluções base do Exam Rank 02 vêm do <a href="https://github.com/alexhiguera/Exam_Rank_02_42_School">Exam_Rank_02_42_School</a> (Alex Higuera, MIT). Os enunciados foram reescritos. O lightyear não é um projeto oficial da 42.</p>
 </div>
 </main>
 
-<footer>
+<footer class="footer">
   <div class="wrap">
-    <span>✦ lightyear · MIT</span>
-    <span><a href="https://github.com/nvizble/Lightyear42">github.com/nvizble/Lightyear42</a></span>
+    <div class="cols">
+      <div>
+        <a class="logo" href="#top"><span class="mark">✦</span>lightyear</a>
+        <p style="margin:12px 0 0;max-width:34ch">A 42 inteira, direto do terminal. Open source, MIT, feito por cadetes.</p>
+      </div>
+      <div>
+        <h4>Produto</h4>
+        <ul>
+          <li><a href="#funcoes">Funções</a></li>
+          <li><a href="#instalar">Instalar</a></li>
+          <li><a href="https://github.com/nvizble/Lightyear42/releases">Releases</a></li>
+          <li><a href="https://github.com/nvizble/Lightyear42/blob/main/CHANGELOG.md">Changelog</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Wiki</h4>
+        <ul>
+          <li><a href="wiki/primeiros-passos.html">Primeiros passos</a></li>
+          <li><a href="wiki/comandos.html">Comandos</a></li>
+          <li><a href="wiki/testes.html">Testes de projeto</a></li>
+          <li><a href="wiki/problemas.html">Solução de problemas</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Comunidade</h4>
+        <ul>
+          <li><a href="https://github.com/nvizble/Lightyear42">GitHub</a></li>
+          <li><a href="https://github.com/nvizble/Lightyear42/issues">Issues</a></li>
+          <li><a href="wiki/contribuir.html">Contribuir</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="legal">
+      <span>✦ lightyear · MIT</span>
+      <span>Não é um projeto oficial da 42</span>
+    </div>
   </div>
 </footer>
 
@@ -342,7 +589,8 @@
     ].join("\n");
   }
 
-  // Terminal demos: real output from the lightyear binary (paths shortened).
+  // Hero terminal demos: the lightyear binary's output (paths shortened; the
+  // ft_printf failure is an example of what a broken %p looks like).
   const demos = {
     start: { cmd: "lightyear exam start", out: box([
       '<span class="b">Exam Rank 02</span>',
@@ -377,18 +625,20 @@ recebido: "\\n"
       '<span class="d">Subject    </span>~/lightyear-exam/subjects/union/',
       '<span class="d">Entrega    </span>~/lightyear-exam/rendu/union/',
     ]) },
-    notify: { cmd: "lightyear notify --help", out:
-`Envia uma notificação push quando aparece uma avaliação nova na sua
-agenda — como avaliador ou como avaliado.
+    test: { cmd: "lightyear test ft_printf --run", out:
+`<span class="d">… make</span>
+<span class="d">… compilando os testes</span>
+<span class="d">… rodando os testes</span>
+<span class="g">✓ Makefile</span> <span class="d">14</span>
+<span class="g">✓ ft_printf: %c</span> <span class="d">11</span>
+<span class="g">✓ ft_printf: %s</span> <span class="d">10</span>
+<span class="r">✗ ft_printf: %p</span> <span class="d">1 de 13 falharam</span>
+    <span class="r">✗</span> ft_printf("%p", (void *)-1)
+        <span class="d">esperado "0xffffffffffffffff" (18), recebido "0x-1" (4)</span>
+<span class="g">✓ ft_printf: comportamento</span> <span class="d">4</span>
+<span class="d">– bônus: # espaço + (pulado)</span>
 
-A entrega usa o ntfy (https://ntfy.sh): instale o app no celular, assine o
-tópico gerado pelo "lightyear notify setup" e pronto.
-
-<span class="d">Fluxo típico:</span>
-
-  <span class="g">lightyear notify setup</span>    <span class="d"># gera o tópico e mostra como assinar</span>
-  <span class="g">lightyear notify test</span>     <span class="d"># confirma que chega no celular</span>
-  <span class="g">lightyear notify watch</span>    <span class="d"># deixa rodando; avisa a cada avaliação nova</span>` },
+<span class="b">ft_printf:</span> <span class="g">140 passaram</span> · <span class="r">1 falharam</span> <span class="d">(9.3s)</span>` },
     help: { cmd: "lightyear --help", out:
 `<span class="d">Available Commands:</span>
   <span class="g">campus</span>      Mostra quem está online no campus, organizado como um mapa
@@ -398,19 +648,28 @@ tópico gerado pelo "lightyear notify setup" e pronto.
   <span class="g">friends</span>     Gerencia sua lista local de amigos
   <span class="g">me</span>          Mostra o seu perfil na 42
   <span class="g">notify</span>      Avisa no celular quando uma avaliação nova for agendada
-  <span class="g">profile</span>     Mostra o perfil de um usuário da 42
-  <span class="g">projects</span>    Lista os projetos de um usuário da 42
-  <span class="g">search</span>      Busca usuários da 42 por prefixo de login
   <span class="g">slots</span>       Gerencia seus slots de disponibilidade para avaliar
   <span class="g">subject</span>     Baixa e abre o PDF do subject de um projeto
+  <span class="g">test</span>        Testa o seu projeto da 42 (libft…) com centenas de casos
   <span class="g">update</span>      Atualiza o lightyear a partir do GitHub Releases
   <span class="d">…</span>` },
   };
 
+  document.getElementById("me-screen").innerHTML = '<span class="pr">~ $</span> <span class="cmd">lightyear me</span>\n' + box([
+    '<span class="b">Marvin Android</span><span class="d"> · marvin</span>',
+    '<span class="d">Campus:</span> São Paulo',
+    '',
+    '<span class="d">42cursus · Member</span>',
+    '<span class="o">Level 7.42</span> <span class="g">██████████████</span><span class="d">░░░░░░</span>',
+    '',
+    '<span class="d">Wallet:</span> 120 ₳',
+    '<span class="d">Pontos de avaliação:</span> 4',
+    '<span class="d">Local:</span> <span class="g">c1r4p12</span>',
+  ], 44);
+
   const screen = document.getElementById("screen");
   const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
   let typing;
-
   function show(key) {
     const d = demos[key];
     clearInterval(typing);
@@ -424,13 +683,9 @@ tópico gerado pelo "lightyear notify setup" e pronto.
         clearInterval(typing);
         setTimeout(() => { screen.innerHTML = prompt + '<span class="cmd">' + d.cmd + '</span>\n' + d.out; }, 180);
       }
-    }, 28);
+    }, 26);
   }
-
-  function selectTab(tabs, active) {
-    tabs.forEach(t => t.setAttribute("aria-selected", String(t === active)));
-  }
-
+  function selectTab(tabs, active) { tabs.forEach(t => t.setAttribute("aria-selected", String(t === active))); }
   const demoTabs = [...document.querySelectorAll("[data-demo]")];
   demoTabs.forEach(t => t.addEventListener("click", () => { selectTab(demoTabs, t); show(t.dataset.demo); }));
   show("start");
@@ -438,56 +693,55 @@ tópico gerado pelo "lightyear notify setup" e pronto.
   // Versions: discovered from the GitHub API (stable = newest release that is
   // not a pre-release; canary = newest pre-release, if ahead of the stable),
   // with these values as the fallback.
-  const versions = { stable: "1.2.1", canary: "1.3.0-canary.3" };
-  let channel = "stable";
+  const versions = { stable: "1.2.1", canary: "1.3.0-canary.35" };
+  let channel = "stable", tool = "curl", current = "one";
 
-  // Install snippets for a version; the stable Go install tracks @latest.
+  // The hero one-liner (short link) and the install tabs.
+  function heroCommand() {
+    const flag = channel === "canary" ? " -s -- --canary" : "";
+    return (tool === "curl" ? "curl -fsSL" : "wget -qO-") + " https://tinyurl.com/lightyear42 | sh" + flag;
+  }
   function installs(ver, chan) {
     const url = file => `https://github.com/nvizble/Lightyear42/releases/download/v\${VER}/lightyear_\${VER}_${file}`;
     return {
+      one:
+`<span class="c"># Linux (como nas máquinas da 42) e macOS: instala em ~/.local/bin e põe no PATH</span>
+curl -fsSL https://nvizble.github.io/Lightyear42/install.sh | sh${chan === "canary" ? " -s -- --canary" : ""}
+<span class="c"># sem curl (como no born2beroot):</span>
+wget -qO- https://tinyurl.com/lightyear42 | sh${chan === "canary" ? " -s -- --canary" : ""}`,
       mac:
 `<span class="c"># Apple Silicon (Intel: troque arm64 por x86_64)</span>
 VER=${ver}
 curl -sL "${url("Darwin_arm64.tar.gz")}" | tar -xz lightyear
 sudo mv lightyear /usr/local/bin/
 lightyear version`,
-      one:
-`<span class="c"># Linux (como nas máquinas da 42) e macOS: instala em ~/.local/bin e põe no PATH</span>
-curl -fsSL https://nvizble.github.io/Lightyear42/install.sh | sh${chan === "canary" ? " -s -- --canary" : ""}`,
       deb:
 `VER=${ver}
 curl -sLO "${url("linux_amd64.deb")}"
 sudo apt install "./lightyear_\${VER}_linux_amd64.deb"
 lightyear version`,
       go:
-`<span class="c"># requer Go 1.25+</span>
+`<span class="c"># requer Go 1.25+ e um compilador C</span>
 go install github.com/nvizble/Lightyear42/cmd/lightyear@${chan === "canary" ? "v" + ver : "latest"}`,
     };
   }
   const notes = {
     stable: 'Depois: <span class="mono" style="color:var(--text)">lightyear setup</span> → <span class="mono" style="color:var(--text)">lightyear login</span>',
-    canary: 'Na canary, <span class="mono" style="color:var(--text)">lightyear update</span> traz as próximas canaries; <span class="mono" style="color:var(--text)">lightyear update --stable</span> volta para a estável.',
+    canary: 'Na canary, <span class="mono" style="color:var(--text)">lightyear update</span> traz as próximas canaries; <span class="mono" style="color:var(--text)">--stable</span> volta para a estável.',
   };
-
   const code = document.getElementById("install-code");
   const installTabs = [...document.querySelectorAll("[data-install]")];
   const chanTabs = [...document.querySelectorAll("[data-channel]")];
-  let current = "one";
-  function snippet() { return installs(versions[channel], channel)[current]; }
-  function showInstall(k) {
-    current = k;
-    code.innerHTML = snippet();
+  const toolTabs = [...document.querySelectorAll("[data-tool]")];
+  function render() {
+    code.innerHTML = installs(versions[channel], channel)[current];
     document.getElementById("install-note").innerHTML = notes[channel];
+    document.getElementById("hero-cmd").textContent = heroCommand();
+    chanTabs.forEach(t => t.setAttribute("aria-selected", String(t.dataset.channel === channel)));
   }
-  function pickChannel(c) {
-    channel = c;
-    selectTab(chanTabs, chanTabs.find(t => t.dataset.channel === c));
-    showInstall(current);
-  }
-  installTabs.forEach(t => t.addEventListener("click", () => { selectTab(installTabs, t); showInstall(t.dataset.install); }));
-  chanTabs.forEach(t => t.addEventListener("click", () => pickChannel(t.dataset.channel)));
-  document.querySelectorAll("[data-pick-channel]").forEach(a => a.addEventListener("click", () => pickChannel(a.dataset.pickChannel)));
-  showInstall("one");
+  installTabs.forEach(t => t.addEventListener("click", () => { selectTab(installTabs, t); current = t.dataset.install; render(); }));
+  chanTabs.forEach(t => t.addEventListener("click", () => { channel = t.dataset.channel; render(); }));
+  toolTabs.forEach(t => t.addEventListener("click", () => { selectTab(toolTabs, t); tool = t.dataset.tool; render(); }));
 
   // Semver comparison (1.2.1 < 1.3.0-canary.2 < 1.3.0-canary.10 < 1.3.0).
   function cmpVer(a, b) {
@@ -504,21 +758,19 @@ go install github.com/nvizble/Lightyear42/cmd/lightyear@${chan === "canary" ? "v
     }
     return x.pre.length - y.pre.length;
   }
-
   function applyVersions() {
     document.querySelectorAll("[data-ver]").forEach(el => (el.textContent = "v" + versions[el.dataset.ver]));
+    document.querySelectorAll("[data-ver-plain]").forEach(el => (el.textContent = versions[el.dataset.verPlain] || versions.stable));
     document.querySelectorAll("[data-canary-only]").forEach(el => (el.hidden = !versions.canary));
-    document.querySelectorAll("[data-release-link]").forEach(a => (a.href = "https://github.com/nvizble/Lightyear42/releases/tag/v" + versions.canary));
-    if (!versions.canary && channel === "canary") pickChannel("stable");
-    showInstall(current);
+    if (!versions.canary && channel === "canary") channel = "stable";
+    render();
   }
   applyVersions();
   fetch("https://api.github.com/repos/nvizble/Lightyear42/releases?per_page=30")
     .then(r => (r.ok ? r.json() : Promise.reject(r.status)))
     .then(releases => {
       // Same rule as `lightyear update`: highest semver per channel; the canary
-      // only shows while it is ahead of the stable. (The API order is not
-      // reliable for this: it sorts by the release commit date.)
+      // only shows while it is ahead of the stable.
       const tags = releases.filter(r => !r.draft).map(r => ({ v: r.tag_name.replace(/^v/, ""), pre: r.prerelease }));
       const newest = list => list.reduce((best, v) => (!best || cmpVer(v, best) > 0 ? v : best), null);
       const stable = newest(tags.filter(r => !r.pre).map(r => r.v));
@@ -532,65 +784,60 @@ go install github.com/nvizble/Lightyear42/cmd/lightyear@${chan === "canary" ? "v
   // Interactive mock of the full-screen app (canary), sample data.
   const appTabs = ["Início", "Avaliações", "Projetos", "Campus", "Slots", "Exam"];
   const appState = { tab: 5, view: "session", confirm: false };
-  const W = 96, BODY = 15;
+  const W = 78, BODY = 13;
   const pad = (html, n) => html + " ".repeat(Math.max(n - html.replace(/<[^>]+>/g, "").length, 0));
   const btn = (attrs, label, on) => `<button class="app-btn${on ? " app-on" : ""}" ${attrs}>${label}</button>`;
   const appBodies = {
     0: () => ['<span class="b">42 São Paulo</span><span class="d"> — 87 online</span>',
-              'marvin<span class="o">  Level 7.42</span><span class="d">  ·  12 ₳  ·  4 pontos de avaliação</span>', "",
+              'marvin<span class="o">  Level 7.42</span><span class="d">  ·  120 ₳  ·  4 pontos</span>', "",
               '<span class="b">Ocupação por cluster</span>',
-              'Cluster 1  <span class="g">█████████████████</span><span class="d">░░░░░░░</span>  41/60  68%',
-              'Cluster 2  <span class="g">███████████</span><span class="d">░░░░░░░░░░░░░</span>  27/60  45%',
-              'Cluster 3  <span class="g">███████</span><span class="d">░░░░░░░░░░░░░░░░░</span>  19/60  32%'],
+              'Cluster 1  <span class="g">█████████████</span><span class="d">░░░░░</span>  41/60',
+              'Cluster 2  <span class="g">████████</span><span class="d">░░░░░░░░░░</span>  27/60',
+              'Cluster 3  <span class="g">█████</span><span class="d">░░░░░░░░░░░░░</span>  19/60'],
     1: () => ['<span class="b">Próximas avaliações</span>', "",
-              'hoje 14:30  <span class="o">você avalia</span>   ft_printf      <span class="d">em 2h</span>',
-              'amanhã 10:00 <span class="g">você é avaliado</span> get_next_line <span class="d">em 21h</span>'],
+              'hoje 14:30   <span class="o">você avalia</span>      ft_printf      <span class="d">em 2h</span>',
+              'amanhã 10:00 <span class="g">você é avaliado</span>  get_next_line  <span class="d">em 21h</span>'],
     2: () => ['<span class="b">Projetos</span>', "",
               'libft            <span class="g">125 ✓</span>', 'get_next_line    <span class="g">115 ✓</span>',
               'ft_printf        <span class="g">100 ✓</span>', 'born2beroot      <span class="o">em andamento</span>'],
-    3: () => ['<span class="b">Cluster 1</span>  <span class="d">(mapa de postos; ● ocupado)</span>', "",
+    3: () => ['<span class="b">Cluster 1</span>  <span class="d">(● ocupado)</span>', "",
               'r1  <span class="g">●</span> <span class="g">●</span> · <span class="g">●</span> · · <span class="g">●</span> <span class="g">●</span> <span class="g">●</span> ·',
               'r2  · <span class="g">●</span> <span class="g">●</span> <span class="g">●</span> · <span class="g">●</span> · · <span class="g">●</span> <span class="g">●</span>',
               'r3  <span class="g">●</span> · · <span class="g">●</span> <span class="g">●</span> <span class="g">●</span> <span class="g">●</span> · <span class="g">●</span> ·'],
     4: () => ['<span class="b">Slots</span>', "", 'hoje      14:00 → 16:00  <span class="g">livre</span>', 'amanhã    09:00 → 10:00  <span class="o">reservado</span>'],
     5: () => {
       if (appState.view === "vim") return [
-        '<span class="d">subject.pt.txt                              │ first_word.c</span>',
-        'Nome do exercício : first_word              │ <span class="b">#include</span> &lt;unistd.h&gt;',
-        'Arquivos esperados: first_word.c            │',
-        'Funções permitidas: write                   │ <span class="o">int</span>  main(<span class="o">int</span> argc, <span class="o">char</span> **argv)',
-        '──────────────────────────────────────────  │ {',
-        'Escreva um programa que recebe uma string   │     <span class="o">char</span> *s;',
-        'e exibe a primeira palavra dela, seguida    │',
-        'de uma quebra de linha.                     │     <span class="b">if</span> (argc == 2)',
-        '                                            │     {',
-        '<span class="d">-- vim -O: subject à esquerda, código à direita --</span>',
-        '<span class="d">(no app de verdade é o seu vim; :wq e você volta para cá)</span>'];
-      const head = appState.view === "graded"
-        ? ['<span class="g">✓ SUCCESS</span><span class="d">  first_word</span>', ""] : [];
+        '<span class="d">subject.pt.txt                  │ first_word.c</span>',
+        'Nome: first_word                │ <span class="b">#include</span> &lt;unistd.h&gt;',
+        'Arquivos: first_word.c          │',
+        'Permitidas: write               │ <span class="o">int</span>  main(<span class="o">int</span> argc, <span class="o">char</span> **argv)',
+        '──────────────────────────────  │ {',
+        'Escreva um programa que recebe  │     <span class="o">char</span> *s;',
+        'uma string e exibe a primeira   │',
+        'palavra dela.                   │     <span class="b">if</span> (argc == 2)',
+        '<span class="d">-- subject só leitura à esquerda, o seu código à direita --</span>'];
+      const head = appState.view === "graded" ? ['<span class="g">✓ SUCCESS</span><span class="d">  first_word</span>', ""] : [];
       const lvl = appState.view === "graded" ? ["union", 2, "25/100"] : ["first_word", 1, "0/100"];
       return [...head, ...box([
         '<span class="b">Exam Rank 02</span>',
         `<span class="d">Exercício  </span><span class="o">${lvl[0]}</span><span class="d">  (nível ${lvl[1]})</span>`,
         `<span class="d">Nota       </span>${lvl[2]}`,
         '<span class="d">Tempo      </span>02h47m restantes',
-      ], 44).split("\n"), "",
-        appState.confirm ? '<span class="r">Encerrar a prova? Aperte f de novo para confirmar.</span>'
-          : '<span class="d">Aperte e para abrir o subject e a sua entrega lado a lado no editor.</span>'];
+      ], 40).split("\n"), "",
+        appState.confirm ? '<span class="r">Encerrar a prova? Aperte f de novo.</span>'
+          : '<span class="d">e abre o subject e a entrega lado a lado no editor.</span>'];
     },
   };
-
   function renderApp() {
-    let bar = '<span class="g">✦ lightyear</span>  ';
+    let bar = '<span class="g">✦</span> ';
     appTabs.forEach((t, i) => { bar += btn(`data-app-tab="${i}"`, ` ${i + 1} ${t} `, i === appState.tab) + " "; });
     const body = appBodies[appState.tab]().map(l => "  " + l);
     while (body.length < BODY) body.push("");
-    const keys = appState.tab === 5 ? [["e", "editar"], ["E", "$EDITOR"], ["g", "grademe"], ["f", "encerrar"]] : [];
+    const keys = appState.tab === 5 ? [["e", "editar"], ["g", "grademe"], ["f", "encerrar"]] : [];
     let foot = " ";
-    [...keys, ["r", "atualizar"], ["q", "sair"]].forEach(([k, l]) => { foot += btn(`data-app-key="${k}"`, ` <span class="app-key">${k}</span> ${l} `) + " "; });
+    [...keys, ["q", "sair"]].forEach(([k, l]) => { foot += btn(`data-app-key="${k}"`, ` <span class="app-key">${k}</span> ${l} `) + " "; });
     const rule = '<span class="d">' + "─".repeat(W) + "</span>";
-    document.getElementById("app-screen").innerHTML =
-      [pad(bar, W), rule, ...body.slice(0, BODY), rule, pad(foot, W - 26) + '<span class="d">1-6 / ←→ abas · ↑↓ rolar</span>'].join("\n");
+    document.getElementById("app-screen").innerHTML = [pad(bar, W), rule, ...body.slice(0, BODY), rule, foot].join("\n");
   }
   document.getElementById("app-screen").addEventListener("click", e => {
     const b = e.target.closest(".app-btn");
@@ -599,31 +846,23 @@ go install github.com/nvizble/Lightyear42/cmd/lightyear@${chan === "canary" ? "v
     const k = b.dataset.appKey;
     if (k === "e") { appState.tab = 5; appState.view = "vim"; appState.confirm = false; }
     if (k === "g") { appState.tab = 5; appState.view = "graded"; appState.confirm = false; }
-    if (k === "f") {
-      if (appState.confirm) { appState.view = "session"; appState.confirm = false; } else appState.confirm = true;
-    }
+    if (k === "f") { if (appState.confirm) { appState.view = "session"; appState.confirm = false; } else appState.confirm = true; }
     if (k === "q") { appState.tab = 5; appState.view = "session"; appState.confirm = false; }
     renderApp();
   });
   renderApp();
 
-  // Editor color schemes (canary): the palettes of
-  // internal/tui/editorview/schemes.go — keyword, string, comment, number,
-  // function, type (lightyear's are its dark-terminal 256 colors).
+  // Editor color schemes: the palettes of internal/tui/editorview/schemes.go —
+  // keyword, string, comment, number, function, type.
   const themes = {
     lightyear: ["#d75fd7", "#87d787", "#8a8a8a", "#ffaf5f", "#5fafff", "#5fd7d7"],
     gruvbox: ["#fb4934", "#b8bb26", "#928374", "#d3869b", "#8ec07c", "#fabd2f"],
     dracula: ["#ff79c6", "#f1fa8c", "#6272a4", "#bd93f9", "#50fa7b", "#8be9fd"],
     nord: ["#81a1c1", "#a3be8c", "#616e88", "#b48ead", "#88c0d0", "#8fbcbb"],
     tokyonight: ["#bb9af7", "#9ece6a", "#565f89", "#ff9e64", "#7aa2f7", "#2ac3de"],
-    monokai: ["#f92672", "#e6db74", "#75715e", "#ae81ff", "#a6e22e", "#66d9ef"],
     catppuccin: ["#cba6f7", "#a6e3a1", "#6c7086", "#fab387", "#89b4fa", "#f9e2af"],
-    onedark: ["#c678dd", "#98c379", "#5c6370", "#d19a66", "#61afef", "#e5c07b"],
-    solarized: ["#859900", "#2aa198", "#586e75", "#d33682", "#268bd2", "#b58900"],
     "github-light": ["#cf222e", "#0a3069", "#6e7781", "#0550ae", "#8250df", "#953800"],
-    off: null,
   };
-  // «k while»: a keyword, by the letters of the order above.
   const themeCode = [
     "«k #include» «s <unistd.h>»",
     "",
@@ -636,17 +875,11 @@ go install github.com/nvizble/Lightyear42/cmd/lightyear@${chan === "canary" ? "v
     "    «k while» (s[i] != «n '\\0'»)",
     "        «f write»(«n 1», &s[i++], «n 1»);",
     "}",
-    "",
-    "«t int» «f main»(«t void»)",
-    "{",
-    "    «f ft_putstr»(«s \"hello, 42\\n\"»);",
-    "    «k return» («n 0»);",
-    "}",
   ];
   function renderTheme(name) {
     const p = themes[name];
     const esc = t => t.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-    const paint = (_, k, t) => p ? `<span style="color:${p["kscnft".indexOf(k)]}${k === "c" ? ";font-style:italic" : ""}">${t}</span>` : t;
+    const paint = (_, k, t) => `<span style="color:${p["kscnft".indexOf(k)]}${k === "c" ? ";font-style:italic" : ""}">${t}</span>`;
     const out = document.getElementById("theme-screen");
     out.className = name === "github-light" ? "light" : "";
     out.innerHTML = [...themeCode.map((l, i) => `<span class="d">${String(i + 1).padStart(2)} │ </span>` + esc(l).replace(/«(\w) ([^»]*)»/g, paint)),
@@ -665,16 +898,16 @@ go install github.com/nvizble/Lightyear42/cmd/lightyear@${chan === "canary" ? "v
   renderTheme("lightyear");
 
   // Copy buttons.
-  async function copy(btn, text) {
-    try { await navigator.clipboard.writeText(text); btn.textContent = "copiado ✓"; }
-    catch { btn.textContent = "erro"; }
-    setTimeout(() => (btn.textContent = "copiar"), 1400);
+  async function copy(button, text) {
+    const label = button.textContent;
+    try { await navigator.clipboard.writeText(text); button.textContent = "Copiado ✓"; }
+    catch { button.textContent = "Erro"; }
+    setTimeout(() => (button.textContent = label), 1400);
   }
+  document.getElementById("hero-copy").addEventListener("click", e => copy(e.currentTarget, heroCommand()));
   document.getElementById("install-copy").addEventListener("click", e => {
-    const text = code.textContent.split("\n").filter(l => !l.startsWith("#")).join("\n");
-    copy(e.currentTarget, text);
+    copy(e.currentTarget, code.textContent.split("\n").filter(l => !l.startsWith("#")).join("\n"));
   });
-  document.querySelectorAll("[data-copy]").forEach(b => b.addEventListener("click", () => copy(b, b.dataset.copy)));
 </script>
 </body>
 </html>
