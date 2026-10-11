@@ -7,6 +7,24 @@ Mudanças visíveis do lightyear, da mais nova para a mais antiga. O
 Versões `-canary.N` são pre-releases: `lightyear update --canary` entra no
 canal canary e `lightyear update --stable` volta para a estável.
 
+## [1.3.0-canary.35] — 2026-10-11
+
+- `lightyear test` para os módulos de Python 05, 06, 07, 09 e 10 e para o
+  05 bis e o 06 bis, de 150 a 225 casos cada, tirados do subject: classes
+  abstratas que não dá para instanciar, Protocols, fábricas e estratégias
+  (05, 07, 06 bis); o pacote `alchemy` com a forma de import que cada
+  script pede e os imports circulares (06, 05 bis); venv, `requirements.txt`,
+  `pyproject.toml` e configuração por variáveis de ambiente e `.env`, sem
+  segredo no código e com o `.env` fora do git (05 bis); os modelos do
+  Pydantic com cada restrição testada nas bordas (09); lambdas, closures,
+  `functools` e decoradores (10). Pacotes que o módulo usa e que não
+  estiverem instalados (pydantic, pandas, numpy, python-dotenv) fazem os
+  casos que dependem deles aparecerem como pulados, não como erro.
+- `lightyear subject python-module-05-bis` e `python-module-06-bis` passam
+  a funcionar (estão no catálogo de subjects).
+- A mensagem de crash nos testes de Python mostra a exceção de verdade (no
+  Pydantic, a última linha do erro era só um link).
+
 ## [1.3.0-canary.34] — 2026-10-10
 
 - `lightyear test ft_printf`: README, norminette, Makefile, funções

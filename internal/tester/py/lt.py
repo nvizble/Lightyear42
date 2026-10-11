@@ -12,6 +12,7 @@ case) and prints one line per case:
 import ast
 import importlib.util
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -37,8 +38,12 @@ class Result:
         return self.code != 0 and ("Traceback" in self.err or self.code < 0)
 
     def last_error(self):
-        """The last line of the traceback ("ValueError: ...")."""
+        """The exception line of the traceback ("ValueError: ..."): the last
+        line that names one, since some (pydantic) end with a help link."""
         lines = [line for line in self.err.strip().splitlines() if line.strip()]
+        for line in reversed(lines):
+            if re.match(r"^[A-Za-z_][\w.]*(Error|Exception|Exit|Interrupt|Warning)\b", line):
+                return line
         return lines[-1] if lines else "código de saída %d" % self.code
 
 
@@ -188,7 +193,8 @@ class T:
                     if a.name.split(".")[0] not in imports:
                         bad.add("import " + a.name)
             elif isinstance(n, ast.ImportFrom):
-                if n.module and n.module.split(".")[0] not in imports:
+                # Relative imports (from . import x) are the project's own modules.
+                if n.level == 0 and n.module and n.module.split(".")[0] not in imports:
                     bad.add("from " + n.module + " import")
         if bad:
             raise Fail("usa o que não é permitido: " + ", ".join(sorted(bad)))
@@ -276,6 +282,7 @@ def common(t, files, typed=()):
 
 
 def main():
+    sys.dont_write_bytecode = True  # no __pycache__ next to the suites
     # Suites `from lt import ...`: make that this very module, so their
     # Fail is the one T.case catches.
     sys.modules["lt"] = sys.modules[__name__]

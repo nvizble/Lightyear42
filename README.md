@@ -342,15 +342,15 @@ num erro para abrir o código na linha dele.
 (na raiz do projeto); o get_next_line roda com vários `BUFFER_SIZE`, de 1 a
 10000000, e testa o bônus se houver os arquivos `_bonus`.
 
-Também: `lightyear test python-module-00` … `-04` (na pasta com `ex0/`,
-`ex1/`…; flake8 e mypy se instalados) e `sudo lightyear test born2beroot`,
+Também: `lightyear test python-module-00` … `-10` (menos o 08, ainda sem
+subject) e `python-module-05-bis` / `-06-bis`, na raiz do módulo (flake8,
+mypy, pydantic, pandas… se instalados; o que faltar aparece como pulado) e `sudo lightyear test born2beroot`,
 dentro da VM avaliada (sem editor: confere a máquina e o `monitoring.sh`).
 
 Os testes ficam em `internal/tester/`: `c/<projeto>/` (C, um arquivo por
 função), `py/moduleNN.py` (Python) e `sh/born2beroot.sh`. Cada suíte se testa
 contra uma solução de referência em `testdata/` (a da libft com bugs
-plantados, em `libft_test.go`). Próximos: push_swap e os módulos de Python
-05–10.
+plantados, em `libft_test.go`). Próximos: push_swap e o módulo de Python 08.
 
 ## Roadmap
 
@@ -363,7 +363,7 @@ plantados, em `libft_test.go`). Próximos: push_swap e os módulos de Python
 7. **Self-update** (concluído) — `lightyear update` via GitHub Releases
 8. **Notificações** (concluído) — push no celular via ntfy (`lightyear notify`)
 9. **Simulador de provas** — `lightyear exam` (Exam Rank 02); próximo: TUI examshell
-10. **Testes de projeto** (canary) — `lightyear test` libft, ft_printf, get_next_line, Python 00–04, born2beroot; próximos: push_swap, Python 05–10
+10. **Testes de projeto** (canary) — `lightyear test` libft, ft_printf, get_next_line, Python 00–10 (e 05/06 bis), born2beroot; próximos: push_swap, Python 08
 
 Chat/DM no terminal: parked (API sem DMs públicos; fórum ≠ chat).
 
