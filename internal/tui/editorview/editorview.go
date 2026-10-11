@@ -85,13 +85,15 @@ func NewVim(ed *editor.Editor) Model {
 	return m
 }
 
-// Close stops the language servers and frees the syntax highlighters; call
-// it once the editor is closed.
+// Close stops the terminal and the language servers and frees the syntax
+// highlighters, once the editor is closed; calling it again does nothing.
 func (m Model) Close() {
+	m.closeTerminal()
 	m.closeLSP()
 	for _, b := range m.ses.bufs {
 		if b.syn != nil {
 			b.syn.Close()
+			b.syn = nil // Close may run again (a host closing twice)
 		}
 	}
 }
@@ -127,7 +129,18 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		m.width, m.height = msg.Width, msg.Height
 		m.ses.width, m.ses.height = msg.Width, msg.Height
+		if t := m.ses.term; t != nil {
+			t.resize(msg.Width, m.terminalHeight()-1)
+		}
+	case termOutputMsg:
+		if msg.t != m.ses.term || msg.closed {
+			return m, nil // an old terminal, or the shell ended (shown in the title)
+		}
+		return m, msg.t.wait()
 	case tea.KeyMsg:
+		if m.ses.term != nil && m.ses.termFocus {
+			return m.terminalKey(msg)
+		}
 		next, cmd := m.key(msg)
 		m = next.(Model).synced() // the key may have switched buffers
 		m.syncLSP()
@@ -263,6 +276,19 @@ func (m Model) indentation() string {
 }
 
 func (m *Model) mouse(msg tea.MouseMsg) {
+	if h := m.terminalHeight(); h > 0 && msg.Y >= m.height-1-h && msg.Y < m.height-1 {
+		if msg.Action == tea.MouseActionPress && msg.Button == tea.MouseButtonLeft {
+			if exited, _ := m.ses.term.done(); exited {
+				m.closeTerminal()
+			} else {
+				m.ses.termFocus = true
+			}
+		}
+		return
+	}
+	if msg.Action == tea.MouseActionPress && msg.Button == tea.MouseButtonLeft {
+		m.ses.termFocus = false
+	}
 	if t := m.ses.tip; t != nil && m.onTip(t, msg.X, msg.Y) {
 		// The box stays while the mouse is on it; a click there fixes.
 		if t.fix && msg.Action == tea.MouseActionPress && msg.Button == tea.MouseButtonLeft {
@@ -508,6 +534,14 @@ func (m Model) statusLine() string {
 		name += fmt.Sprintf(" [%d/%d]", m.ses.cur+1, n)
 	}
 	cur := m.ed.Cursor()
+	if m.ses.term != nil && m.ses.termFocus {
+		left := styleMode.Render("TERMINAL") + styleStatus.Render(" │ "+m.ses.term.title)
+		right := styleStatus.Render("Ctrl-\\ Ctrl-n ou Ctrl-w k volta ao código ")
+		if room := m.width - lipgloss.Width(left) - lipgloss.Width(right); room > 0 {
+			return left + strings.Repeat(" ", room) + right
+		}
+		return ansi.Truncate(left, m.width, "…")
+	}
 	mode := styleMode.Render("EDIT")
 	right := styleStatus.Render("ctrl+s salva · ctrl+z desfaz · ctrl+q sai ")
 	if m.vim != nil {

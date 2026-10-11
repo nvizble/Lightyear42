@@ -29,6 +29,12 @@ canal canary e `lightyear update --stable` volta para a estável.
   (que esgota rápido num campus inteiro atrás do mesmo IP). Não aparece em
   scripts, pipes, CI e nos comandos `update` e `version`; desliga com
   `LIGHTYEAR_NO_UPDATE_NOTIFIER=1`.
+- Editor: terminal embutido. `:term` abre o seu shell embaixo do código,
+  na pasta do arquivo, para compilar, rodar a norminette ou os testes sem
+  sair do editor; `:term make` roda só um comando. `Ctrl-\ Ctrl-n` (como no
+  Vim) ou `Ctrl-w k` voltam ao código, `Ctrl-w j` desce para o terminal, e
+  o clique troca o foco. Funciona também no editor da aba Exam e no
+  `lightyear test`. Precisa de Linux ou macOS.
 
 ## [1.3.0-canary.35] — 2026-10-11
 

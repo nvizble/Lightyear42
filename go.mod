@@ -6,6 +6,8 @@ require (
 	github.com/charmbracelet/bubbletea v1.3.10
 	github.com/charmbracelet/lipgloss v1.1.0
 	github.com/charmbracelet/x/ansi v0.10.1
+	github.com/creack/pty v1.1.24
+	github.com/hinshun/vt10x v0.0.0-20220301184237-5011da428d02
 	github.com/muesli/termenv v0.16.0
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/viper v1.21.0
