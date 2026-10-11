@@ -29,8 +29,6 @@ var operators = map[string]Operator{
 	"gu": opLower, "gU": opUpper, "g~": opToggle,
 }
 
-// keepsRegister reports an operator that doesn't put text in the register.
-func (op Operator) keepsRegister() bool { return op >= opIndent }
 
 // apply runs op from the cursor to target t.
 func (c *Controller) apply(op Operator, t Target) {
