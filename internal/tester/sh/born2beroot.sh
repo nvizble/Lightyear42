@@ -320,10 +320,38 @@ if has systemctl; then
 	[ "$ROCKY" = 1 ] && cron_unit=crond
 	check "cron ativo" "systemctl is-active $cron_unit" systemctl is-active "$cron_unit"
 fi
-script=$(printf '%s\n' "$cronlines" | grep -oE '/[^ ;&|]*monitoring\.sh' | head -1)
-[ -z "$script" ] && for p in /usr/local/bin/monitoring.sh /root/monitoring.sh /home/"$LOGIN"/monitoring.sh; do [ -f "$p" ] && script=$p && break; done
-if [ -z "$script" ] || [ ! -f "$script" ]; then
-	ko "o script existe" "monitoring.sh não encontrado (procurei no cron, /usr/local/bin, /root, /home/$LOGIN)"
+# The path cron really runs: the word naming monitoring.sh in its line,
+# with ~, $HOME and relative paths resolved the way root's cron does (from
+# /root). If that file isn't there, the script is looked for in the usual
+# places, and the cron line is reported as broken.
+cronword=$(printf '%s\n' "$cronlines" | grep -oE "[^[:space:];&|\"']*monitoring\.sh" | head -1)
+cronpath=""
+case "$cronword" in
+	"") ;;
+	/*) cronpath=$cronword ;;
+	"~/"*) cronpath="/root/${cronword#\~/}" ;;
+	'$HOME/'*|'${HOME}/'*) cronpath="/root/${cronword#*/}" ;;
+	*) cronpath="/root/${cronword#./}" ;;
+esac
+script=""
+[ -n "$cronpath" ] && [ -f "$cronpath" ] && script=$cronpath
+if [ -n "$cronpath" ]; then
+	if [ -n "$script" ]; then
+		ok "o cron chama um script que existe ($cronpath)"
+	else
+		ko "o cron chama um script que existe" "a linha do cron roda $cronpath (\"$cronword\"), que não existe: o cron não vai achar o script. Use o caminho completo"
+	fi
+fi
+if [ -z "$script" ]; then
+	for p in /usr/local/bin/monitoring.sh /usr/local/sbin/monitoring.sh /root/monitoring.sh /home/"$LOGIN"/monitoring.sh; do
+		[ -f "$p" ] && script=$p && break
+	done
+fi
+if [ -z "$script" ]; then
+	script=$(find /root /home /usr/local /opt /etc -maxdepth 4 -type f -name monitoring.sh 2>/dev/null | head -1)
+fi
+if [ -z "$script" ]; then
+	ko "o script existe" "monitoring.sh não encontrado (procurei no cron, em /root, /home, /usr/local, /opt e /etc)"
 else
 	ok "o script existe ($script)"
 	first=$(head -1 "$script")

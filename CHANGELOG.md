@@ -7,6 +7,15 @@ Mudanças visíveis do lightyear, da mais nova para a mais antiga. O
 Versões `-canary.N` são pre-releases: `lightyear update --canary` entra no
 canal canary e `lightyear update --stable` volta para a estável.
 
+## [1.3.0-canary.37] — 2026-10-11
+
+- `lightyear test born2beroot` não achava o `monitoring.sh` quando a linha
+  do cron usava `~/monitoring.sh`, `./monitoring.sh` ou um caminho
+  relativo. Agora ele resolve o caminho como o cron do root resolve; se o
+  arquivo não estiver lá, procura em `/root`, `/home`, `/usr/local`, `/opt`
+  e `/etc`, confere o script que achar e avisa que a linha do cron aponta
+  para um arquivo que não existe (o cron não vai rodá-lo).
+
 ## [1.3.0-canary.36] — 2026-10-11
 
 - Editor: muito mais do Vim. Movimentos: `Home` e `End`, `Ctrl-Home` e
