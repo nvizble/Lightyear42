@@ -9,6 +9,26 @@ canal canary e `lightyear update --stable` volta para a estável.
 
 ## [1.3.0-canary.36] — 2026-10-11
 
+- Editor: muito mais do Vim. Movimentos: `Home` e `End`, `Ctrl-Home` e
+  `Ctrl-End`, `W` `B` `E` (WORDs), `ge` `gE`, `g_`, `|`, `+` `-` `Enter`,
+  `{` `}` (parágrafos), `%` (o par do parêntese, colchete ou chave; `50%`
+  vai à metade do arquivo), `H` `M` `L` e marcas (`ma`, `` `a ``, `'a`),
+  todos também com operadores (`d}`, `d%`, `y'a`). Rolagem: `Ctrl-d` `Ctrl-u`,
+  `Ctrl-f` `Ctrl-b`, `PgDn` `PgUp`, `Ctrl-e` `Ctrl-y` e `zz` `zt` `zb`.
+- Editor: comandos novos: `J` e `gJ` (juntar linhas), `r` (substituir),
+  `~`, `s` `S` `X`, `>>` `<<` e `>`/`<` com movimento (indentar com tab),
+  `gU` `gu` `g~` (`gUU`, `guiw`…), `Ctrl-a` e `Ctrl-x` (somar ao número),
+  `ZZ` e `ZQ`. No VISUAL, `U` `u` `~` `>` `<` `J` e `s`; no INSERT, `Home`
+  `End`, `PgUp` `PgDn`, `Ctrl-←` `Ctrl-→`, `Ctrl-w` (apaga a palavra) e
+  `Ctrl-u` (apaga a linha digitada). Tudo isso repete com `.` e desfaz com
+  um `u`.
+- Aviso de versão nova: quando sai um lightyear mais novo no seu canal
+  (estável ou canary), os comandos avisam no fim, com o comando para
+  atualizar, e o app mostra o aviso na barra de abas. A checagem é uma vez
+  por dia, em segundo plano, sem atrasar nada e sem usar a API do GitHub
+  (que esgota rápido num campus inteiro atrás do mesmo IP). Não aparece em
+  scripts, pipes, CI e nos comandos `update` e `version`; desliga com
+  `LIGHTYEAR_NO_UPDATE_NOTIFIER=1`.
 - Editor: terminal embutido. `:term` abre o seu shell embaixo do código,
   na pasta do arquivo, para compilar, rodar a norminette ou os testes sem
   sair do editor; `:term make` roda só um comando. `Ctrl-\ Ctrl-n` (como no

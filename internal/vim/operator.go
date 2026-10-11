@@ -1,6 +1,11 @@
 package vim
 
-import "github.com/nvizble/Lightyear42/internal/editor"
+import (
+	"strings"
+	"unicode"
+
+	"github.com/nvizble/Lightyear42/internal/editor"
+)
 
 // Operator acts on the text covered by a motion or a selection.
 type Operator int
@@ -11,15 +16,23 @@ const (
 	opDelete
 	opYank
 	opChange
+	opIndent // >: one level more, on whole lines
+	opDedent // <: one level less
+	opLower  // gu
+	opUpper  // gU
+	opToggle // g~
 )
 
 // operators maps keys to operators.
-var operators = map[string]Operator{"d": opDelete, "y": opYank, "c": opChange}
+var operators = map[string]Operator{
+	"d": opDelete, "y": opYank, "c": opChange, ">": opIndent, "<": opDedent,
+	"gu": opLower, "gU": opUpper, "g~": opToggle,
+}
 
 // apply runs op from the cursor to target t.
 func (c *Controller) apply(op Operator, t Target) {
 	from := c.ed.Cursor()
-	if t.Linewise {
+	if t.Linewise || op == opIndent || op == opDedent {
 		c.applyLines(op, from.Line, t.Pos.Line)
 		return
 	}
@@ -35,6 +48,16 @@ func (c *Controller) apply(op Operator, t Target) {
 
 // applyRange runs op on the characters in r; the text goes to the register.
 func (c *Controller) applyRange(op Operator, r editor.Range) {
+	switch op {
+	case opIndent, opDedent:
+		c.applyLines(op, r.Start.Line, r.End.Line)
+		return
+	case opLower, opUpper, opToggle:
+		c.recase(op, r)
+		c.ed.MoveCursor(r.Start)
+		c.clampNormal()
+		return
+	}
 	if text := c.ed.Buffer().Slice(r); text != "" {
 		c.regs[unnamed] = Register{Text: text}
 	}
@@ -59,7 +82,18 @@ func (c *Controller) applyLines(op Operator, first, last int) {
 		first, last = last, first
 	}
 	buf := c.ed.Buffer()
-	c.regs[unnamed] = Register{Text: buf.Slice(editor.Range{Start: editor.Position{Line: first}, End: editor.Position{Line: last, Column: buf.LineLen(last)}}), Linewise: true}
+	whole := editor.Range{Start: editor.Position{Line: first}, End: editor.Position{Line: last, Column: buf.LineLen(last)}}
+	switch op {
+	case opIndent, opDedent:
+		c.indent(first, last, op == opIndent)
+		return
+	case opLower, opUpper, opToggle:
+		c.recase(op, whole)
+		c.ed.MoveCursor(editor.Position{Line: first, Column: indentWidth(buf, first)})
+		c.clampNormal()
+		return
+	}
+	c.regs[unnamed] = Register{Text: buf.Slice(whole), Linewise: true}
 	switch op {
 	case opYank:
 		if cur := c.ed.Cursor(); cur.Line != first {
@@ -112,4 +146,52 @@ func (c *Controller) deleteLines(first, last int) {
 	target := min(first, buf.LineCount()-1)
 	c.ed.MoveCursor(editor.Position{Line: target, Column: indentWidth(buf, target)})
 	c.clampNormal()
+}
+
+// indent adds (or removes) one level of indentation on lines first..last:
+// a tab, like the norm asks; removing takes one tab or up to a tab's worth
+// of spaces. Empty lines get nothing. The cursor goes to the first line's
+// first non-blank character.
+func (c *Controller) indent(first, last int, more bool) {
+	buf := c.ed.Buffer()
+	c.ed.BeginGroup()
+	for line := first; line <= last; line++ {
+		start := editor.Position{Line: line}
+		switch text := buf.Line(line); {
+		case more && text != "":
+			c.ed.PlaceCursor(start)
+			c.ed.Insert("\t")
+		case !more && strings.HasPrefix(text, "\t"):
+			c.ed.Delete(editor.Range{Start: start, End: editor.Position{Line: line, Column: 1}})
+		case !more:
+			n := len(text) - len(strings.TrimLeft(text, " "))
+			if n = min(n, c.ed.TabSize()); n > 0 {
+				c.ed.Delete(editor.Range{Start: start, End: editor.Position{Line: line, Column: n}})
+			}
+		}
+	}
+	c.ed.EndGroup()
+	c.ed.MoveCursor(editor.Position{Line: first, Column: indentWidth(buf, first)})
+	c.clampNormal()
+}
+
+// recase changes the case of the text in r (gu, gU, g~ and ~).
+func (c *Controller) recase(op Operator, r editor.Range) {
+	text := c.ed.Buffer().Slice(r)
+	out := []rune(text)
+	for i, ch := range out {
+		switch {
+		case op == opLower:
+			out[i] = unicode.ToLower(ch)
+		case op == opUpper:
+			out[i] = unicode.ToUpper(ch)
+		case unicode.IsUpper(ch):
+			out[i] = unicode.ToLower(ch)
+		default:
+			out[i] = unicode.ToUpper(ch)
+		}
+	}
+	if string(out) != text {
+		c.ed.Replace(r, string(out))
+	}
 }

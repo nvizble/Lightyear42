@@ -53,3 +53,11 @@ func renderNotes(notes string) string {
 	}
 	return strings.Join(lines, "\n")
 }
+
+// RenderUpdateNotice is the note a command prints when a newer lightyear
+// is out.
+func RenderUpdateNotice(current, latest string) string {
+	return "\n" + styleLevel.Render("✦ Nova versão do lightyear disponível: ") +
+		styleLabel.Render(strings.TrimPrefix(current, "v")+" → ") + styleGood.Render(latest) +
+		"\n" + styleLabel.Render("  Atualize com: ") + styleValue.Render("lightyear update")
+}

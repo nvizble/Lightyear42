@@ -34,7 +34,11 @@ redimensionar). Com o language server: grn renomeia (:Rename), grr
 lista as referências, gra as correções e :Format formata (C só com
 .clang-format no projeto, para não quebrar a norminette):
 i/a/o/I/A/O entram no INSERT, esc volta ao NORMAL; movimentos hjkl, w b e,
-0 ^ $, gg G; operador d com qualquer movimento (dw, d$, dG, dd) e contadores
+W B E, ge, 0 ^ $ g_ (e Home/End), gg G, { } (parágrafos), % (o par), H M L,
++ - |, marcas (ma, ` + "`" + `a, 'a) e rolagem (Ctrl-d/u/f/b/e/y, PgUp/PgDn, zz zt zb);
+J junta linhas, r substitui, ~ troca a caixa, >> << indentam, gU gu g~ mudam
+a caixa, Ctrl-a/Ctrl-x somam ao número, ZZ salva e sai;
+operador d com qualquer movimento (dw, d$, dG, dd) e contadores
 (3j, 3dd, 2d3w); y copia (yy, yw, Y), c muda (cw, cc, C) e p/P colam o
 que foi copiado ou apagado (dd, x, D também guardam); x apaga, u e Ctrl-r
 desfazem/refazem; v e V selecionam (caracteres ou linhas, também arrastando
