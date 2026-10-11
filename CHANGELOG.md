@@ -7,6 +7,16 @@ Mudanças visíveis do lightyear, da mais nova para a mais antiga. O
 Versões `-canary.N` são pre-releases: `lightyear update --canary` entra no
 canal canary e `lightyear update --stable` volta para a estável.
 
+## [1.3.0-canary.36] — 2026-10-11
+
+- Aviso de versão nova: quando sai um lightyear mais novo no seu canal
+  (estável ou canary), os comandos avisam no fim, com o comando para
+  atualizar, e o app mostra o aviso na barra de abas. A checagem é uma vez
+  por dia, em segundo plano, sem atrasar nada e sem usar a API do GitHub
+  (que esgota rápido num campus inteiro atrás do mesmo IP). Não aparece em
+  scripts, pipes, CI e nos comandos `update` e `version`; desliga com
+  `LIGHTYEAR_NO_UPDATE_NOTIFIER=1`.
+
 ## [1.3.0-canary.35] — 2026-10-11
 
 - `lightyear test` para os módulos de Python 05, 06, 07, 09 e 10 e para o

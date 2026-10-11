@@ -30,6 +30,7 @@ func runApp(ctx context.Context) error {
 		// The editor's color scheme lives in config.yaml (:colorscheme).
 		EditorScheme:     func() string { name, _ := config.Colorscheme(); return name },
 		SaveEditorScheme: func(name string) { _ = config.SaveColorscheme(name) },
+		UpdateAvailable:  availableUpdate(),
 	}
 	deps, cleanup, err := newDeps(ctx)
 	if err != nil {
