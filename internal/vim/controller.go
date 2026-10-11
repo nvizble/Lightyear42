@@ -63,7 +63,7 @@ type CommandState struct {
 	opKey   string // the operator's key, so "dd" can be told apart
 	opCount int    // the count typed before the operator
 	lead    string // a prefix ("g", "[", "]", "ctrl+w", "i", "a") waiting for its second key
-	find    string // f, F, t, T, q or @ waiting for its character
+	find    string // f, F, t, T, q, @, r, m, ' or ` waiting for its character
 }
 
 // Controller interprets keys for one editor.
@@ -78,6 +78,8 @@ type Controller struct {
 	search  search
 	// lastFind is the last f/F/t/T and its character, for ; and ,.
 	lastFind string
+	// marks are m{a-z}, by file.
+	marks map[*editor.Editor]map[rune]editor.Position
 
 	// Repeating (repeat.go): the command being typed and the text changes
 	// when it started, the last change for ".", macros and their recording.
@@ -218,6 +220,9 @@ func (c *Controller) normalKey(key string) Result {
 		return res
 	}
 
+	if st.Operator != opNone && len(st.opKey) == 2 && key == st.opKey[1:] {
+		key = st.opKey // guu is gugu, gUU gUgU, g~~ g~g~
+	}
 	if op, ok := operators[key]; ok {
 		if st.Operator == opNone {
 			st.Operator, st.opKey, st.opCount, st.Count = op, key, st.Count, 0
@@ -315,8 +320,9 @@ func (c *Controller) prefix(key string) (string, bool) {
 		_, motion := motions[key]
 		_, command := c.Commands[key]
 		_, _, object := lookupObject(key)
+		_, op := operators[key]
 		switch {
-		case motion || command || object:
+		case motion || command || object || op || leadCommands[key]:
 			return key, true
 		case c.commandPrefix(key):
 			// Part of a longer host command ("gr" of "grn"): keep waiting.
@@ -328,11 +334,13 @@ func (c *Controller) prefix(key string) (string, bool) {
 		return "", false
 	case key == "q" && c.macro != 0:
 		return key, true // stops recording
-	case key == "f" || key == "F" || key == "t" || key == "T" || key == "q" || key == "@":
+	case key == "f" || key == "F" || key == "t" || key == "T" || key == "q" || key == "@" || key == "'" || key == "`",
+		(key == "r" || key == "m") && st.Operator == opNone && c.mode == Normal:
 		st.find = key
 		st.Pending = append(st.Pending, key)
 		return "", false
 	case key == "g" || key == "[" || key == "]" || key == "ctrl+w" || ((key == "i" || key == "a") && (st.Operator != opNone || c.visual())),
+		(key == "z" || key == "Z") && st.Operator == opNone && c.mode == Normal,
 		key == " " && st.Operator == opNone && c.commandPrefix(" "): // a host's leader (Space e)
 		st.lead = key
 		st.Pending = append(st.Pending, key)
@@ -367,6 +375,8 @@ func (c *Controller) motion(key string) (Motion, bool) {
 		return m, true
 	}
 	switch {
+	case len(key) > 1 && (key[0] == '\'' || key[0] == '`') && isChar(key[1:]):
+		return c.markMotion(key[0] == '`', []rune(key[1:])[0]), true
 	case (key == ";" || key == ",") && c.lastFind != "":
 		kind, char := c.lastFind[0], []rune(c.lastFind[1:])[0]
 		if key == "," {
@@ -385,12 +395,52 @@ func (c *Controller) visual() bool {
 }
 
 // aliases are commands spelled as other keys, like Vim's D = d$.
-var aliases = map[string][]string{"D": {"d", "$"}, "C": {"c", "$"}, "Y": {"y", "y"}}
+var aliases = map[string][]string{
+	"D": {"d", "$"}, "C": {"c", "$"}, "Y": {"y", "y"},
+	"s": {"c", "l"}, "S": {"c", "c"}, "X": {"d", "h"},
+}
+
+// leadCommands are the built-in commands typed after a prefix key.
+var leadCommands = map[string]bool{"gJ": true, "zz": true, "zt": true, "zb": true, "ZZ": true, "ZQ": true}
 
 // command runs the Normal-mode commands that aren't motions or operators.
 func (c *Controller) command(key string, n int) Result {
 	cur := c.ed.Cursor()
+	if len(key) > 1 && (key[0] == 'r' || key[0] == 'm') && isChar(key[1:]) {
+		if key[0] == 'm' {
+			return c.setMark([]rune(key[1:])[0])
+		}
+		return c.replaceChars(key[1:], n)
+	}
+	half := max(c.ed.Viewport().Height/2, 1)
+	page := max(c.ed.Viewport().Height-2, 1)
 	switch key {
+	case "J", "gJ":
+		return c.join(n, key == "gJ")
+	case "~":
+		return c.toggleCase(n)
+	case "ctrl+a":
+		return c.addNumber(n)
+	case "ctrl+x":
+		return c.addNumber(-n)
+	case "ctrl+d":
+		return c.scroll(half)
+	case "ctrl+u":
+		return c.scroll(-half)
+	case "ctrl+f", "pgdown":
+		return c.scroll(page * n)
+	case "ctrl+b", "pgup":
+		return c.scroll(-page * n)
+	case "ctrl+e":
+		return c.scrollView(n)
+	case "ctrl+y":
+		return c.scrollView(-n)
+	case "zz", "zt", "zb":
+		return c.place(key[1])
+	case "ZZ":
+		return c.execute("x")
+	case "ZQ":
+		return c.execute("q!")
 	case "i":
 		c.enterInsert()
 	case "a":
@@ -539,6 +589,21 @@ func (c *Controller) visualKey(key string) Result {
 		c.ed.SwapSelectionEnds()
 	case "x", "delete":
 		c.operate(opDelete)
+	case "s":
+		c.operate(opChange)
+	case "u":
+		c.operate(opLower)
+	case "U":
+		c.operate(opUpper)
+	case "~":
+		c.operate(opToggle)
+	case "J", "gJ":
+		r, _, ok := c.ed.SelectedRange()
+		c.exitVisual()
+		if ok {
+			c.ed.MoveCursor(editor.Position{Line: r.Start.Line})
+			return c.join(r.End.Line-r.Start.Line+1, key == "gJ")
+		}
 	case "p", "P":
 		return c.replaceSelection(times(n))
 	case ":":
@@ -624,6 +689,26 @@ func (c *Controller) insertKey(key string) Result {
 		c.ed.Move(editor.MoveUp)
 	case "down":
 		c.ed.Move(editor.MoveDown)
+	case "home":
+		c.ed.Move(editor.MoveLineStart)
+	case "end":
+		c.ed.Move(editor.MoveLineEnd)
+	case "ctrl+home":
+		c.ed.Move(editor.MoveDocStart)
+	case "ctrl+end":
+		c.ed.Move(editor.MoveDocEnd)
+	case "pgup":
+		c.ed.Move(editor.MovePageUp)
+	case "pgdown":
+		c.ed.Move(editor.MovePageDown)
+	case "ctrl+left":
+		c.ed.PlaceCursor(wordBackward(c.ed, 1, false).Pos)
+	case "ctrl+right":
+		c.ed.PlaceCursor(wordForward(c.ed, 1, false).Pos)
+	case "ctrl+w":
+		c.deleteWordBefore()
+	case "ctrl+u":
+		c.deleteToLineStart()
 	default:
 		if isChar(key) {
 			c.ed.Insert(key)

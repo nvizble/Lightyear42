@@ -12,7 +12,10 @@ import (
 // keys splits a Vim-style sequence: "ihi<esc>" → "i", "h", "i", "esc".
 func keys(seq string) []string {
 	names := map[string]string{"esc": "esc", "cr": "enter", "bs": "backspace", "tab": "tab", "s-tab": "shift+tab", "c-r": "ctrl+r",
-		"up": "up", "down": "down", "left": "left", "right": "right", "del": "delete"}
+		"up": "up", "down": "down", "left": "left", "right": "right", "del": "delete",
+		"home": "home", "end": "end", "c-home": "ctrl+home", "c-end": "ctrl+end", "pgup": "pgup", "pgdn": "pgdown",
+		"c-d": "ctrl+d", "c-u": "ctrl+u", "c-f": "ctrl+f", "c-b": "ctrl+b", "c-e": "ctrl+e", "c-y": "ctrl+y",
+		"c-a": "ctrl+a", "c-x": "ctrl+x", "c-w": "ctrl+w", "c-left": "ctrl+left", "c-right": "ctrl+right"}
 	var out []string
 	for len(seq) > 0 {
 		if seq[0] == '<' {
