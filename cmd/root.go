@@ -44,7 +44,7 @@ clicáveis, mouse e teclado); os subcomandos abaixo continuam iguais.`,
 			// Skip config load for commands that do not need OAuth/config,
 			// including shell completion (__complete).
 			switch cmd.Name() {
-			case "version", "help", "update", "completion", "install",
+			case "version", "help", "update", "completion", "install", updateCheckCmd,
 				cobra.ShellCompRequestCmd, cobra.ShellCompNoDescRequestCmd:
 				return nil
 			}
@@ -59,6 +59,7 @@ clicáveis, mouse e teclado); os subcomandos abaixo continuam iguais.`,
 
 	root.AddCommand(newVersionCmd())
 	root.AddCommand(newUpdateCmd())
+	root.AddCommand(newUpdateCheckCmd())
 	root.AddCommand(newSetupCmd())
 	root.AddCommand(newConfigCmd())
 	root.AddCommand(newLoginCmd())
@@ -87,9 +88,13 @@ clicáveis, mouse e teclado); os subcomandos abaixo continuam iguais.`,
 // Execute runs the root command.
 func Execute() error {
 	root := NewRootCmd()
-	if err := root.Execute(); err != nil {
+	notice := startUpdateNotice(root, os.Args[1:], os.Stderr)
+	err := root.Execute()
+	if err != nil {
 		fmt.Fprintln(os.Stderr, "Error:", err)
-		return err
 	}
-	return nil
+	if notice != nil {
+		notice()
+	}
+	return err
 }

@@ -22,6 +22,13 @@ canal canary e `lightyear update --stable` volta para a estável.
   `End`, `PgUp` `PgDn`, `Ctrl-←` `Ctrl-→`, `Ctrl-w` (apaga a palavra) e
   `Ctrl-u` (apaga a linha digitada). Tudo isso repete com `.` e desfaz com
   um `u`.
+- Aviso de versão nova: quando sai um lightyear mais novo no seu canal
+  (estável ou canary), os comandos avisam no fim, com o comando para
+  atualizar, e o app mostra o aviso na barra de abas. A checagem é uma vez
+  por dia, em segundo plano, sem atrasar nada e sem usar a API do GitHub
+  (que esgota rápido num campus inteiro atrás do mesmo IP). Não aparece em
+  scripts, pipes, CI e nos comandos `update` e `version`; desliga com
+  `LIGHTYEAR_NO_UPDATE_NOTIFIER=1`.
 
 ## [1.3.0-canary.35] — 2026-10-11
 
