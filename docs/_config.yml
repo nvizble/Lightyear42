@@ -1,0 +1,17 @@
+# GitHub Pages builds this folder with Jekyll: index.html and install.sh are
+# copied as they are; the Markdown pages under wiki/ get the wiki layout.
+title: lightyear
+description: A 42 inteira, direto do terminal.
+markdown: kramdown
+kramdown:
+  input: GFM
+  hard_wrap: false
+  syntax_highlighter_opts:
+    disable: true
+defaults:
+  - scope:
+      path: "wiki"
+    values:
+      layout: wiki
+exclude:
+  - README.md

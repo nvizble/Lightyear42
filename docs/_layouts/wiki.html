@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% if page.title != "Wiki do lightyear" %}{{ page.title }} · {% endif %}Wiki do lightyear</title>
+<meta name="description" content="{{ page.description | default: site.description | escape }}">
+<meta name="theme-color" content="#0a0a0b">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Inter+Tight:wght@600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ '/assets/site.css' | relative_url }}">
+</head>
+<body>
+<a class="skip" href="#conteudo">Pular para o conteúdo</a>
+<header class="nav">
+  <div class="wrap">
+    <a class="logo" href="{{ '/' | relative_url }}"><span class="mark">✦</span>lightyear</a>
+    <nav class="links" aria-label="Principal">
+      <a href="{{ '/#funcoes' | relative_url }}" class="hide-sm">Funções</a>
+      <a href="{{ '/wiki/' | relative_url }}" aria-current="page">Wiki</a>
+      <a href="https://github.com/nvizble/Lightyear42" class="hide-sm">GitHub</a>
+      <a class="btn small primary" href="{{ '/wiki/instalacao.html' | relative_url }}">Instalar</a>
+    </nav>
+  </div>
+</header>
+
+{% assign docs = site.pages | where_exp: "p", "p.path contains 'wiki/'" | sort: "order" %}
+<div class="wrap wiki">
+  <aside class="wiki-side" aria-label="Páginas da wiki">
+    <input class="wiki-search" type="search" placeholder="Buscar na wiki…" aria-label="Buscar na wiki" id="wiki-search">
+      <h4>Começando</h4>
+      <ul>
+        {% for p in docs %}{% if p.order < 4 %}<li><a href="{{ p.url | relative_url }}"{% if p.url == page.url %} aria-current="page"{% endif %}>{{ p.title }}</a></li>{% endif %}{% endfor %}
+      </ul>
+      <h4>Funções</h4>
+      <ul>
+        {% for p in docs %}{% if p.order >= 4 and p.order < 10 %}<li><a href="{{ p.url | relative_url }}"{% if p.url == page.url %} aria-current="page"{% endif %}>{{ p.title }}</a></li>{% endif %}{% endfor %}
+      </ul>
+      <h4>Mais</h4>
+      <ul>
+        {% for p in docs %}{% if p.order >= 10 %}<li><a href="{{ p.url | relative_url }}"{% if p.url == page.url %} aria-current="page"{% endif %}>{{ p.title }}</a></li>{% endif %}{% endfor %}
+      </ul>
+  </aside>
+
+  <main class="doc" id="conteudo">
+    <div class="crumbs"><a href="{{ '/wiki/' | relative_url }}">Wiki</a>{% if page.title != "Wiki do lightyear" %} / {{ page.title }}{% endif %}</div>
+    <h1>{{ page.title }}</h1>
+    {% if page.description %}<p class="lede">{{ page.description }}</p>{% endif %}
+    {{ content }}
+
+    {% for p in docs %}{% if p.url == page.url %}{% assign i = forloop.index0 %}{% endif %}{% endfor %}
+    <nav class="pager" aria-label="Página anterior e próxima">
+      {% if i > 0 %}{% assign pi = i | minus: 1 %}{% assign prev = docs[pi] %}<a href="{{ prev.url | relative_url }}"><small>← Anterior</small>{{ prev.title }}</a>{% endif %}
+      {% assign n = i | plus: 1 %}{% if n < docs.size %}{% assign next = docs[n] %}<a class="next" href="{{ next.url | relative_url }}"><small>Próxima →</small>{{ next.title }}</a>{% endif %}
+    </nav>
+    <p class="edit"><a href="https://github.com/nvizble/Lightyear42/edit/main/docs/{{ page.path }}">Editar esta página no GitHub</a></p>
+  </main>
+
+  <aside class="wiki-toc" aria-label="Nesta página">
+    <h4>Nesta página</h4>
+    <ul id="toc"></ul>
+  </aside>
+</div>
+
+<footer class="footer">
+  <div class="wrap">
+    <div class="legal" style="margin-top:0;border-top:0;padding-top:0">
+      <span>✦ lightyear · MIT · não é um projeto oficial da 42</span>
+      <span><a href="https://github.com/nvizble/Lightyear42">github.com/nvizble/Lightyear42</a></span>
+    </div>
+  </div>
+</footer>
+
+<script>
+  // Callouts: a blockquote starting with "Atenção:", "Canary:" or "Dica:".
+  document.querySelectorAll(".doc blockquote").forEach(q => {
+    const t = q.textContent.trim();
+    if (/^Atenção:/.test(t)) q.classList.add("warn");
+    else if (/^Canary:/.test(t)) q.classList.add("canary");
+    else if (/^Dica:/.test(t)) q.classList.add("tip");
+  });
+
+  // On-page table of contents from the h2/h3 headings.
+  const toc = document.getElementById("toc");
+  document.querySelectorAll(".doc h2[id], .doc h3[id]").forEach(h => {
+    const li = document.createElement("li");
+    const a = document.createElement("a");
+    a.href = "#" + h.id;
+    a.textContent = h.textContent;
+    if (h.tagName === "H3") a.className = "lvl3";
+    li.append(a);
+    toc.append(li);
+  });
+  if (!toc.children.length) toc.parentElement.hidden = true;
+
+  // Copy buttons on code blocks (the "$ " prompt isn't copied).
+  document.querySelectorAll(".doc pre").forEach(pre => {
+    const b = document.createElement("button");
+    b.className = "btn small copy";
+    b.type = "button";
+    b.textContent = "copiar";
+    b.addEventListener("click", async () => {
+      const text = pre.querySelector("code").textContent.replace(/^\$ /gm, "").trimEnd();
+      try { await navigator.clipboard.writeText(text); b.textContent = "copiado ✓"; } catch { b.textContent = "erro"; }
+      setTimeout(() => (b.textContent = "copiar"), 1400);
+    });
+    pre.append(b);
+  });
+
+  // Sidebar filter.
+  const links = [...document.querySelectorAll(".wiki-side li")];
+  document.getElementById("wiki-search").addEventListener("input", e => {
+    const q = e.target.value.trim().toLowerCase();
+    links.forEach(li => (li.hidden = q && !li.textContent.toLowerCase().includes(q)));
+  });
+</script>
+</body>
+</html>
