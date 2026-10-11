@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -15,7 +16,7 @@ func TestPythonModulesReferencePasses(t *testing.T) {
 		t.Skip("python3 não encontrado")
 	}
 	for _, p := range projects {
-		if len(p.Markers) == 0 || p.Markers[0] != "ex0" {
+		if !strings.HasPrefix(p.Name, "python-module-") {
 			continue
 		}
 		t.Run(p.Name, func(t *testing.T) {

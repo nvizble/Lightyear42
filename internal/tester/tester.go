@@ -149,6 +149,8 @@ var projects = []Project{
 	ftPrintf,
 	getNextLine,
 	pythonModule("00"), pythonModule("01"), pythonModule("02"), pythonModule("03"), pythonModule("04"),
+	pythonModule("05"), pythonModule("06", "alchemy"), pythonModule("07"), pythonModule("09"), pythonModule("10"),
+	pythonModule("05-bis"), pythonModule("06-bis", "data_processor.py", "ex3"),
 	born2beroot,
 }
 

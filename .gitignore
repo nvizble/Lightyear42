@@ -32,3 +32,7 @@ config.local.yaml
 
 # Aux tooling (scraper Python vive fora do produto; não commitar)
 /tools/
+
+# Python
+__pycache__/
+*.pyc

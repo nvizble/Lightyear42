@@ -10,11 +10,14 @@ import (
 // The Python modules of the Common Core: ex0/, ex1/… at the root, checked
 // by py/lt.py and the module's suite (py/moduleNN.py), which run every
 // case in its own python3 process.
-func pythonModule(n string) Project {
+func pythonModule(n string, markers ...string) Project {
+	if len(markers) == 0 {
+		markers = []string{"ex0"}
+	}
 	return Project{
 		Name:    "python-module-" + n,
 		Subject: "python-module-" + n,
-		Markers: []string{"ex0"},
+		Markers: markers,
 		run: func(ctx context.Context, r *runner) error {
 			return r.runPython(ctx, "module"+n+".py")
 		},
