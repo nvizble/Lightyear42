@@ -26,20 +26,23 @@ type buffer struct {
 
 // session is what the model's copies share.
 type session struct {
-	bufs     []*buffer
-	cur      int
-	lsp      bool                  // WithLSP: buffers get language servers
-	servers  map[string]*lspServer // by server name and project root
-	wins     []*window             // see windows.go
-	win      int                   // the current window
-	vertical bool                  // windows side by side (:vsp), not stacked
-	starts   []tea.Cmd             // servers to start, for Update to return
-	jumps    []jump                // where gd jumped from, for Ctrl-o
-	pick     *picker               // an open list to choose from (lspedits.go)
-	tip      *tip                  // the diagnostics under the mouse (diagtip.go)
-	scheme   *scheme               // the code's colors (schemes.go)
-	onScheme func(name string)     // keeps the one :colorscheme picks
-	drag     *drag                 // a window border being dragged (resize.go)
+	bufs      []*buffer
+	cur       int
+	lsp       bool                  // WithLSP: buffers get language servers
+	servers   map[string]*lspServer // by server name and project root
+	wins      []*window             // see windows.go
+	win       int                   // the current window
+	vertical  bool                  // windows side by side (:vsp), not stacked
+	starts    []tea.Cmd             // servers to start, for Update to return
+	jumps     []jump                // where gd jumped from, for Ctrl-o
+	pick      *picker               // an open list to choose from (lspedits.go)
+	tip       *tip                  // the diagnostics under the mouse (diagtip.go)
+	scheme    *scheme               // the code's colors (schemes.go)
+	onScheme  func(name string)     // keeps the one :colorscheme picks
+	drag      *drag                 // a window border being dragged (resize.go)
+	term      *terminal             // the :term panel (terminal.go), nil when closed
+	termFocus bool                  // keys go to the terminal
+	termLead  string                // Ctrl-\ or Ctrl-w held back in the terminal
 	// width and height are the screen's, for the window layout: commands
 	// the controller runs see the session, not the latest model.
 	width, height int
@@ -347,6 +350,8 @@ func (m Model) exCommands() map[string]func(string) vim.Result {
 		"close":       func(string) vim.Result { return m.closeWindow() },
 		"on":          func(string) vim.Result { return m.only() },
 		"only":        func(string) vim.Result { return m.only() },
+		"term":        m.openTerminal,
+		"terminal":    m.openTerminal,
 		"colo":        m.colorscheme,
 		"colorscheme": m.colorscheme,
 		"res":         func(arg string) vim.Result { return m.resizeTo(false, arg) },

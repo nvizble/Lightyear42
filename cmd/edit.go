@@ -40,6 +40,8 @@ que foi copiado ou apagado (dd, x, D também guardam); x apaga, u e Ctrl-r
 desfazem/refazem; v e V selecionam (caracteres ou linhas, também arrastando
 o mouse), o troca a ponta e d, y, c e p agem na seleção; :w salva, :wq salva
 e sai, :q! sai sem salvar. Ctrl-S e Ctrl-Q também salvam e saem.
+:term abre um terminal embaixo do código (:term make roda um comando);
+Ctrl-\ Ctrl-n ou Ctrl-w k voltam ao código, Ctrl-w j desce para o terminal.
 Use --plain para o editor sem modos.`,
 		Hidden: true,
 		Args:   cobra.MinimumNArgs(1),

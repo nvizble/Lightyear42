@@ -7,6 +7,15 @@ Mudanças visíveis do lightyear, da mais nova para a mais antiga. O
 Versões `-canary.N` são pre-releases: `lightyear update --canary` entra no
 canal canary e `lightyear update --stable` volta para a estável.
 
+## [1.3.0-canary.36] — 2026-10-11
+
+- Editor: terminal embutido. `:term` abre o seu shell embaixo do código,
+  na pasta do arquivo, para compilar, rodar a norminette ou os testes sem
+  sair do editor; `:term make` roda só um comando. `Ctrl-\ Ctrl-n` (como no
+  Vim) ou `Ctrl-w k` voltam ao código, `Ctrl-w j` desce para o terminal, e
+  o clique troca o foco. Funciona também no editor da aba Exam e no
+  `lightyear test`. Precisa de Linux ou macOS.
+
 ## [1.3.0-canary.35] — 2026-10-11
 
 - `lightyear test` para os módulos de Python 05, 06, 07, 09 e 10 e para o

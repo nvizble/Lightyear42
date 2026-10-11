@@ -125,6 +125,22 @@ Copiar, colar, macros e busca valem entre os arquivos.
 
 Também dá para arrastar a borda `│` entre janelas lado a lado, ou a linha de título nas empilhadas.
 
+## Terminal {#terminal}
+
+`:term` abre um terminal embaixo do código, rodando o seu shell na pasta do arquivo. Dá para compilar, rodar a norminette ou os testes sem sair do editor. `:term make` (ou qualquer comando) roda só aquele comando.
+
+| Tecla | Ação |
+|---|---|
+| `:term`, `:terminal` | abre o terminal (com ele aberto, só volta para ele) |
+| `:term comando` | roda um comando no terminal (`:term make re`, `:term norminette`) |
+| `Ctrl-\` `Ctrl-n` | volta ao código (como no Vim) |
+| `Ctrl-w k` | também volta ao código; `Ctrl-w j` desce para o terminal |
+| clique | no terminal ou no código, troca o foco |
+
+Com o terminal em foco, as teclas vão para o programa, até `Ctrl-c`, as setas e o `Tab`. A barra de status mostra **TERMINAL**. Quando o shell (ou o comando) termina, o título avisa o código de saída e qualquer tecla fecha o painel. Fechar o editor encerra o que estiver rodando.
+
+> **Atenção:** o terminal precisa de Linux ou macOS; no Windows, use o WSL.
+
 ## Language server {#lsp}
 
 Com um language server, o editor mostra os erros enquanto você digita, completa nomes e navega pelo código.

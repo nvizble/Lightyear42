@@ -33,7 +33,7 @@ type rect struct{ x, y, w, h int }
 
 // rects lays the windows out over the screen above the status line.
 func (m Model) rects() []rect {
-	n, width, height := len(m.ses.wins), m.ses.width, max(m.ses.height-1, 1)
+	n, width, height := len(m.ses.wins), m.ses.width, max(m.ses.height-1-m.terminalHeight(), 1)
 	if n == 1 {
 		return []rect{{0, 0, width, height}}
 	}
@@ -76,9 +76,9 @@ func (m Model) screen() []string {
 	several := len(m.ses.wins) > 1
 	for i, w := range m.ses.wins {
 		r, active := rects[i], i == m.ses.win
-		lines := m.renderWindow(w.buf, r, active)
+		lines := m.renderWindow(w.buf, r, active && !m.ses.termFocus)
 		if several {
-			lines = append(lines, title(w.buf, r.w, active))
+			lines = append(lines, title(w.buf, r.w, active && !m.ses.termFocus))
 		}
 		for j, line := range lines {
 			row := r.y + j
@@ -97,6 +97,10 @@ func (m Model) screen() []string {
 			}
 			rows[row] += line
 		}
+	}
+	if h := m.terminalHeight(); h > 0 {
+		top := max(len(rows)-h, 0)
+		copy(rows[top:], m.renderTerminal(m.ses.width, h))
 	}
 	return rows
 }
@@ -197,7 +201,14 @@ func (m Model) windowCommands() map[string]func(int) vim.Result {
 	return map[string]func(int) vim.Result{
 		"ctrl+ww": cycle(1), "ctrl+wctrl+w": cycle(1), "ctrl+wW": cycle(-1),
 		"ctrl+wh": move(-1, true), "ctrl+wl": move(1, true),
-		"ctrl+wk": move(-1, false), "ctrl+wj": move(1, false),
+		"ctrl+wk": move(-1, false), "ctrl+wj": func(n int) vim.Result {
+			// Below the last window: the terminal.
+			if m.ses.term != nil && (len(m.ses.wins) == 1 || m.ses.vertical || m.ses.win == len(m.ses.wins)-1) {
+				m.ses.termFocus = true
+				return vim.Result{}
+			}
+			return move(1, false)(n)
+		},
 		"ctrl+ws": func(int) vim.Result { return m.split(false, "") },
 		"ctrl+wv": func(int) vim.Result { return m.split(true, "") },
 		"ctrl+wc": func(int) vim.Result { return m.closeWindow() },
