@@ -29,7 +29,6 @@ var operators = map[string]Operator{
 	"gu": opLower, "gU": opUpper, "g~": opToggle,
 }
 
-
 // apply runs op from the cursor to target t.
 func (c *Controller) apply(op Operator, t Target) {
 	from := c.ed.Cursor()
