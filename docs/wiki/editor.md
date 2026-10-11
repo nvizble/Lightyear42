@@ -39,8 +39,29 @@ Com `--plain`, não há modos: o editor funciona como um editor comum, com `Ctrl
 | `h` `j` `k` `l` | esquerda, baixo, cima, direita |
 | `w` `b` `e` | próxima palavra, palavra anterior, fim da palavra |
 | `0` `^` `$` | início da linha, primeiro caractere não branco, fim da linha |
+| `W` `B` `E` | o mesmo para WORDs (tudo que não é espaço: `a.b` é uma WORD só) |
+| `ge` `gE` | fim da palavra (ou WORD) anterior |
+| `0` `Home` | início da linha |
+| `$` `End` | fim da linha |
+| `g_` | último caractere não branco |
+| `N\|` | coluna N (`4\|`) |
+| `+` `Enter` `-` | primeiro não branco da linha de baixo / de cima |
 | `gg` `G` | início e fim do arquivo; com número, vão à linha N (`42G`) |
+| `Ctrl-Home` `Ctrl-End` | início e fim do arquivo |
+| `{` `}` | parágrafo anterior / próximo (a linha vazia antes ou depois) |
+| `%` | o par do `(` `[` `{` sob o cursor ou adiante na linha; `50%` vai à metade do arquivo |
+| `H` `M` `L` | topo, meio e fim da tela |
 | `f` `F` `t` `T` + caractere | até o caractere na linha; `;` repete, `,` repete ao contrário |
+| `ma` … `` `a `` `'a` | marca a posição em `a` (de `a` a `z`); `` ` `` volta ao lugar exato, `'` à linha (também com operador: `d'a`) |
+
+### Rolar a tela
+
+| Tecla | Ação |
+|---|---|
+| `Ctrl-d` `Ctrl-u` | meia tela para baixo / para cima (o cursor vai junto) |
+| `Ctrl-f` `Ctrl-b`, `PgDn` `PgUp` | uma tela para baixo / para cima |
+| `Ctrl-e` `Ctrl-y` | uma linha, sem mover o cursor (só se ele sair da tela) |
+| `zz` `zt` `zb` | põe a linha do cursor no meio, no topo ou embaixo da tela |
 
 Contadores multiplicam: `3j`, `10l`, `2fa`.
 
@@ -48,7 +69,14 @@ Contadores multiplicam: `3j`, `10l`, `2fa`.
 
 | Tecla | Ação |
 |-------|------|
-| `x` | apaga o caractere |
+| `x` `X` | apaga o caractere sob o cursor / antes dele |
+| `s` `S` | troca o caractere / a linha inteira (entra no INSERT) |
+| `r` + caractere | substitui o caractere (`3rx` substitui três) |
+| `~` | troca maiúscula e minúscula e anda (`5~`) |
+| `J` `gJ` | junta a linha de baixo (`J` com um espaço, `gJ` como está; `3J` junta três) |
+| `>>` `<<` | indenta / desindenta a linha com um tab (`>j`, `>}`, `3>>`) |
+| `gU` `gu` `g~` + movimento | maiúsculas, minúsculas, troca (`gUw`, `guiw`); `gUU` `guu` `g~~` na linha |
+| `Ctrl-a` `Ctrl-x` | soma / subtrai do número sob o cursor ou adiante (`5 Ctrl-a`) |
 | `d` + movimento | apaga (`dw`, `d$`, `dG`, `dt;`); `dd` apaga a linha, `D` até o fim |
 | `c` + movimento | muda: apaga e entra no INSERT (`cw`, `cb`); `cc` muda a linha mantendo a indentação, `C` até o fim |
 | `y` + movimento | copia (`yw`, `y$`); `yy` e `Y` copiam a linha |
@@ -79,7 +107,11 @@ A busca é por **texto literal**, não por expressão regular.
 
 ### VISUAL
 
-Com a seleção feita: `d` ou `x` apagam, `y` copia, `c` muda, `p` troca pelo que foi copiado e `o` troca a ponta da seleção. Movimentos e contadores estendem a seleção (`vjd`, `V3jd`).
+Com a seleção feita: `d` ou `x` apagam, `y` copia, `c` ou `s` mudam, `p` troca pelo que foi copiado e `o` troca a ponta da seleção. `U`, `u` e `~` passam para maiúsculas, minúsculas ou trocam; `>` e `<` indentam as linhas; `J` junta as linhas selecionadas. Movimentos e contadores estendem a seleção (`vjd`, `V3jd`, `v}d`).
+
+### INSERT
+
+Além de digitar: setas, `Home` `End`, `Ctrl-Home` `Ctrl-End` e `PgUp` `PgDn` movem o cursor; `Ctrl-←` `Ctrl-→` andam uma palavra; `Ctrl-w` apaga a palavra antes do cursor e `Ctrl-u` apaga o que foi digitado na linha (até a indentação).
 
 ## Comandos
 
@@ -88,7 +120,8 @@ Com a seleção feita: `d` ou `x` apagam, `y` copia, `c` muda, `p` troca pelo qu
 | `:w` | salva |
 | `:q` | fecha (avisa se há alterações não salvas) |
 | `:q!` | sai sem salvar |
-| `:wq`, `:x` | salva e sai |
+| `:wq`, `:x`, `ZZ` | salva e sai |
+| `ZQ` | sai sem salvar |
 | `:wa` | salva todos os arquivos |
 | `:wqa`, `:xa` | salva todos e sai |
 | `Ctrl-S`, `Ctrl-Q` | também salvam e saem |
