@@ -95,6 +95,9 @@ type AppOptions struct {
 	// says what it sent, for the footer ("" when nothing).
 	Notify      func(ctx context.Context) (string, error)
 	NotifyEvery time.Duration
+	// UpdateAvailable is a newer lightyear release, shown in the tab bar
+	// ("" when up to date).
+	UpdateAvailable string
 }
 
 // appNotifiedMsg carries the outcome of a Notify check.
@@ -923,7 +926,8 @@ func (m AppModel) tabSpans() []span {
 
 func tabLabel(i int, title string) string { return fmt.Sprintf("%d %s", i+1, title) }
 
-func (m AppModel) tabBar() string {
+// tabBarTabsOnly is the logo and the tabs, without what goes on the right.
+func (m AppModel) tabBarTabsOnly() string {
 	var b strings.Builder
 	b.WriteString(styleAppLogo.Render(appLogo))
 	for i, t := range m.titles() {
@@ -933,12 +937,28 @@ func (m AppModel) tabBar() string {
 		}
 		b.WriteString(style.Render(tabLabel(i, t)) + " ")
 	}
+	return b.String()
+}
+
+func (m AppModel) tabBar() string {
+	var b strings.Builder
+	b.WriteString(m.tabBarTabsOnly())
+	// On the right: a newer release, and the schedule being watched for the
+	// phone (notify); the notify note goes first when there's no room.
+	var right []string
+	if v := m.opts.UpdateAvailable; v != "" {
+		right = append(right, styleLevel.Render("↑ "+v+" disponível: lightyear update "))
+	}
 	if m.opts.Notify != nil {
-		// The schedule is being watched for the phone (notify).
-		on := styleLabel.Render("notify ligado ")
-		if gap := m.width - lipgloss.Width(b.String()) - lipgloss.Width(on); gap > 0 {
-			b.WriteString(strings.Repeat(" ", gap) + on)
+		right = append(right, styleLabel.Render("notify ligado "))
+	}
+	for len(right) > 0 {
+		text := strings.Join(right, styleLabel.Render("· "))
+		if gap := m.width - lipgloss.Width(b.String()) - lipgloss.Width(text); gap > 0 {
+			b.WriteString(strings.Repeat(" ", gap) + text)
+			break
 		}
+		right = right[:len(right)-1]
 	}
 	return b.String()
 }

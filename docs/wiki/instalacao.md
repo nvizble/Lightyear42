@@ -88,6 +88,16 @@ Exige **Go 1.25+** e um **compilador C** (`cc`, `gcc` ou `clang`): o realce de s
 
 ## Atualizar {#atualizar}
 
+Quando sai uma versão nova do seu canal, o lightyear avisa no fim dos comandos:
+
+```text
+✦ Nova versão do lightyear disponível: 1.3.0-canary.35 → 1.3.0-canary.36
+  Atualize com: lightyear update
+```
+
+No app em tela cheia, o aviso aparece na barra de abas. O lightyear confere no máximo uma vez por dia, em segundo plano, sem atrasar o comando e sem usar a API do GitHub. O aviso fica de fora de scripts e pipes, em CI e nos comandos `update` e `version`. Para desligar: `export LIGHTYEAR_NO_UPDATE_NOTIFIER=1`.
+
+
 ```bash
 lightyear update --check   # só verifica se há versão nova
 lightyear update           # baixa e substitui o binário atual
