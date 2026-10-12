@@ -1,0 +1,27 @@
+Nome do exercício : py_array_rotation_detector
+Arquivos esperados: py_array_rotation_detector.py
+Funções permitidas: todas as builtins menos deque.rotate()
+--------------------------------------------------------------------------------
+
+Escreva uma função que diz se uma lista é uma rotação de outra.
+
+def array_rotation_detector(arr1: list, arr2: list) -> bool:
+
+Rotacionar uma lista desloca seus elementos de forma circular: mover
+[1, 2, 3] uma posição para a direita dá [3, 1, 2], e uma posição para a
+esquerda dá [2, 3, 1].
+
+Retorne True se arr2 pode ser obtida rotacionando arr1 qualquer número de
+posições, para a esquerda ou para a direita, e False caso contrário. Uma
+lista é rotação de si mesma (zero posições). Listas de tamanhos diferentes
+nunca são rotações uma da outra, e duas listas vazias são. Os elementos
+podem se repetir e são comparados com ==.
+
+Exemplos:
+
+array_rotation_detector([1, 2, 3, 4, 5], [4, 5, 1, 2, 3])  -> True
+array_rotation_detector([1, 2, 3, 4, 5], [5, 1, 2, 3, 4])  -> True
+array_rotation_detector([1, 2, 3], [3, 2, 1])              -> False
+array_rotation_detector([1, 2], [1, 2, 3])                 -> False
+array_rotation_detector([1, 1, 2], [1, 2, 1])              -> True
+array_rotation_detector([], [])                            -> True

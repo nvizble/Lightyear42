@@ -1,0 +1,44 @@
+Assignment name  : py_package_dependency_resolver
+Expected files   : py_package_dependency_resolver.py
+Allowed functions: all builtins except the graphlib module
+--------------------------------------------------------------------------------
+
+Write a function that finds an installation order for a set of packages,
+installing each package only after its dependencies.
+
+def package_dependency_resolver(packages: dict[str, list[str]]) -> list[str]:
+
+Each key of packages is a package name and its value lists the packages it
+depends on. A dependency that is not a key of packages is ignored (it is
+assumed to be installed already). A dependency listed twice counts once.
+
+Build the order in rounds:
+  - a round installs, all at once, every package not yet installed whose
+    dependencies are all installed;
+  - the packages of a round are added to the result sorted by name, in
+    ascending string order (as compared by Python's <, so 'B' < 'a');
+  - rounds repeat until every package is installed.
+
+If at some point no package can be installed, there is a circular
+dependency (a package depending on itself counts too) and no valid order
+exists: return an empty list, even if other packages could be installed.
+An empty dict gives an empty list.
+
+Examples:
+
+package_dependency_resolver({'app': ['database'], 'database': ['driver'],
+                             'driver': []})
+    -> ['driver', 'database', 'app']
+package_dependency_resolver({'A': [], 'B': ['A'], 'C': ['A', 'B']})
+    -> ['A', 'B', 'C']
+package_dependency_resolver({'web': [], 'api': [], 'frontend': ['web'],
+                             'backend': ['api']})
+    -> ['api', 'web', 'backend', 'frontend']
+package_dependency_resolver({'app': ['lib', 'ghost'], 'lib': []})
+    -> ['lib', 'app']
+package_dependency_resolver({'X': ['Y'], 'Y': ['X']})
+    -> []
+package_dependency_resolver({'ok': [], 'loop': ['loop']})
+    -> []
+package_dependency_resolver({})
+    -> []

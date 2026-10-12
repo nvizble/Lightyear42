@@ -26,6 +26,11 @@ var exercisesFS embed.FS
 //   - provided/:          optional files the exam hands out (e.g. a header); they
 //     go into both builds and next to the subject, and the student doesn't turn them in
 //   - main.c:             optional harness for function exercises (no main of their own)
+//
+// Python exercises (meta.json "lang": "python") are a function in one file:
+// "function" names it, each test is a list of calls (their arguments as
+// Python expressions: "[1, 2, 3], 2" or "'(' * 5000") and "forbidden" lists what can't be
+// used ("sorted", "list.sort", "itertools"). The grader writes the harness.
 type Exercise struct {
 	Rank  string
 	Level int
@@ -38,14 +43,24 @@ type Exercise struct {
 	Tests [][]string
 	// Provided maps file name to content for files handed out by the exam.
 	Provided map[string]string
+	// Lang is "c" or "python".
+	Lang string
+	// Function is the function a Python exercise asks for.
+	Function string
+	// Forbidden lists what a Python submission must not use: builtins
+	// ("sorted"), methods ("list.sort") and modules ("itertools").
+	Forbidden []string
 
 	ref     map[string]string
 	harness string
 }
 
 type exerciseMeta struct {
-	Files []string   `json:"files"`
-	Tests [][]string `json:"tests"`
+	Files     []string   `json:"files"`
+	Tests     [][]string `json:"tests"`
+	Lang      string     `json:"lang"`
+	Function  string     `json:"function"`
+	Forbidden []string   `json:"forbidden"`
 }
 
 // Load returns every embedded exercise, ordered by rank, level and name.
@@ -132,7 +147,18 @@ func loadExercise(fsys fs.FS, dir string) (Exercise, error) {
 	if len(meta.Files) == 0 || len(meta.Tests) == 0 {
 		return Exercise{}, fmt.Errorf("meta.json precisa de files e tests")
 	}
-	ex.Files, ex.Tests = meta.Files, meta.Tests
+	ex.Files, ex.Tests, ex.Lang, ex.Function, ex.Forbidden = meta.Files, meta.Tests, meta.Lang, meta.Function, meta.Forbidden
+	switch ex.Lang {
+	case "":
+		ex.Lang = "c"
+	case "python":
+		if ex.Function == "" || len(ex.Files) != 1 || !strings.HasSuffix(ex.Files[0], ".py") {
+			return Exercise{}, fmt.Errorf("meta.json de Python precisa de function e de um único arquivo .py")
+		}
+	case "c":
+	default:
+		return Exercise{}, fmt.Errorf("meta.json: linguagem %q desconhecida", ex.Lang)
+	}
 	return ex, nil
 }
 

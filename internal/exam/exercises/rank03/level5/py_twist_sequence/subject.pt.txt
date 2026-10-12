@@ -1,0 +1,25 @@
+Nome do exercício : py_twist_sequence
+Arquivos esperados: py_twist_sequence.py
+Funções permitidas: todas as builtins
+--------------------------------------------------------------------------------
+
+Escreva uma função que rotaciona uma lista k posições para a direita.
+
+def twist_sequence(arr: list[int], k: int) -> list[int]:
+
+Rotacionar uma posição para a direita leva o último elemento para o
+início; rotacionar k posições faz isso k vezes, então os últimos k
+elementos vão para o início, na ordem original. k pode ser maior que o
+tamanho da lista (rotacionar pelo tamanho devolve a mesma lista) e pode
+ser enorme, então não rotacione um passo de cada vez. Um k negativo
+rotaciona -k posições para a esquerda. Uma lista vazia dá uma lista
+vazia. Retorne uma nova lista.
+
+Exemplos:
+
+twist_sequence([1, 2, 3, 4, 5], 2)    -> [4, 5, 1, 2, 3]
+twist_sequence([1, 2, 3], 1)          -> [3, 1, 2]
+twist_sequence([1, 2, 3, 4], 0)       -> [1, 2, 3, 4]
+twist_sequence([1, 2, 3], 5)          -> [2, 3, 1]
+twist_sequence([1, 2, 3, 4, 5], -2)   -> [3, 4, 5, 1, 2]
+twist_sequence([], 3)                 -> []

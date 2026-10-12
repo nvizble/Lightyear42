@@ -1,0 +1,26 @@
+Assignment name  : py_inter
+Expected files   : py_inter.py
+Allowed functions: all builtins
+--------------------------------------------------------------------------------
+
+Write a function that returns the characters two strings have in common.
+
+def inter(s1: str, s2: str) -> str:
+
+Return a string with every character that appears in both s1 and s2, each
+one only once, in the order of its first appearance in s1.
+
+The comparison is case-sensitive ('a' and 'A' are different), and spaces,
+digits and punctuation are characters like any other. If the strings have
+nothing in common (or one of them is empty), return "".
+
+Examples:
+
+inter("hello", "world")    -> 'lo'
+inter("banana", "band")    -> 'ban'
+inter("abcabc", "bc")      -> 'bc'
+inter("aabbcc", "cba")     -> 'abc'
+inter("abc", "xyz")        -> ''
+inter("ABC", "abc")        -> ''
+inter("a b c", " ")        -> ' '
+inter("", "abc")           -> ''

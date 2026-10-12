@@ -1,0 +1,13 @@
+{
+  "lang": "python",
+  "files": ["py_inter.py"],
+  "function": "inter",
+  "tests": [
+    ["\"hello\", \"world\"", "\"banana\", \"band\"", "\"abcabc\", \"bc\"", "\"abc\", \"xyz\"", "\"\", \"abc\""],
+    ["\"abc\", \"\"", "\"\", \"\"", "\"a\", \"a\"", "\"aaaa\", \"a\"", "\"a\", \"aaaa\""],
+    ["\"abc\", \"cba\"", "\"cba\", \"abc\"", "\"aabbcc\", \"cba\"", "\"padinton\", \"paqefwtdjetyiytjneytjoeyjnejeyj\""],
+    ["\"Aa\", \"a\"", "\"ABC\", \"abc\"", "\"aAbB\", \"AB\"", "\"Hello\", \"HELLO\"", "\"xyz\", \"zyx\"", "\"mississippi\", \"spim\"", "\"abcdef\", \"fdb\""],
+    ["\"a b c\", \" \"", "\"hello world\", \"o w\"", "\"1, 2, 3\", \"321\"", "\"ação\", \"ão\"", "\"tab\\there\", \"\\t\""],
+    ["\"abc\" * 1000, \"cab\" * 1000", "\"\".join(chr(i) for i in range(32, 1032)), \"\".join(chr(i) for i in range(1031, 500, -1))", "\"xy\" * 5000, \"y\""]
+  ]
+}

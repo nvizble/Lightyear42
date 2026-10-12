@@ -1,0 +1,43 @@
+Nome do exercício : py_prism_detector
+Arquivos esperados: py_prism_detector.py
+Funções permitidas: todas as builtins
+--------------------------------------------------------------------------------
+
+Escreva uma função que encontra todas as ocorrências de uma palavra numa
+grade de letras, lendo em qualquer uma das 8 direções retas, como num
+caça-palavras.
+
+def prism_detector(grid: list[str], pattern: str):
+
+grid é uma lista de linhas (strings), todas do mesmo tamanho. Uma célula é
+localizada por (x, y): x é a coluna e y é a linha, com (0, 0) no canto
+superior esquerdo e y crescendo para baixo. pattern casa em (x, y) numa
+direção quando as suas letras aparecem uma a uma a partir dessa célula,
+andando um passo (dx, dy) por letra, sem sair da grade. Maiúsculas e
+minúsculas são diferentes.
+
+As direções, os seus passos (dx, dy) e os seus códigos:
+
+  (1, 0)   "H"    direita              (-1, 0)   "H-"   esquerda
+  (0, 1)   "V"    baixo                (0, -1)   "V-"   cima
+  (1, 1)   "D1"   baixo e direita      (-1, -1)  "D1-"  cima e esquerda
+  (-1, 1)  "D2"   baixo e esquerda     (1, -1)   "D2-"  cima e direita
+
+Devolva uma lista com uma tupla (x, y, código) para cada ocorrência, onde
+(x, y) é a célula da primeira letra. Ordene a lista por y, depois por x,
+depois pela direção nesta ordem: H, H-, V, V-, D1, D1-, D2, D2-. Cada
+direção conta separadamente, mesmo quando as mesmas letras são lidas (um
+pattern de uma letra casa nas 8 direções; "ABA" em "ABA" casa em
+(0, 0, "H") e em (2, 0, "H-")). Devolva [] se grid ou pattern for vazio ou
+se nada casar.
+
+Exemplos:
+
+prism_detector(["CAT", "A..", "T.."], "CAT") -> [(0, 0, 'H'), (0, 0, 'V')]
+prism_detector(["TAC"], "CAT")               -> [(2, 0, 'H-')]
+prism_detector(["..C", ".A.", "T.."], "CAT") -> [(2, 0, 'D2')]
+prism_detector(["..T", ".A.", "C.."], "CAT") -> [(0, 2, 'D2-')]
+prism_detector(["AAAA"], "AA")
+    -> [(0, 0, 'H'), (1, 0, 'H'), (1, 0, 'H-'), (2, 0, 'H'), (2, 0, 'H-'),
+        (3, 0, 'H-')]
+prism_detector([], "CAT")                    -> []

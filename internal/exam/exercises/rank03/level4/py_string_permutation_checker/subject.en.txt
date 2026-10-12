@@ -1,0 +1,26 @@
+Assignment name  : py_string_permutation_checker
+Expected files   : py_string_permutation_checker.py
+Allowed functions: all builtins
+--------------------------------------------------------------------------------
+
+Write a function that tells whether one string is a permutation of
+another.
+
+def string_permutation_checker(s1: str, s2: str) -> bool:
+
+A string is a permutation of another when it has exactly the same
+characters, each one the same number of times, possibly in a different
+order. The comparison is case sensitive ('A' and 'a' are different) and
+every character counts, including spaces, tabs, newlines and
+punctuation. Two empty strings are permutations of each other.
+
+Examples:
+
+string_permutation_checker("abc", "bca")                 -> True
+string_permutation_checker("abc", "def")                 -> False
+string_permutation_checker("listen", "silent")           -> True
+string_permutation_checker("hello", "bello")             -> False
+string_permutation_checker("", "")                       -> True
+string_permutation_checker("a", "")                      -> False
+string_permutation_checker("Abc", "abc")                 -> False
+string_permutation_checker("a gentleman", "elegant man") -> True

@@ -1,0 +1,13 @@
+{
+  "lang": "python",
+  "files": ["py_string_permutation_checker.py"],
+  "function": "string_permutation_checker",
+  "tests": [
+    ["\"abc\", \"bca\"", "\"abc\", \"def\"", "\"listen\", \"silent\"", "\"hello\", \"bello\"", "\"\", \"\"", "\"a\", \"\"", "\"Abc\", \"abc\"", "\"a gentleman\", \"elegant man\""],
+    ["\"a\", \"a\"", "\"a\", \"b\"", "\"\", \"a\"", "\" \", \"\"", "\" \", \" \"", "\"ab\", \"ba \""],
+    ["\"Hello\", \"olleh\"", "\"Hello\", \"olleH\"", "\"a,b\", \"b,a\"", "\"a b\", \"ab\"", "\"aab\", \"abb\"", "\"aabbcc\", \"abcabc\"", "\"Dormitory\", \"Dirty room\""],
+    ["\"ação\", \"çãoa\"", "\"é\", \"e\"", "\"\\t\\n\", \"\\n\\t\"", "\"\\t\", \" \"", "\"12 3\", \"3 21\""],
+    ["\"aaaa\", \"aaa\"", "\"aaab\", \"aabb\"", "\"abcd\", \"dcba\"", "\"!!??\", \"?!?!\""],
+    ["\"abc\" * 40000, \"cab\" * 40000", "\"abc\" * 40000, \"abc\" * 39999 + \"abd\"", "\"x\" * 100000, \"x\" * 99999"]
+  ]
+}

@@ -7,6 +7,16 @@ Mudanças visíveis do lightyear, da mais nova para a mais antiga. O
 Versões `-canary.N` são pre-releases: `lightyear update --canary` entra no
 canal canary e `lightyear update --stable` volta para a estável.
 
+## [1.3.0-canary.38] — 2026-10-11
+
+- `lightyear exam` ganhou os Exam Ranks 03, 04 e 05: 28 exercícios em
+  Python (lista do [42exam.net](https://42exam.net/)), com enunciado em
+  inglês e português. Use `lightyear exam start --rank 03` (ou 04, 05) ou,
+  na aba Exam do app, `p` para trocar o rank antes do `s`. A entrega é uma
+  função num arquivo `.py`; o `grademe` chama a função com cada teste,
+  compara o retorno com o da solução de referência e reprova o uso do que o
+  enunciado proíbe (como `sorted()`). Precisa de `python3`.
+
 ## [1.3.0-canary.37] — 2026-10-11
 
 - `lightyear test born2beroot` não achava o `monitoring.sh` quando a linha

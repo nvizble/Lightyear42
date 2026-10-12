@@ -1,0 +1,33 @@
+Nome do exercício : py_merge_sorted_lists
+Arquivos esperados: py_merge_sorted_lists.py
+Funções permitidas: todas as builtins menos sorted(), list.sort() e o módulo
+                    heapq
+--------------------------------------------------------------------------------
+
+Escreva uma função que junta várias listas ordenadas numa só lista
+ordenada.
+
+def merge_sorted_lists(lists: list[list[int]]) -> list[int]:
+
+Cada lista interna está em ordem crescente. Retorne uma nova lista com
+todos os elementos de todas as listas internas, em ordem crescente. Os
+repetidos são mantidos, tanto dentro de uma lista quanto entre listas.
+Listas internas vazias não contribuem com nada; se lists estiver vazia ou
+só tiver listas vazias, retorne [].
+
+Aproveite o fato de as entradas já estarem ordenadas: os testes juntam
+listas com dezenas de milhares de elementos, então reordenar tudo ou
+inserir elemento por elemento no resultado vai ser lento demais.
+
+Exemplos:
+
+merge_sorted_lists([[1, 3, 5], [2, 4, 6]])           -> [1, 2, 3, 4, 5, 6]
+merge_sorted_lists([[1, 5, 9], [2, 3, 8], [4, 6, 7]])
+                                    -> [1, 2, 3, 4, 5, 6, 7, 8, 9]
+merge_sorted_lists([[5], [1, 3], [2, 4]])            -> [1, 2, 3, 4, 5]
+merge_sorted_lists([[1, 1, 2], [2, 3, 3]])           -> [1, 1, 2, 2, 3, 3]
+merge_sorted_lists([[-5, -1, 0], [-3, 2, 4]])        -> [-5, -3, -1, 0, 2, 4]
+merge_sorted_lists([[], [1, 2, 3]])                  -> [1, 2, 3]
+merge_sorted_lists([[10], [10], [10]])               -> [10, 10, 10]
+merge_sorted_lists([[]])                             -> []
+merge_sorted_lists([])                               -> []

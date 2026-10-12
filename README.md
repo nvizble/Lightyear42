@@ -141,7 +141,7 @@ lightyear campus --friends # mapa filtrado pela sua lista de amigos
 lightyear friends add <l>  # gerencia a lista local de amigos (add/remove/list)
 lightyear friends online   # quais amigos estão online e em qual posto
 lightyear dashboard        # TUI: perfil, ocupação, avaliações, calendário de slots, amigos
-lightyear exam start       # simulador de prova (Exam Rank 02), cronometrado, offline
+lightyear exam start       # simulador de prova (Exam Ranks 02–05), cronometrado, offline
 lightyear exam practice <ex>  # treina um exercício específico, sem tempo
 lightyear exam grademe     # corrige o exercício atual (status / finish / list)
 lightyear test libft       # testa o seu projeto (na raiz dele): editor + ▶ Rodar testes
@@ -224,12 +224,15 @@ Para regenerar o catálogo partilhado: use um scraper Playwright local
 
 ### Simulador de provas
 
-Funciona offline e não precisa de login; só de um compilador C (`cc`).
-Os 56 exercícios do Exam Rank 02 (níveis 1–4) vêm embutidos no binário, com
-enunciado em inglês e português.
+Funciona offline e não precisa de login; só de um compilador C (`cc`) e,
+para os ranks em Python, de `python3`. Vêm embutidos no binário, com
+enunciado em inglês e português, os 56 exercícios em C do Exam Rank 02
+(níveis 1–4) e os 28 em Python dos Exam Ranks 03, 04 e 05 (lista do
+[42exam.net](https://42exam.net/)).
 
 ```bash
 lightyear exam start              # nível 1, exercício sorteado, 3h (--time 90m)
+lightyear exam start --rank 03    # Rank 03, 04 ou 05: uma função em Python
 # leia ~/lightyear-exam/subjects/<ex>/subject.pt.txt
 # escreva em ~/lightyear-exam/rendu/<ex>/<ex>.c
 lightyear exam grademe            # compila com -Wall -Wextra -Werror e compara
@@ -240,7 +243,7 @@ lightyear exam practice ft_split  # um exercício só, sem tempo
 lightyear exam list               # todos os exercícios por nível
 ```
 
-Passou → próximo nível (25 pontos cada). Falhou → o trace com esperado ×
+Passou → próximo nível (100 dividido pelo número de níveis do rank). Falhou → o trace com esperado ×
 recebido fica em `~/lightyear-exam/traces/`.
 
 Quer adicionar exercícios (outros ranks, outros níveis)? Cada um é uma pasta em

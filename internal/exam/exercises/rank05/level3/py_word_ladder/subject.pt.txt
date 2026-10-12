@@ -1,0 +1,32 @@
+Nome do exercício : py_word_ladder
+Arquivos esperados: py_word_ladder.py
+Funções permitidas: todas as builtins
+--------------------------------------------------------------------------------
+
+Escreva uma função que devolve o tamanho da menor escada de palavras de
+start até end.
+
+def word_ladder(start: str, end: str, sentence: list[str]) -> int:
+
+Uma escada de palavras é uma sequência de palavras que começa em start e
+termina em end, em que cada palavra difere da anterior em exatamente uma
+posição (mesmo tamanho, uma letra trocada; maiúsculas e minúsculas são
+diferentes). Toda palavra depois de start, incluindo end, tem que estar em
+sentence; o próprio start não precisa estar. Palavras de sentence com outro
+tamanho nunca podem ser usadas, e sentence pode ter repetições.
+
+Devolva o número de palavras da menor escada, contando start e end, ou 0 se
+não houver escada (em particular, quando end não está em sentence). start
+e end são sempre diferentes.
+
+sentence pode ter algumas centenas de palavras, ligadas por mais escadas do
+que daria para listar, então procure a menor sem testar todos os caminhos.
+
+Exemplos:
+
+word_ladder("hit", "cog", ["hot", "dot", "dog", "lot", "log", "cog"]) -> 5
+word_ladder("hit", "cog", ["hot", "dot", "dog", "lot", "log"])        -> 0
+word_ladder("hit", "hot", ["hot"])                                    -> 2
+word_ladder("a", "c", ["a", "b", "c"])                                -> 2
+word_ladder("hot", "dog", ["hot", "dog"])                             -> 0
+word_ladder("cat", "dog", ["cot", "cog", "dog", "cats", "do"])        -> 4

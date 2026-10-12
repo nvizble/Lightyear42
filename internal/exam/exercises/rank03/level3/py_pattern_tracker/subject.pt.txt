@@ -1,0 +1,28 @@
+Nome do exercício : py_pattern_tracker
+Arquivos esperados: py_pattern_tracker.py
+Funções permitidas: todas as builtins
+--------------------------------------------------------------------------------
+
+Escreva uma função que conta os pares de dígitos crescentes numa string.
+
+def pattern_tracker(text: str) -> int:
+
+Um par crescente são dois dígitos ('0' a '9') colados um no outro na
+string em que o segundo é exatamente um a mais que o primeiro: "01", "12",
+..., "89". "90" não é um par crescente (não dá a volta), e dois dígitos
+com qualquer coisa entre eles (uma letra, um espaço, ...) não formam par.
+
+Os pares podem se sobrepor: em "123", "12" e "23" contam os dois. Devolva
+o número de pares crescentes (0 quando não houver nenhum, por exemplo
+numa string vazia).
+
+Exemplos:
+
+pattern_tracker("123")        -> 2
+pattern_tracker("12a34")      -> 2
+pattern_tracker("987654321")  -> 0
+pattern_tracker("01234567")   -> 7
+pattern_tracker("abc")        -> 0
+pattern_tracker("1a2b3c4")    -> 0
+pattern_tracker("112233")     -> 2
+pattern_tracker("9012")       -> 2

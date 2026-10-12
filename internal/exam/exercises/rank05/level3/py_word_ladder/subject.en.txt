@@ -1,0 +1,32 @@
+Assignment name  : py_word_ladder
+Expected files   : py_word_ladder.py
+Allowed functions: all builtins
+--------------------------------------------------------------------------------
+
+Write a function that returns the length of the shortest word ladder from
+start to end.
+
+def word_ladder(start: str, end: str, sentence: list[str]) -> int:
+
+A word ladder is a sequence of words that begins with start and finishes
+with end, where each word differs from the previous one in exactly one
+position (same length, one letter replaced; letters are case sensitive).
+Every word after start, end included, must be in sentence; start itself
+does not need to be. Words in sentence with another length can never be
+used, and sentence may contain duplicates.
+
+Return the number of words in the shortest ladder, counting start and end,
+or 0 if there is no ladder (in particular, when end is not in sentence).
+start and end are always different.
+
+sentence can hold a few hundred words, linked by more ladders than you
+could ever list, so look for the shortest one without trying every path.
+
+Examples:
+
+word_ladder("hit", "cog", ["hot", "dot", "dog", "lot", "log", "cog"]) -> 5
+word_ladder("hit", "cog", ["hot", "dot", "dog", "lot", "log"])        -> 0
+word_ladder("hit", "hot", ["hot"])                                    -> 2
+word_ladder("a", "c", ["a", "b", "c"])                                -> 2
+word_ladder("hot", "dog", ["hot", "dog"])                             -> 0
+word_ladder("cat", "dog", ["cot", "cog", "dog", "cats", "do"])        -> 4

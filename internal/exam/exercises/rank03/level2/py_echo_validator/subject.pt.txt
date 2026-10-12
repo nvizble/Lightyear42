@@ -1,0 +1,29 @@
+Nome do exercício : py_echo_validator
+Arquivos esperados: py_echo_validator.py
+Funções permitidas: todas as builtins
+--------------------------------------------------------------------------------
+
+Escreva uma função que diz se um texto é um palíndromo.
+
+def echo_validator(text: str) -> bool:
+
+Só as letras do texto contam (os caracteres para os quais str.isalpha() é
+True); espaços, dígitos, pontuação e qualquer outro caractere são
+ignorados. Maiúscula e minúscula são a mesma letra. O texto é um
+palíndromo quando as suas letras são lidas igual de frente para trás e de
+trás para frente.
+
+Um texto sem nenhuma letra (inclusive a string vazia) NÃO é um palíndromo:
+devolva False.
+
+Exemplos:
+
+echo_validator("racecar")                      -> True
+echo_validator("A man a plan a canal Panama")  -> True
+echo_validator("race a car")                   -> False
+echo_validator("Was it a car or a cat I saw")  -> True
+echo_validator("Madam, I'm Adam.")             -> True
+echo_validator("hello")                        -> False
+echo_validator("ab1ba")                        -> True
+echo_validator("12321")                        -> False
+echo_validator("")                             -> False

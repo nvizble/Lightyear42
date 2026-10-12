@@ -1,0 +1,28 @@
+Assignment name  : py_pattern_tracker
+Expected files   : py_pattern_tracker.py
+Allowed functions: all builtins
+--------------------------------------------------------------------------------
+
+Write a function that counts the rising digit pairs in a string.
+
+def pattern_tracker(text: str) -> int:
+
+A rising pair is two digits ('0' to '9') right next to each other in the
+string where the second one is exactly one more than the first: "01",
+"12", ..., "89". "90" is not a rising pair (there is no wrap-around), and
+two digits with anything between them (a letter, a space, ...) are not a
+pair.
+
+Pairs may overlap: in "123", "12" and "23" both count. Return the number
+of rising pairs (0 when there are none, for example in an empty string).
+
+Examples:
+
+pattern_tracker("123")        -> 2
+pattern_tracker("12a34")      -> 2
+pattern_tracker("987654321")  -> 0
+pattern_tracker("01234567")   -> 7
+pattern_tracker("abc")        -> 0
+pattern_tracker("1a2b3c4")    -> 0
+pattern_tracker("112233")     -> 2
+pattern_tracker("9012")       -> 2

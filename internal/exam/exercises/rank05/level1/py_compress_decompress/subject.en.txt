@@ -1,0 +1,33 @@
+Assignment name  : py_compress_decompress
+Expected files   : py_compress_decompress.py
+Allowed functions: all builtins
+--------------------------------------------------------------------------------
+
+Write two functions in the same file: one that compresses a string with
+run-length encoding and one that undoes it.
+
+def compress(s: str) -> str:
+def decompress(s: str) -> str:
+
+compress replaces every run of the same character by the character followed
+by the length of the run. A run of length 1 is written as the character
+alone, without "1". Characters are case sensitive ("aA" has two runs). The
+input of compress never contains digits. An empty string gives "".
+
+decompress does the opposite: each character is followed by an optional
+count of one or more digits (it can be "12" or "100"), and no count means 1.
+The count is never 0, and "1" may appear explicitly ("a1b1" is "ab"). An
+empty string gives "".
+
+Both functions are graded; decompress is checked through compress, so
+compress(decompress(t)) must give the compressed form of what t stands for.
+
+Examples:
+
+compress("aabcccccaaa")   -> "a2bc5a3"
+compress("abc")           -> "abc"
+compress("")              -> ""
+decompress("a2bc5a3")     -> "aabcccccaaa"
+decompress("a12")         -> "aaaaaaaaaaaa"
+decompress("a1b1a2")      -> "abaa"
+decompress("")            -> ""

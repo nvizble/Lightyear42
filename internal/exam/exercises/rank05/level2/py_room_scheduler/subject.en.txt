@@ -1,0 +1,42 @@
+Assignment name  : py_room_scheduler
+Expected files   : py_room_scheduler.py
+Allowed functions: all builtins
+--------------------------------------------------------------------------------
+
+Write a function that assigns meetings to rooms so that no two meetings in
+the same room overlap, and reports how many rooms it used.
+
+def py_room_scheduler(meetings: list[list[int]]) -> dict[str, Any]:
+
+(Any comes from the typing module.)
+
+Each meeting is a list [start, end] with start < end. A meeting that starts
+exactly when another one ends can use the same room.
+
+Assign the meetings like this:
+  1. Sort the meetings by start time; meetings with the same start are
+     ordered by end time.
+  2. Take them in that order. Put each meeting in the first room (the one
+     opened earliest) whose last meeting ends at or before its start. If no
+     room is free, open a new room for it.
+
+This greedy method always uses the smallest possible number of rooms.
+
+Return a dictionary with two keys, in this order:
+  - "total_rooms": the number of rooms used;
+  - "schedule": one list per room, in the order the rooms were opened, with
+    the meetings of that room in the order they were assigned, each as a
+    list [start, end].
+
+For an empty list, return {"total_rooms": 0, "schedule": []}.
+
+Examples:
+
+py_room_scheduler([[0, 30], [5, 10], [15, 20]])
+    -> {'total_rooms': 2, 'schedule': [[[0, 30]], [[5, 10], [15, 20]]]}
+py_room_scheduler([[5, 10], [1, 5]])
+    -> {'total_rooms': 1, 'schedule': [[[1, 5], [5, 10]]]}
+py_room_scheduler([[0, 3], [1, 2], [4, 5]])
+    -> {'total_rooms': 2, 'schedule': [[[0, 3], [4, 5]], [[1, 2]]]}
+py_room_scheduler([])
+    -> {'total_rooms': 0, 'schedule': []}

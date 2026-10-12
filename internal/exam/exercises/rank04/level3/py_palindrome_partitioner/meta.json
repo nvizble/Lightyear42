@@ -1,0 +1,14 @@
+{
+  "lang": "python",
+  "files": ["py_palindrome_partitioner.py"],
+  "function": "palindrome_partitioner",
+  "tests": [
+    ["'aab'", "'aba'", "'abc'"],
+    ["''", "'a'", "'aa'", "'ab'", "'racecar'"],
+    ["'abcd'", "'abba'", "'abbab'", "'noonabbad'", "'banana'"],
+    ["'abaab'", "'aabaa'", "'ababbbabbababa'", "'cabababcbc'", "'abacdcxyx'"],
+    ["''.join(chr(65 + i) for i in range(26))", "'abcde' * 20", "'xyz' + 'abcba' + 'xy'"],
+    ["'aabb'", "'leet'", "'abccbaxy'", "'aaabbbaaa'", "'abcbm'", "'efe'"],
+    ["'a' * 300 + 'b'", "'ab' * 150", "'abc' * 100", "'a' * 200 + 'b' + 'a' * 199"]
+  ]
+}

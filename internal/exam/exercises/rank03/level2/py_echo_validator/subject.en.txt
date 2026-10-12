@@ -1,0 +1,28 @@
+Assignment name  : py_echo_validator
+Expected files   : py_echo_validator.py
+Allowed functions: all builtins
+--------------------------------------------------------------------------------
+
+Write a function that tells whether a text is a palindrome.
+
+def echo_validator(text: str) -> bool:
+
+Only the letters of the text count (the characters for which str.isalpha()
+is True); spaces, digits, punctuation and every other character are
+ignored. Upper and lower case are the same letter. The text is a
+palindrome when its letters read the same forwards and backwards.
+
+A text with no letters at all (including the empty string) is NOT a
+palindrome: return False.
+
+Examples:
+
+echo_validator("racecar")                      -> True
+echo_validator("A man a plan a canal Panama")  -> True
+echo_validator("race a car")                   -> False
+echo_validator("Was it a car or a cat I saw")  -> True
+echo_validator("Madam, I'm Adam.")             -> True
+echo_validator("hello")                        -> False
+echo_validator("ab1ba")                        -> True
+echo_validator("12321")                        -> False
+echo_validator("")                             -> False

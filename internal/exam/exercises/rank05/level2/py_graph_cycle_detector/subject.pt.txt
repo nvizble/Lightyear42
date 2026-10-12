@@ -1,0 +1,32 @@
+Nome do exercício : py_graph_cycle_detector
+Arquivos esperados: py_graph_cycle_detector.py
+Funções permitidas: todas as builtins menos graphlib
+--------------------------------------------------------------------------------
+
+Escreva uma função que diz se um grafo direcionado tem um ciclo.
+
+def py_graph_cycle_detector(graph: dict[int, list[int]]) -> bool:
+
+O grafo é uma lista de adjacência: cada chave é um nó e o seu valor lista
+os nós para os quais ele tem uma aresta. Um nó pode aparecer só como
+vizinho, sem ser chave; esse nó não tem arestas de saída. Uma aresta de um
+nó para ele mesmo (um laço) é um ciclo. A mesma aresta pode aparecer mais
+de uma vez.
+
+Devolva True se, seguindo as arestas, for possível sair de algum nó e
+voltar a ele, e False caso contrário (inclusive para o grafo vazio). O
+grafo pode ter várias partes desconexas; um ciclo em qualquer uma delas
+conta.
+
+Os grafos podem ter muitos caminhos entre os mesmos nós (centenas de nós e
+mais caminhos do que daria para listar), então visite cada nó um número
+limitado de vezes em vez de explorar todos os caminhos.
+
+Exemplos:
+
+py_graph_cycle_detector({0: [1], 1: [2], 2: [0]})        -> True
+py_graph_cycle_detector({0: [1], 1: [2], 2: []})         -> False
+py_graph_cycle_detector({})                              -> False
+py_graph_cycle_detector({0: [0]})                        -> True
+py_graph_cycle_detector({0: [1, 2], 1: [3], 2: [3]})     -> False
+py_graph_cycle_detector({0: [1], 1: [], 2: [3], 3: [2]}) -> True

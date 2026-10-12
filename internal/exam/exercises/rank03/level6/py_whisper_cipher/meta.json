@@ -1,0 +1,13 @@
+{
+  "lang": "python",
+  "files": ["py_whisper_cipher.py"],
+  "function": "whisper_cipher",
+  "tests": [
+    ["\"hello\", 3", "\"Hello World!\", 1", "\"xyz\", 3", "\"ABC123def\", 5", "\"\", 10", "\"abc\", -3"],
+    ["\"a\", 0", "\"a\", 1", "\"z\", 1", "\"Z\", 1", "\"A\", -1", "\"a\", 26", "\"m\", -26"],
+    ["\"abc\", 52", "\"abc\", -27", "\"Hello\", 1000000007", "\"xyz\", -1000000", "\"Ab\", 10**18"],
+    ["\"123 !?\", 5", "\"   \", 3", "\"café\", 1", "\"ação\", 2", "\"\\tA\\n\", 1"],
+    ["\"The Quick Brown Fox\", 13", "\"Zebra-Yak_42\", 2", "\"abcdefghijklmnopqrstuvwxyz\", 13", "\"ABCDEFGHIJKLMNOPQRSTUVWXYZ\", -13", "\"MiXeD cAsE\", 25"],
+    ["\"Hello, World! \" * 10000, 7", "\"z\" * 100000, -1"]
+  ]
+}

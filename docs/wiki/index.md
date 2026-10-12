@@ -4,7 +4,7 @@ order: 1
 description: A 42 inteira, direto do terminal. Tudo o que o lightyear faz e como usar.
 ---
 
-O **lightyear** é uma CLI open source para quem estuda na 42 Network. Ela conversa com a API oficial da Intra e traz para o terminal o que você faria no navegador: seu perfil, projetos, avaliações agendadas, slots, quem está no campus e o PDF dos subjects. Também faz coisas que a Intra não faz: avisa no celular quando surge uma avaliação nova, simula o Exam Rank 02 offline e testa os seus projetos com centenas de casos.
+O **lightyear** é uma CLI open source para quem estuda na 42 Network. Ela conversa com a API oficial da Intra e traz para o terminal o que você faria no navegador: seu perfil, projetos, avaliações agendadas, slots, quem está no campus e o PDF dos subjects. Também faz coisas que a Intra não faz: avisa no celular quando surge uma avaliação nova, simula os Exam Ranks 02 a 05 offline e testa os seus projetos com centenas de casos.
 
 É feita para estudantes da 42 (Common Core e piscine), funciona nas máquinas do campus sem `sudo` e roda em Linux, macOS e Windows (os testes de projeto precisam de Linux ou macOS).
 
@@ -30,7 +30,7 @@ lightyear
 
 ### Estudar
 
-- [Simulador de provas](simulador.html): o Exam Rank 02 no seu computador, cronometrado e offline.
+- [Simulador de provas](simulador.html): os Exam Ranks 02 a 05 (C e Python) no seu computador, cronometrados e offline.
 - [Testes de projeto](testes.html): `lightyear test` para libft, ft_printf, get_next_line, módulos de Python e born2beroot.
 - [Editor embutido](editor.html): o editor estilo Vim, com erros do compilador e autocomplete.
 

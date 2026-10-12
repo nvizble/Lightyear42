@@ -1,0 +1,15 @@
+{
+  "lang": "python",
+  "files": ["py_cryptic_sorter.py"],
+  "function": "cryptic_sorter",
+  "forbidden": ["sorted", "list.sort"],
+  "tests": [
+    ["[\"apple\", \"cat\", \"banana\", \"dog\", \"elephant\"]", "[\"aaa\", \"bbb\", \"AAA\", \"BBB\"]", "[\"hello\", \"world\", \"hi\", \"test\"]", "[]", "[\"\"]"],
+    ["[\"x\"]", "[\"b\", \"a\"]", "[\"ccc\", \"bb\", \"a\"]", "[\"a\", \"bb\", \"ccc\"]", "[\"\", \"a\", \"\"]"],
+    ["[\"Banana\", \"apple\", \"Cherry\"]", "[\"b\", \"A\", \"a\", \"B\"]", "[\"dog\", \"Dog\", \"DOG\", \"dOg\"]", "[\"Zeta\", \"alfa\", \"beta\", \"ALFA\"]"],
+    ["[\"same\", \"same\", \"SAME\", \"Same\"]", "[\"abc\", \"abd\", \"ab\", \"abcd\", \"a\"]", "[\"xyz\", \"XY\", \"x\", \"Xyz\"]"],
+    ["[\"_a\", \"Aa\", \"aa\"]", "[\"[\", \"a\", \"Z\", \"1\"]", "[\"b2\", \"B1\", \"a9\", \"~a\", \" a\"]", "[\"Hello World\", \"hello world\", \"HELLO WORLD\"]"],
+    ["[\"10\", \"9\", \"100\", \"1\"]", "[\"a-b\", \"a b\", \"aBc\", \"A_b\"]", "[\"zz\", \"ZY\", \"zx\", \"Zw\"]", "[\"Ab\"]", "[\"ba\", \"AB\", \"Ba\", \"ab\"]", "[\"aaa\", \"AA\", \"a\", \"\"]"],
+    ["[str(i) for i in range(300, 0, -1)]", "[\"Ab\", \"aB\", \"AB\", \"ab\"] * 50", "[chr(65 + (i * 7) % 26) + chr(97 + (i * 3) % 26) for i in range(400)]"]
+  ]
+}

@@ -1,0 +1,24 @@
+Assignment name  : py_anagram
+Expected files   : py_anagram.py
+Allowed functions: all builtins
+--------------------------------------------------------------------------------
+
+Write a function that tells whether two strings are anagrams.
+
+def anagram(s1: str, s2: str) -> bool:
+
+Two strings are anagrams when, after removing every space (' ') and
+ignoring the difference between uppercase and lowercase, they contain
+exactly the same characters, each one the same number of times. Only
+spaces are ignored: digits, punctuation and accented letters count like
+any other character. Two empty strings are anagrams.
+
+Examples:
+
+anagram("listen", "silent")          -> True
+anagram("Triangle", "Integral")      -> True
+anagram("Dormitory", "Dirty Room")   -> True
+anagram("hello", "world")            -> False
+anagram("", "")                      -> True
+anagram("abc", "abcc")               -> False
+anagram("a!", "a")                   -> False

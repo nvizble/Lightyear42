@@ -1,0 +1,13 @@
+{
+  "lang": "python",
+  "files": ["py_string_sculptor.py"],
+  "function": "string_sculptor",
+  "tests": [
+    ["\"hello\"", "\"Hello World\"", "\"abc123def\"", "\"Python3.9!\"", "\"\""],
+    ["\"a\"", "\"A\"", "\"ab\"", "\"AB\"", "\"1234\"", "\"   \"", "\"!?.\""],
+    ["\"a b c\"", "\"ab cd ef\"", "\"  hello  world  \"", "\"HELLO WORLD\"", "\"one two  three\""],
+    ["\"a1b2c3\"", "\"a-b-c-d\"", "\"x_y_z\"", "\"it's ok\"", "\"hello,world\"", "\"ab.cd ef\""],
+    ["\"ação é ótima\"", "\"ÁÉÍÓÚ\"", "\"çÇç\""],
+    ["\"ab\" * 50000", "\"ab cd \" * 20000", "\"a1\" * 40000"]
+  ]
+}

@@ -63,7 +63,7 @@ func (f *fakeExam) EditTargets(exam.Session) (string, []string, error) {
 }
 
 func (f *fakeExam) Exercises() []exam.Exercise {
-	return []exam.Exercise{{Rank: "02", Level: 1, Name: "first_word"}}
+	return []exam.Exercise{{Rank: "02", Level: 1, Name: "first_word"}, {Rank: "03", Level: 1, Name: "py_anagram", Lang: "python"}}
 }
 
 var appNow = time.Date(2026, 10, 7, 12, 0, 0, 0, time.UTC)
@@ -202,6 +202,21 @@ func TestAppScrollAndUnavailable(t *testing.T) {
 	m = run(t, m, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("2")})
 	if !strings.Contains(m.View(), "faça login") {
 		t.Fatalf("aba sem Load deveria explicar o motivo:\n%s", m.View())
+	}
+}
+
+func TestAppExamPicksRank(t *testing.T) {
+	m, fe := newTestApp(t, []AppTab{{Title: "Início"}})
+	m.active = m.examTab()
+	m = run(t, m, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("p")})
+	if !strings.Contains(m.View(), "Exam Rank 03") {
+		t.Fatalf("p deveria trocar para o Rank 03:\n%s", m.View())
+	}
+	m = run(t, m, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("p")})
+	m = run(t, m, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("p")})
+	m = run(t, m, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("s")})
+	if fe.sess == nil || fe.sess.Rank != "03" {
+		t.Fatalf("p p p deveria dar a volta (02 → 03 → 02 → 03) e s começar o 03: %+v", fe.sess)
 	}
 }
 
@@ -410,7 +425,7 @@ func TestAppNotifyWatch(t *testing.T) {
 func TestAppExamPracticeByClick(t *testing.T) {
 	m, fe := newTestApp(t, nil) // only the Exam tab
 	spots := m.spots()
-	if len(spots) != 1 || spots[0].id() != "first_word" {
+	if len(spots) != 2 || spots[0].id() != "first_word" {
 		t.Fatalf("o catálogo deveria ter first_word clicável: %+v", spots)
 	}
 	h := spots[0]

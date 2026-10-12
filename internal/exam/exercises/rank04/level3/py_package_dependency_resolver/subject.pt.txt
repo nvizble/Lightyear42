@@ -1,0 +1,45 @@
+Nome do exercício : py_package_dependency_resolver
+Arquivos esperados: py_package_dependency_resolver.py
+Funções permitidas: todas as builtins menos o módulo graphlib
+--------------------------------------------------------------------------------
+
+Escreva uma função que encontra uma ordem de instalação para um conjunto de
+pacotes, instalando cada pacote só depois das suas dependências.
+
+def package_dependency_resolver(packages: dict[str, list[str]]) -> list[str]:
+
+Cada chave de packages é o nome de um pacote e o valor lista os pacotes dos
+quais ele depende. Uma dependência que não é chave de packages é ignorada
+(considera-se que já está instalada). Uma dependência listada duas vezes
+conta uma vez só.
+
+Monte a ordem em rodadas:
+  - uma rodada instala, de uma vez, todo pacote ainda não instalado cujas
+    dependências já estão todas instaladas;
+  - os pacotes de uma rodada entram no resultado ordenados pelo nome, em
+    ordem crescente de string (como compara o < do Python, então 'B' < 'a');
+  - as rodadas se repetem até todos os pacotes estarem instalados.
+
+Se em algum momento nenhum pacote puder ser instalado, há uma dependência
+circular (um pacote que depende de si mesmo também conta) e não existe
+ordem válida: retorne uma lista vazia, mesmo que outros pacotes pudessem
+ser instalados. Um dict vazio dá uma lista vazia.
+
+Exemplos:
+
+package_dependency_resolver({'app': ['database'], 'database': ['driver'],
+                             'driver': []})
+    -> ['driver', 'database', 'app']
+package_dependency_resolver({'A': [], 'B': ['A'], 'C': ['A', 'B']})
+    -> ['A', 'B', 'C']
+package_dependency_resolver({'web': [], 'api': [], 'frontend': ['web'],
+                             'backend': ['api']})
+    -> ['api', 'web', 'backend', 'frontend']
+package_dependency_resolver({'app': ['lib', 'ghost'], 'lib': []})
+    -> ['lib', 'app']
+package_dependency_resolver({'X': ['Y'], 'Y': ['X']})
+    -> []
+package_dependency_resolver({'ok': [], 'loop': ['loop']})
+    -> []
+package_dependency_resolver({})
+    -> []

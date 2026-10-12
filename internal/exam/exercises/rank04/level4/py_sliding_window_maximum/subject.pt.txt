@@ -1,0 +1,31 @@
+Nome do exercício : py_sliding_window_maximum
+Arquivos esperados: py_sliding_window_maximum.py
+Funções permitidas: todas as builtins
+--------------------------------------------------------------------------------
+
+Escreva uma função que retorna o máximo de cada janela de k elementos
+consecutivos de uma lista.
+
+def sliding_window_maximum(nums: list[int], k: int) -> list[int]:
+
+Deslize uma janela de tamanho k sobre nums da esquerda para a direita, uma
+posição por vez, e retorne a lista dos máximos de cada janela, em ordem.
+Uma lista de n elementos tem n - k + 1 janelas.
+
+Se k for 0 ou negativo, ou maior que len(nums) (o que inclui nums vazia),
+retorne uma lista vazia.
+
+Sua solução precisa ser rápida: os testes usam listas de 100000 elementos
+com janelas de 50000, então calcular o max() de cada janela separadamente
+vai ser lento demais. Mire em tempo linear.
+
+Exemplos:
+
+sliding_window_maximum([1, 3, -1, -3, 5, 3, 6, 7], 3)  -> [3, 3, 5, 5, 6, 7]
+sliding_window_maximum([1, 2, 3, 4, 5], 2)             -> [2, 3, 4, 5]
+sliding_window_maximum([5, 4, 3, 2, 1], 1)             -> [5, 4, 3, 2, 1]
+sliding_window_maximum([4, 4, 4, 4], 2)                -> [4, 4, 4]
+sliding_window_maximum([1, 2, 3], 3)                   -> [3]
+sliding_window_maximum([1, 2, 3], 4)                   -> []
+sliding_window_maximum([1, 2, 3], 0)                   -> []
+sliding_window_maximum([], 2)                          -> []

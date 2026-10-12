@@ -1,0 +1,32 @@
+Nome do exercício : py_cryptic_sorter
+Arquivos esperados: py_cryptic_sorter.py
+Funções permitidas: todas as builtins menos sorted() e list.sort()
+--------------------------------------------------------------------------------
+
+Escreva uma função que devolve uma cópia ordenada de uma lista de strings.
+
+def cryptic_sorter(strings: list[str]) -> list[str]:
+
+As strings são ordenadas por estas regras, e cada uma só desempata o que
+as anteriores deixaram empatado:
+
+1. Tamanho: as strings mais curtas vêm primeiro.
+2. Caractere a caractere, sem diferenciar maiúsculas: compare as strings
+   como se toda letra maiúscula fosse a minúscula correspondente
+   (s.lower()), pelo código dos caracteres. Assim "apple" < "Banana" e
+   "_a" < "Aa" (porque '_' é 95 e 'a' é 97).
+3. Strings que continuam empatadas (iguais, ou iguais ignorando
+   maiúsculas) mantêm a ordem em que estavam na lista de entrada.
+
+A entrada só tem strings ASCII. Uma lista vazia dá uma lista vazia.
+
+Exemplos:
+
+cryptic_sorter(["apple", "cat", "banana", "dog", "elephant"])
+    -> ['cat', 'dog', 'apple', 'banana', 'elephant']
+cryptic_sorter(["aaa", "bbb", "AAA", "BBB"])  -> ['aaa', 'AAA', 'bbb', 'BBB']
+cryptic_sorter(["hello", "world", "hi", "test"])
+    -> ['hi', 'test', 'hello', 'world']
+cryptic_sorter(["Banana", "apple", "Cherry"]) -> ['apple', 'Banana', 'Cherry']
+cryptic_sorter([])                            -> []
+cryptic_sorter([""])                          -> ['']

@@ -1,0 +1,28 @@
+Nome do exercício : py_hidenp
+Arquivos esperados: py_hidenp.py
+Funções permitidas: todas as builtins
+--------------------------------------------------------------------------------
+
+Escreva uma função que diz se uma string está escondida dentro de outra.
+
+def hidenp(small: str, big: str) -> bool:
+
+small está escondida em big quando cada caractere de small aparece em big,
+na mesma ordem, mas não necessariamente um do lado do outro (small é uma
+subsequência de big). Cada caractere de big só pode ser usado uma vez,
+então "aa" não está escondida em "a".
+
+A comparação diferencia maiúsculas de minúsculas, e espaços e pontuação
+são caracteres como quaisquer outros. A string vazia está escondida em
+qualquer string, inclusive na vazia.
+
+Exemplos:
+
+hidenp("abc", "a1b2c3")                 -> True
+hidenp("ace", "abcde")                  -> True
+hidenp("aec", "abcde")                  -> False
+hidenp("", "abc")                       -> True
+hidenp("abc", "ab")                     -> False
+hidenp("aaaa", "aaa")                   -> False
+hidenp("A", "a")                        -> False
+hidenp("sing", "subsequence testing")   -> True

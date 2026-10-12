@@ -1,0 +1,15 @@
+{
+  "lang": "python",
+  "files": ["py_word_ladder.py"],
+  "function": "word_ladder",
+  "tests": [
+    ["\"hit\", \"cog\", [\"hot\", \"dot\", \"dog\", \"lot\", \"log\", \"cog\"]", "\"hit\", \"cog\", [\"hot\", \"dot\", \"dog\", \"lot\", \"log\"]"],
+    ["\"hit\", \"hot\", [\"hot\"]", "\"hit\", \"cog\", []", "\"a\", \"c\", [\"a\", \"b\", \"c\"]", "\"ab\", \"cd\", [\"cd\"]"],
+    ["\"hit\", \"cog\", [\"hit\", \"hot\", \"dot\", \"dog\", \"lot\", \"log\", \"cog\"]", "\"hit\", \"cog\", [\"cog\", \"log\", \"lot\", \"dog\", \"dot\", \"hot\"]", "\"hot\", \"dog\", [\"hot\", \"dog\"]", "\"hot\", \"dog\", [\"hot\", \"dog\", \"dot\"]"],
+    ["\"cat\", \"dog\", [\"cot\", \"cog\", \"dog\", \"cats\", \"do\", \"dogs\"]", "\"cat\", \"dog\", [\"cats\", \"dats\", \"dogs\", \"dog\"]", "\"lead\", \"gold\", [\"load\", \"goad\", \"gold\", \"lead\"]", "\"lead\", \"gold\", [\"load\", \"goad\", \"lead\"]"],
+    ["\"red\", \"tax\", [\"ted\", \"tex\", \"red\", \"tax\", \"tad\", \"den\", \"rex\", \"pee\"]", "\"aaa\", \"bbb\", [\"aab\", \"aab\", \"abb\", \"abb\", \"bbb\"]", "\"cold\", \"warm\", [\"cord\", \"card\", \"ward\", \"warm\", \"word\", \"worm\", \"corm\", \"wold\"]", "\"abc\", \"xyz\", [\"xbc\", \"xyc\", \"ayz\", \"axz\"]"],
+    ["\"kite\", \"kits\", [\"kits\", \"bite\", \"kite\"]", "\"same\", \"game\", [\"came\", \"gamr\", \"game\", \"sane\"]", "\"bat\", \"cat\", [\"CAT\", \"Cat\", \"cat\"]", "\"bat\", \"cat\", [\"CAT\", \"Cat\"]"],
+    ["\"aaa\", \"eee\", [a + b + c for a in 'abcde' for b in 'abcde' for c in 'abcde']", "\"aaa\", \"eez\", [a + b + c for a in 'abcde' for b in 'abcde' for c in 'abcde']", "\"abc\", \"cba\", [a + b + c for a in 'abcde' for b in 'abcde' for c in 'abcde']", "\"aaaa\", \"dddd\", [a + b + c + d for a in 'abcd' for b in 'abcd' for c in 'abcd' for d in 'abcd']"],
+    ["\"aaaaaaaaaaaa\", \"bbbbbbbbbbbb\", ['b' * i + 'a' * (12 - i) for i in range(1, 13)]", "\"aaaaaaaaaaaa\", \"bbbbbbbbbbbb\", ['b' * i + 'a' * (12 - i) for i in range(1, 13)][:5] + ['b' * i + 'a' * (12 - i) for i in range(1, 13)][6:]", "\"aaaa\", \"zzzz\", [a + b + c + d for a in 'abcd' for b in 'abcd' for c in 'abcd' for d in 'abcd'] + [\"zzzz\"]"]
+  ]
+}

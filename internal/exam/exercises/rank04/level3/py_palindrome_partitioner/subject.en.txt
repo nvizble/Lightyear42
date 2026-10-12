@@ -1,0 +1,30 @@
+Assignment name  : py_palindrome_partitioner
+Expected files   : py_palindrome_partitioner.py
+Allowed functions: all builtins
+--------------------------------------------------------------------------------
+
+Write a function that returns the minimum number of cuts needed to split a
+string into palindromes.
+
+def palindrome_partitioner(s: str) -> int:
+
+A cut splits the string between two adjacent characters, so c cuts give
+c + 1 non-empty pieces. Find the smallest c such that every piece reads the
+same forwards and backwards.
+
+A string that is already a palindrome needs 0 cuts; this includes the
+empty string and any single character. Since every single character is a
+palindrome, the answer is never more than len(s) - 1.
+
+Cutting off the longest palindrome first does not always give the minimum.
+The tests use strings of a few hundred characters, so trying every
+possible split will be too slow.
+
+Examples:
+
+palindrome_partitioner("aab")      -> 1
+palindrome_partitioner("aba")      -> 0
+palindrome_partitioner("abc")      -> 2
+palindrome_partitioner("abaab")    -> 1
+palindrome_partitioner("banana")   -> 1
+palindrome_partitioner("")         -> 0

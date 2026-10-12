@@ -1,0 +1,26 @@
+Assignment name  : py_string_sculptor
+Expected files   : py_string_sculptor.py
+Allowed functions: all builtins
+--------------------------------------------------------------------------------
+
+Write a function that alternates the case of the letters of a string.
+
+def string_sculptor(text: str) -> str:
+
+A letter is a character for which str.isalpha() is True. Inside each
+word, the 1st letter becomes lowercase, the 2nd uppercase, the 3rd
+lowercase, and so on. Characters that are not letters are copied
+unchanged and do not count in the alternation (the letter right after
+them takes the next case in the sequence). A space (' ') restarts the
+alternation: the first letter after a space is lowercase again. Other
+characters such as '-', ',' or '.' do not restart it.
+
+Examples:
+
+string_sculptor("hello")         -> "hElLo"
+string_sculptor("Hello World")   -> "hElLo wOrLd"
+string_sculptor("abc123def")     -> "aBc123DeF"
+string_sculptor("Python3.9!")    -> "pYtHoN3.9!"
+string_sculptor("hello,world")   -> "hElLo,WoRlD"
+string_sculptor("ab cd ef")      -> "aB cD eF"
+string_sculptor("")              -> ""

@@ -1,0 +1,34 @@
+Assignment name  : py_number_base_converter
+Expected files   : py_number_base_converter.py
+Allowed functions: all builtins
+--------------------------------------------------------------------------------
+
+Write a function that converts a number written in one base to another.
+
+def number_base_converter(number: str, from_base: int, to_base: int) -> str:
+
+number is a non-negative integer written in base from_base. Return it
+written in base to_base. Both bases go from 2 to 36 inclusive.
+
+Digits are 0-9 for the values 0 to 9 and the letters A-Z for the values 10
+to 35. In number, letters may be upper or lower case; the result always
+uses uppercase letters and has no leading zeros (zero is "0").
+
+Return "ERROR" when:
+- either base is outside 2..36;
+- number is empty;
+- number has any character that is not a digit valid in from_base. This
+  includes signs, spaces, dots, underscores and prefixes such as "0x".
+
+Examples:
+
+number_base_converter("1010", 2, 10)   -> '10'
+number_base_converter("FF", 16, 10)    -> '255'
+number_base_converter("255", 10, 16)   -> 'FF'
+number_base_converter("123", 10, 2)    -> '1111011'
+number_base_converter("Z", 36, 10)     -> '35'
+number_base_converter("35", 10, 36)    -> 'Z'
+number_base_converter("00ff", 16, 16)  -> 'FF'
+number_base_converter("123", 1, 10)    -> 'ERROR'
+number_base_converter("G", 16, 10)     -> 'ERROR'
+number_base_converter("-5", 10, 2)     -> 'ERROR'

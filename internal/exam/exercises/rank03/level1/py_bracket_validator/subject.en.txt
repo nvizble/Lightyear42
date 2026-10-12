@@ -1,0 +1,24 @@
+Assignment name  : py_bracket_validator
+Expected files   : py_bracket_validator.py
+Allowed functions: all builtins
+--------------------------------------------------------------------------------
+
+Write a function that tells whether the brackets of a string are balanced.
+
+def bracket_validator(s: str) -> bool:
+
+The brackets are (), [] and {}. The string is valid when every opening
+bracket is closed by a bracket of the same kind, in the right order, and
+no closing bracket comes without its opening one. Any other character is
+ignored. An empty string is valid.
+
+Examples:
+
+bracket_validator("()")            -> True
+bracket_validator("()[]{}")        -> True
+bracket_validator("(]")            -> False
+bracket_validator("([)]")          -> False
+bracket_validator("{[]}")          -> True
+bracket_validator("hello(world)")  -> True
+bracket_validator("((())")         -> False
+bracket_validator("")              -> True
