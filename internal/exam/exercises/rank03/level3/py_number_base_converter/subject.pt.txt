@@ -1,0 +1,36 @@
+Nome do exercício : py_number_base_converter
+Arquivos esperados: py_number_base_converter.py
+Funções permitidas: todas as builtins
+--------------------------------------------------------------------------------
+
+Escreva uma função que converte um número escrito numa base para outra.
+
+def number_base_converter(number: str, from_base: int, to_base: int) -> str:
+
+number é um inteiro não negativo escrito na base from_base. Devolva-o
+escrito na base to_base. As duas bases vão de 2 a 36, inclusive.
+
+Os dígitos são 0-9 para os valores de 0 a 9 e as letras A-Z para os
+valores de 10 a 35. Em number, as letras podem ser maiúsculas ou
+minúsculas; o resultado sempre usa letras maiúsculas e não tem zeros à
+esquerda (zero é "0").
+
+Devolva "ERROR" quando:
+- alguma das bases estiver fora de 2..36;
+- number for vazio;
+- number tiver qualquer caractere que não seja um dígito válido na base
+  from_base. Isso inclui sinais, espaços, pontos, sublinhados e prefixos
+  como "0x".
+
+Exemplos:
+
+number_base_converter("1010", 2, 10)   -> '10'
+number_base_converter("FF", 16, 10)    -> '255'
+number_base_converter("255", 10, 16)   -> 'FF'
+number_base_converter("123", 10, 2)    -> '1111011'
+number_base_converter("Z", 36, 10)     -> '35'
+number_base_converter("35", 10, 36)    -> 'Z'
+number_base_converter("00ff", 16, 16)  -> 'FF'
+number_base_converter("123", 1, 10)    -> 'ERROR'
+number_base_converter("G", 16, 10)     -> 'ERROR'
+number_base_converter("-5", 10, 2)     -> 'ERROR'

@@ -1,0 +1,34 @@
+Nome do exercício : py_compress_decompress
+Arquivos esperados: py_compress_decompress.py
+Funções permitidas: todas as builtins
+--------------------------------------------------------------------------------
+
+Escreva duas funções no mesmo arquivo: uma que comprime uma string com
+codificação por repetição (run-length) e outra que desfaz a compressão.
+
+def compress(s: str) -> str:
+def decompress(s: str) -> str:
+
+compress troca cada sequência do mesmo caractere pelo caractere seguido do
+tamanho da sequência. Uma sequência de tamanho 1 vira só o caractere, sem
+o "1". Maiúsculas e minúsculas são diferentes ("aA" tem duas sequências).
+A entrada de compress nunca tem dígitos. A string vazia devolve "".
+
+decompress faz o contrário: cada caractere é seguido de uma contagem
+opcional de um ou mais dígitos (pode ser "12" ou "100"), e sem contagem
+vale 1. A contagem nunca é 0, e o "1" pode aparecer explícito ("a1b1" é
+"ab"). A string vazia devolve "".
+
+As duas funções são corrigidas; decompress é testada por meio de compress,
+então compress(decompress(t)) tem que dar a forma comprimida do que t
+representa.
+
+Exemplos:
+
+compress("aabcccccaaa")   -> "a2bc5a3"
+compress("abc")           -> "abc"
+compress("")              -> ""
+decompress("a2bc5a3")     -> "aabcccccaaa"
+decompress("a12")         -> "aaaaaaaaaaaa"
+decompress("a1b1a2")      -> "abaa"
+decompress("")            -> ""

@@ -1,0 +1,15 @@
+{
+  "lang": "python",
+  "files": ["py_package_dependency_resolver.py"],
+  "function": "package_dependency_resolver",
+  "forbidden": ["graphlib"],
+  "tests": [
+    ["{'app': ['database'], 'database': ['driver'], 'driver': []}", "{'A': [], 'B': ['A'], 'C': ['A', 'B']}", "{}", "{'X': ['Y'], 'Y': ['X']}", "{'web': [], 'api': [], 'frontend': ['web'], 'backend': ['api']}"],
+    ["{'solo': []}", "{'a': ['a']}", "{'a': ['missing']}", "{'b': [], 'a': []}"],
+    ["{'z': [], 'b': ['z'], 'a': ['b']}", "{'b': [], 'a2': ['a1'], 'a1': []}", "{'c': [], 'a': ['c'], 'b': []}", "{'top': ['left', 'right'], 'left': ['base'], 'right': ['base'], 'base': []}"],
+    ["{'a': ['b'], 'b': ['c'], 'c': ['a']}", "{'ok': [], 'x': ['y'], 'y': ['x']}", "{'a': ['b'], 'b': ['b']}", "{'a': ['b'], 'b': [], 'c': ['d'], 'd': ['c', 'b']}"],
+    ["{'app': ['lib', 'ghost'], 'lib': ['phantom']}", "{'a': ['b', 'b'], 'b': []}", "{'b': [], 'B': [], 'a': []}", "{'x': ['y', 'z'], 'y': ['z'], 'z': [], 'w': ['nope']}"],
+    ["{'b': ['a'], 'a': [], 'c': []}", "{'lib': [], 'app': ['lib'], 'tests': ['app', 'lib'], 'docs': []}", "{'a': ['b'], 'b': ['c'], 'c': [], 'd': ['d']}", "{'x': [], 'y': [], 'z': []}", "{'m': ['n', 'o'], 'n': ['o'], 'o': ['p'], 'p': [], 'q': ['p']}", "{'a': [], 'b': ['a', 'zzz']}"],
+    ["{f'p{i:03}': ([f'p{i + 1:03}'] if i < 199 else []) for i in range(200)}", "{f'n{i:02}': [] for i in range(50)}", "{**{f'p{i:03}': [f'p{i + 1:03}'] for i in range(100)}, 'p100': ['p000']}"]
+  ]
+}

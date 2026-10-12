@@ -1,0 +1,29 @@
+Assignment name  : py_constellation_mapper
+Expected files   : py_constellation_mapper.py
+Allowed functions: all builtins
+--------------------------------------------------------------------------------
+
+Write a function that draws a constellation of stars on a square grid.
+
+def constellation_mapper(stars: list[tuple[int, int]], dim: int) -> list[str]:
+
+The grid has dim rows and dim columns. Return it as a list of dim strings,
+one per row from top to bottom, each dim characters long: '*' where there
+is a star and '.' everywhere else.
+
+Each star is a (row, col) pair; (0, 0) is the top-left corner, rows grow
+downwards and columns grow to the right. Stars outside the grid (any
+coordinate negative or greater than or equal to dim) are ignored. A star
+listed more than once is drawn once. If dim is 0 or negative, return an
+empty list.
+
+Examples:
+
+constellation_mapper([(0, 0), (1, 1), (2, 2)], 3)  -> ['*..', '.*.', '..*']
+constellation_mapper([(1, 0), (1, 1), (1, 2)], 3)  -> ['...', '***', '...']
+constellation_mapper([(0, 2)], 3)                  -> ['..*', '...', '...']
+constellation_mapper([(0, 0), (0, 0), (1, 1)], 2)  -> ['*.', '.*']
+constellation_mapper([(0, 0), (5, 5)], 3)          -> ['*..', '...', '...']
+constellation_mapper([(-1, 0), (1, 1)], 2)         -> ['..', '.*']
+constellation_mapper([], 2)                        -> ['..', '..']
+constellation_mapper([(0, 0)], 0)                  -> []

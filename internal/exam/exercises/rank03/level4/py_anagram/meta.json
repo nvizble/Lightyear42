@@ -1,0 +1,13 @@
+{
+  "lang": "python",
+  "files": ["py_anagram.py"],
+  "function": "anagram",
+  "tests": [
+    ["\"listen\", \"silent\"", "\"Triangle\", \"Integral\"", "\"Dormitory\", \"Dirty Room\"", "\"hello\", \"world\"", "\"\", \"\"", "\"abc\", \"abcc\""],
+    ["\"a\", \"a\"", "\"a\", \"A\"", "\"a\", \"b\"", "\"ab\", \"a\"", "\"   \", \"\"", "\" \", \"a\""],
+    ["\"aab\", \"abb\"", "\"aabb\", \"bbaa\"", "\"aaab\", \"abbb\"", "\"abc\", \"ab c\"", "\"A gentleman\", \"Elegant man\""],
+    ["\"a1b2\", \"2b1a\"", "\"a!\", \"a\"", "\"a.b\", \"ab.\"", "\"Astronomer\", \"Moon starer\"", "\"School master\", \"The classroom\"", "\"rat\", \"car\""],
+    ["\"ação\", \"oaçã\"", "\"Ação\", \"ÇÃOA\"", "\"café\", \"face\"", "\"Éa\", \"aé\""],
+    ["\"ab\" * 50000, \"BA\" * 50000", "\"ab\" * 50000, \"ab\" * 49999 + \"aa\"", "\"a\" * 100000 + \"b\", \"b\" + \"A\" * 100000", "\"a b\" * 30000, \"ab\" * 30000"]
+  ]
+}

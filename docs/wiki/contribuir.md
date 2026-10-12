@@ -83,6 +83,23 @@ O `meta.json` lista os arquivos da entrega e, em `tests`, os argumentos (sem o n
 
 O grader compila a entrega e a `ref/` com `cc -Wall -Wextra -Werror` e compara a saída padrão das duas em cada teste. Nos exercícios de função, o `main.c` chama a função e imprime o resultado (veja `level1/ft_strlen/`).
 
+Um exercício em Python tem `"lang": "python"`, o nome da função em `function`, um único arquivo `.py` e, opcionalmente, o que é proibido em `forbidden` (`"sorted"` para uma builtin ou um módulo, `"list.sort"` para um método). Cada teste é uma lista de chamadas, cada uma com os argumentos como expressão Python:
+
+```json
+{
+  "lang": "python",
+  "files": ["py_cryptic_sorter.py"],
+  "function": "cryptic_sorter",
+  "forbidden": ["sorted", "list.sort"],
+  "tests": [
+    ["[3, 1, 2]", "[]"],
+    ["list(range(500, 0, -1))"]
+  ]
+}
+```
+
+O grader roda as chamadas de um teste num processo `python3` só e compara o `repr()` de cada retorno (ou `raise <Exceção>`) com o da `ref/`.
+
 Os testes do pacote (`go test ./internal/exam/`) carregam o catálogo e conferem que **toda solução de referência passa** nos próprios testes. Um rank novo aparece no `lightyear exam list` e vale em `lightyear exam start --rank <NN>`. Se usar material de terceiros, credite em `internal/exam/CREDITS.md`.
 
 ## Adicionar uma suíte de testes {#suites}

@@ -1,0 +1,25 @@
+Assignment name  : py_spiral_matrix
+Expected files   : py_spiral_matrix.py
+Allowed functions: all builtins
+--------------------------------------------------------------------------------
+
+Write a function that builds an n x n matrix holding the numbers 1 to n * n
+laid out in a clockwise spiral.
+
+def generate_spiral(n: int) -> list[list[int]]:
+
+The matrix is a list of n rows, each a list of n integers. The number 1 goes
+in the top-left cell; the numbers then go right along the top row, down the
+right column, left along the bottom row and up the left column, and keep
+turning clockwise towards the center until every cell is filled.
+
+n is never negative. For n == 0 return an empty list.
+
+Examples:
+
+generate_spiral(1) -> [[1]]
+generate_spiral(2) -> [[1, 2], [4, 3]]
+generate_spiral(3) -> [[1, 2, 3], [8, 9, 4], [7, 6, 5]]
+generate_spiral(4) -> [[1, 2, 3, 4], [12, 13, 14, 5], [11, 16, 15, 6],
+                       [10, 9, 8, 7]]
+generate_spiral(0) -> []

@@ -1,0 +1,43 @@
+Nome do exercício : py_room_scheduler
+Arquivos esperados: py_room_scheduler.py
+Funções permitidas: todas as builtins
+--------------------------------------------------------------------------------
+
+Escreva uma função que distribui reuniões entre salas de modo que duas
+reuniões na mesma sala nunca se sobreponham, e informa quantas salas foram
+usadas.
+
+def py_room_scheduler(meetings: list[list[int]]) -> dict[str, Any]:
+
+(Any vem do módulo typing.)
+
+Cada reunião é uma lista [início, fim] com início < fim. Uma reunião que
+começa exatamente quando outra termina pode usar a mesma sala.
+
+Distribua as reuniões assim:
+  1. Ordene as reuniões pelo horário de início; reuniões com o mesmo início
+     são ordenadas pelo horário de fim.
+  2. Percorra-as nessa ordem. Coloque cada reunião na primeira sala (a que
+     foi aberta antes) cuja última reunião termina no início dela ou antes.
+     Se nenhuma sala estiver livre, abra uma sala nova para ela.
+
+Esse método guloso sempre usa o menor número possível de salas.
+
+Devolva um dicionário com duas chaves, nesta ordem:
+  - "total_rooms": o número de salas usadas;
+  - "schedule": uma lista por sala, na ordem em que as salas foram abertas,
+    com as reuniões daquela sala na ordem em que foram colocadas, cada uma
+    como uma lista [início, fim].
+
+Para uma lista vazia, devolva {"total_rooms": 0, "schedule": []}.
+
+Exemplos:
+
+py_room_scheduler([[0, 30], [5, 10], [15, 20]])
+    -> {'total_rooms': 2, 'schedule': [[[0, 30]], [[5, 10], [15, 20]]]}
+py_room_scheduler([[5, 10], [1, 5]])
+    -> {'total_rooms': 1, 'schedule': [[[1, 5], [5, 10]]]}
+py_room_scheduler([[0, 3], [1, 2], [4, 5]])
+    -> {'total_rooms': 2, 'schedule': [[[0, 3], [4, 5]], [[1, 2]]]}
+py_room_scheduler([])
+    -> {'total_rooms': 0, 'schedule': []}

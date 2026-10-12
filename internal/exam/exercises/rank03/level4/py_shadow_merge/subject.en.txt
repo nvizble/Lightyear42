@@ -1,0 +1,23 @@
+Assignment name  : py_shadow_merge
+Expected files   : py_shadow_merge.py
+Allowed functions: all builtins
+--------------------------------------------------------------------------------
+
+Write a function that merges two sorted lists into a single sorted list.
+
+def shadow_merge(list1: list[int], list2: list[int]) -> list[int]:
+
+Both lists are already sorted in ascending order and may be empty,
+contain negative numbers or repeat values. Return a new list with every
+element of both lists, sorted in ascending order. Repeated values are
+all kept.
+
+Examples:
+
+shadow_merge([1, 3, 5], [2, 4, 6])   -> [1, 2, 3, 4, 5, 6]
+shadow_merge([1, 2, 3], [4, 5, 6])   -> [1, 2, 3, 4, 5, 6]
+shadow_merge([1], [2, 3, 4])         -> [1, 2, 3, 4]
+shadow_merge([], [1, 2, 3])          -> [1, 2, 3]
+shadow_merge([1, 1, 2], [1, 3, 3])   -> [1, 1, 1, 2, 3, 3]
+shadow_merge([-5, -1], [-3])         -> [-5, -3, -1]
+shadow_merge([], [])                 -> []

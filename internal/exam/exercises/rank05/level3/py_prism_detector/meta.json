@@ -1,0 +1,15 @@
+{
+  "lang": "python",
+  "files": ["py_prism_detector.py"],
+  "function": "prism_detector",
+  "tests": [
+    ["[\"CAT\", \"A..\", \"T..\"], \"CAT\"", "[], \"CAT\"", "[\"CAT\"], \"\"", "[\"\"], \"A\""],
+    ["[\"CAT\"], \"CAT\"", "[\"TAC\"], \"CAT\"", "[\"C\", \"A\", \"T\"], \"CAT\"", "[\"T\", \"A\", \"C\"], \"CAT\"", "[\"cat\"], \"CAT\""],
+    ["[\"C..\", \".A.\", \"..T\"], \"CAT\"", "[\"T..\", \".A.\", \"..C\"], \"CAT\"", "[\"..C\", \".A.\", \"T..\"], \"CAT\"", "[\"..T\", \".A.\", \"C..\"], \"CAT\""],
+    ["[\"AB\", \"CD\"], \"ABCDE\"", "[\"ABC\"], \"ABCD\"", "[\"XYZ\", \"XYZ\"], \"Q\"", "[\"AB\", \"BA\"], \"A\""],
+    ["[\"ABA\"], \"ABA\"", "[\"AAAA\"], \"AA\"", "[\"AAA\", \"AAA\"], \"AA\""],
+    ["[\"G.G.G\", \".OOO.\", \"GOXOG\", \".OOO.\", \"G.G.G\"], \"XOG\"", "[\"S.S.S\", \".UUU.\", \"SUNUS\", \".UUU.\", \"S.S.S\"], \"SUN\""],
+    ["[\"HELLO\", \"WORLD\", \"HELLO\"], \"LOL\"", "[\"HELLO\", \"WORLD\", \"HELLO\"], \"LRL\"", "[\"ABCDE\", \"FGHIJ\", \"KLMNO\", \"PQRST\"], \"AGMS\"", "[\"ABCDE\", \"FGHIJ\", \"KLMNO\", \"PQRST\"], \"TNHB\"", "[\"ABCDE\", \"FGHIJ\", \"KLMNO\", \"PQRST\"], \"QMIE\""],
+    ["[\"XY\" * 10 for _ in range(20)], \"XYX\"", "[\"Z\" * 15] * 15, \"ZZZZZZZZZZZZZZZ\"", "[\"AB\" * 25] * 50, \"ABBA\""]
+  ]
+}

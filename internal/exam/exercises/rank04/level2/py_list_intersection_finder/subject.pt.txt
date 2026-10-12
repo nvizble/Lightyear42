@@ -1,0 +1,27 @@
+Nome do exercício : py_list_intersection_finder
+Arquivos esperados: py_list_intersection_finder.py
+Funções permitidas: todas as builtins
+--------------------------------------------------------------------------------
+
+Escreva uma função que encontra os valores em comum entre várias listas
+ordenadas.
+
+def list_intersection_finder(lists: list[list[int]]) -> list[int]:
+
+Cada lista interna está em ordem crescente e pode ter repetidos. Retorne
+uma nova lista com todos os valores que aparecem em TODAS as listas
+internas, cada valor uma vez só, em ordem crescente.
+
+Se lists estiver vazia, ou se alguma lista interna estiver vazia, retorne
+uma lista vazia. Com uma única lista interna, o resultado é essa lista sem
+repetidos.
+
+Exemplos:
+
+list_intersection_finder([[1, 2, 3], [2, 3, 4], [2, 3, 5]])         -> [2, 3]
+list_intersection_finder([[1, 2, 3, 4], [2, 4, 6, 8], [4, 8, 12]])  -> [4]
+list_intersection_finder([[1, 1, 2, 3], [1, 2, 2, 3], [1, 2, 3]])   -> [1, 2, 3]
+list_intersection_finder([[1, 2], [2, 3], [3, 4]])                  -> []
+list_intersection_finder([[1, 2, 3], []])                           -> []
+list_intersection_finder([[5, 5]])                                  -> [5]
+list_intersection_finder([])                                        -> []

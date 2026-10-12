@@ -1,0 +1,32 @@
+Nome do exercício : py_island_matrix_counter
+Arquivos esperados: py_island_matrix_counter.py
+Funções permitidas: todas as builtins
+--------------------------------------------------------------------------------
+
+Escreva uma função que conta as ilhas de um mapa.
+
+def island_matrix_counter(matrix: list[list[str]]) -> int:
+
+O mapa é uma lista de linhas, todas do mesmo tamanho, e cada célula é a
+string "1" (terra) ou "0" (água). Uma ilha é um grupo de células de terra
+ligadas umas às outras pelos vizinhos de cima, de baixo, da esquerda e da
+direita. Células que só se tocam na diagonal pertencem a ilhas diferentes.
+Tudo o que está fora do mapa é água.
+
+Devolva o número de ilhas. Um mapa sem linhas ([]) ou com linhas vazias
+([[]]) não tem ilhas. Os mapas podem ter até algumas dezenas de linhas e
+colunas.
+
+Exemplos:
+
+island_matrix_counter([["1", "1", "1", "1", "0"],
+                       ["1", "1", "1", "0", "0"],
+                       ["1", "1", "1", "1", "0"],
+                       ["0", "0", "0", "0", "0"]])  -> 1
+island_matrix_counter([["1", "1", "0", "0", "0"],
+                       ["1", "1", "0", "0", "0"],
+                       ["0", "0", "1", "0", "0"],
+                       ["0", "0", "0", "1", "1"]])  -> 3
+island_matrix_counter([["1", "0"], ["0", "1"]])     -> 2
+island_matrix_counter([["1", "0", "1", "1"]])       -> 2
+island_matrix_counter([])                           -> 0

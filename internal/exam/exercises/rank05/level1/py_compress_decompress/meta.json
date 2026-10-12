@@ -1,0 +1,14 @@
+{
+  "lang": "python",
+  "files": ["py_compress_decompress.py"],
+  "function": "compress",
+  "tests": [
+    ["\"aabcccccaaa\"", "\"\"", "\"a\"", "\"abc\"", "\"aaaa\""],
+    ["\"aabb\"", "\"abab\"", "\"aaAA\"", "\"  !!!\"", "\"zzzzzzzzzzzz\""],
+    ["\"x\" * 100", "\"ab\" * 50", "\"a\" * 1000 + \"b\" + \"a\" * 9"],
+    ["__import__(\"py_compress_decompress\").decompress(\"a2bc5a3\")", "__import__(\"py_compress_decompress\").decompress(\"\")", "__import__(\"py_compress_decompress\").decompress(\"a1\")", "__import__(\"py_compress_decompress\").decompress(\"a1b1c1\")"],
+    ["__import__(\"py_compress_decompress\").decompress(\"a2a3\")", "__import__(\"py_compress_decompress\").decompress(\"b1a12\")", "__import__(\"py_compress_decompress\").decompress(\"x6x6\")", "__import__(\"py_compress_decompress\").decompress(\"q1w10e1\")"],
+    ["__import__(\"py_compress_decompress\").decompress(\"a100b1\")", "__import__(\"py_compress_decompress\").decompress(\"!3 2a1\")", "__import__(\"py_compress_decompress\").decompress(\"Z1z1Z2\")"],
+    ["__import__(\"py_compress_decompress\").decompress(\"c1\" * 30)", "__import__(\"py_compress_decompress\").decompress(\"k1000\") + \"j\"", "__import__(\"py_compress_decompress\").decompress(\"m20\" * 5 + \"n1\")"]
+  ]
+}

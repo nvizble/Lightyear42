@@ -1,0 +1,27 @@
+Nome do exercício : py_string_sculptor
+Arquivos esperados: py_string_sculptor.py
+Funções permitidas: todas as builtins
+--------------------------------------------------------------------------------
+
+Escreva uma função que alterna entre minúsculas e maiúsculas as letras
+de uma string.
+
+def string_sculptor(text: str) -> str:
+
+Uma letra é um caractere para o qual str.isalpha() é True. Dentro de cada
+palavra, a 1ª letra fica minúscula, a 2ª maiúscula, a 3ª minúscula, e
+assim por diante. Os caracteres que não são letras são copiados sem
+mudança e não contam na alternância (a letra logo depois deles recebe o
+próximo caso da sequência). Um espaço (' ') reinicia a alternância: a
+primeira letra depois de um espaço volta a ser minúscula. Outros
+caracteres, como '-', ',' ou '.', não reiniciam.
+
+Exemplos:
+
+string_sculptor("hello")         -> "hElLo"
+string_sculptor("Hello World")   -> "hElLo wOrLd"
+string_sculptor("abc123def")     -> "aBc123DeF"
+string_sculptor("Python3.9!")    -> "pYtHoN3.9!"
+string_sculptor("hello,world")   -> "hElLo,WoRlD"
+string_sculptor("ab cd ef")      -> "aB cD eF"
+string_sculptor("")              -> ""

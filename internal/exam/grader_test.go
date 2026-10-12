@@ -17,6 +17,17 @@ func requireCC(t *testing.T) {
 	}
 }
 
+func requireTool(t *testing.T, ex Exercise) {
+	t.Helper()
+	if ex.Lang == "python" {
+		if _, err := exec.LookPath("python3"); err != nil {
+			t.Skip("python3 não disponível")
+		}
+		return
+	}
+	requireCC(t)
+}
+
 func TestLoadEmbeddedCatalog(t *testing.T) {
 	exercises, err := Load()
 	if err != nil {
@@ -45,13 +56,13 @@ func TestLoadEmbeddedCatalog(t *testing.T) {
 // Every reference solution, turned in as the student's answer, must pass:
 // this catches broken references and tests that disagree with them.
 func TestReferenceSolutionsPass(t *testing.T) {
-	requireCC(t)
 	exercises, err := Load()
 	if err != nil {
 		t.Fatal(err)
 	}
 	for _, ex := range exercises {
 		t.Run(ex.Name, func(t *testing.T) {
+			requireTool(t, ex)
 			dir := t.TempDir()
 			for name, src := range ex.ref {
 				writeFile(t, dir, name, src)
@@ -113,6 +124,43 @@ func TestGradeFailures(t *testing.T) {
 				if res.Tests[n-1].Passed {
 					t.Fatalf("o último teste deveria ser a falha: %+v", res.Tests)
 				}
+			}
+		})
+	}
+}
+
+func TestGradePythonFailures(t *testing.T) {
+	ex := findExercise(t, "py_bracket_validator")
+	requireTool(t, ex)
+
+	tests := []struct {
+		name  string
+		src   string
+		trace string
+	}{
+		{"wrong answer", "def bracket_validator(s):\n    return s.count('(') == s.count(')')\n", "esperado: False\nrecebido: True"},
+		{"raises", "def bracket_validator(s):\n    raise ValueError(s)\n", "recebido: raise ValueError"},
+		{"syntax error", "def bracket_validator(s)\n    return True\n", "erro: SyntaxError"},
+		{"wrong name", "def validator(s):\n    return True\n", "erro: ImportError"},
+		{"timeout", "def bracket_validator(s):\n    while True:\n        pass\n", "timeout"},
+		{"forbidden", "import itertools\ndef bracket_validator(s):\n    return sorted(s) == s\n", "sorted() na linha 3"},
+	}
+	ex.Forbidden = []string{"sorted", "list.sort", "itertools"}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			dir := t.TempDir()
+			writeFile(t, dir, "py_bracket_validator.py", tt.src)
+			g := NewGrader()
+			g.Timeout = time.Second
+			res, err := g.Grade(context.Background(), ex, dir)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if res.Passed {
+				t.Fatal("submissão errada foi aprovada")
+			}
+			if !strings.Contains(res.Trace, tt.trace) {
+				t.Fatalf("trace sem %q:\n%s", tt.trace, res.Trace)
 			}
 		})
 	}

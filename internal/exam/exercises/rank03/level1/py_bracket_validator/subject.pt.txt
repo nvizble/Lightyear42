@@ -1,0 +1,25 @@
+Nome do exercício : py_bracket_validator
+Arquivos esperados: py_bracket_validator.py
+Funções permitidas: todas as builtins
+--------------------------------------------------------------------------------
+
+Escreva uma função que diz se os parênteses, colchetes e chaves de uma
+string estão balanceados.
+
+def bracket_validator(s: str) -> bool:
+
+Os delimitadores são (), [] e {}. A string é válida quando todo delimitador
+aberto é fechado por um do mesmo tipo, na ordem certa, e nenhum fechamento
+aparece sem a sua abertura. Qualquer outro caractere é ignorado. A string
+vazia é válida.
+
+Exemplos:
+
+bracket_validator("()")            -> True
+bracket_validator("()[]{}")        -> True
+bracket_validator("(]")            -> False
+bracket_validator("([)]")          -> False
+bracket_validator("{[]}")          -> True
+bracket_validator("hello(world)")  -> True
+bracket_validator("((())")         -> False
+bracket_validator("")              -> True

@@ -1,0 +1,32 @@
+Assignment name  : py_cryptic_sorter
+Expected files   : py_cryptic_sorter.py
+Allowed functions: all builtins except sorted() and list.sort()
+--------------------------------------------------------------------------------
+
+Write a function that returns a sorted copy of a list of strings.
+
+def cryptic_sorter(strings: list[str]) -> list[str]:
+
+The strings are ordered by these rules, each one only breaking the ties
+left by the previous ones:
+
+1. Length: shorter strings come first.
+2. Character by character, ignoring case: compare the strings as if every
+   uppercase letter were its lowercase version (s.lower()), using the
+   character codes. So "apple" < "Banana" and "_a" < "Aa" (because '_' is
+   95 and 'a' is 97).
+3. Strings that are still tied (equal, or equal ignoring case) keep the
+   order they had in the input list.
+
+The input contains only ASCII strings. An empty list gives an empty list.
+
+Examples:
+
+cryptic_sorter(["apple", "cat", "banana", "dog", "elephant"])
+    -> ['cat', 'dog', 'apple', 'banana', 'elephant']
+cryptic_sorter(["aaa", "bbb", "AAA", "BBB"])  -> ['aaa', 'AAA', 'bbb', 'BBB']
+cryptic_sorter(["hello", "world", "hi", "test"])
+    -> ['hi', 'test', 'hello', 'world']
+cryptic_sorter(["Banana", "apple", "Cherry"]) -> ['apple', 'Banana', 'Cherry']
+cryptic_sorter([])                            -> []
+cryptic_sorter([""])                          -> ['']

@@ -1,0 +1,26 @@
+Nome do exercício : py_spiral_matrix
+Arquivos esperados: py_spiral_matrix.py
+Funções permitidas: todas as builtins
+--------------------------------------------------------------------------------
+
+Escreva uma função que monta uma matriz n x n com os números de 1 a n * n
+dispostos em espiral no sentido horário.
+
+def generate_spiral(n: int) -> list[list[int]]:
+
+A matriz é uma lista de n linhas, cada uma uma lista de n inteiros. O
+número 1 fica na célula do canto superior esquerdo; depois os números
+seguem para a direita na primeira linha, descem pela última coluna, voltam
+para a esquerda na última linha, sobem pela primeira coluna e continuam
+girando no sentido horário em direção ao centro até preencher tudo.
+
+n nunca é negativo. Para n == 0, devolva uma lista vazia.
+
+Exemplos:
+
+generate_spiral(1) -> [[1]]
+generate_spiral(2) -> [[1, 2], [4, 3]]
+generate_spiral(3) -> [[1, 2, 3], [8, 9, 4], [7, 6, 5]]
+generate_spiral(4) -> [[1, 2, 3, 4], [12, 13, 14, 5], [11, 16, 15, 6],
+                       [10, 9, 8, 7]]
+generate_spiral(0) -> []

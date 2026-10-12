@@ -1,0 +1,26 @@
+Assignment name  : py_whisper_cipher
+Expected files   : py_whisper_cipher.py
+Allowed functions: all builtins
+--------------------------------------------------------------------------------
+
+Write a function that encrypts a string with a Caesar cipher.
+
+def whisper_cipher(text: str, shift: int) -> str:
+
+Every letter from 'a' to 'z' and from 'A' to 'Z' is replaced by the
+letter shift positions after it in the alphabet, wrapping around from
+'z' back to 'a' (and 'Z' to 'A'). Letters keep their case. A negative
+shift moves the letters backwards, and the shift can be any integer,
+even larger than 26 in either direction. Every other character (digits,
+spaces, punctuation, accented letters like 'é') is copied unchanged.
+
+Examples:
+
+whisper_cipher("hello", 3)          -> "khoor"
+whisper_cipher("Hello World!", 1)   -> "Ifmmp Xpsme!"
+whisper_cipher("xyz", 3)            -> "abc"
+whisper_cipher("ABC123def", 5)      -> "FGH123ijk"
+whisper_cipher("abc", -3)           -> "xyz"
+whisper_cipher("abc", 52)           -> "abc"
+whisper_cipher("café", 1)           -> "dbgé"
+whisper_cipher("", 10)              -> ""

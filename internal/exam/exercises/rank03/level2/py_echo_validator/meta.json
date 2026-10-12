@@ -1,0 +1,13 @@
+{
+  "lang": "python",
+  "files": ["py_echo_validator.py"],
+  "function": "echo_validator",
+  "tests": [
+    ["\"racecar\"", "\"A man a plan a canal Panama\"", "\"race a car\"", "\"Was it a car or a cat I saw\"", "\"hello\"", "\"Madam Im Adam\"", "\"\""],
+    ["\"a\"", "\"Z\"", "\"ab\"", "\"aa\"", "\"Aa\"", "\"abA\""],
+    ["\"   \"", "\"12321\"", "\"!?!\"", "\"1\"", "\" a \"", "\"\\ta\\n\""],
+    ["\"No lemon, no melon\"", "\"Madam, I'm Adam.\"", "\"A1b2B3a\"", "\"ab1ba\"", "\"a12b\"", "\"Eva, can I see bees in a cave?\""],
+    ["\"Never odd or even!\"", "\"Step on no pets\"", "\"abcdba\"", "\"abccba\"", "\"abcba\"", "\"abca\""],
+    ["\"été\"", "\"Ésé\"", "\"abc\" * 1000 + \"cba\" * 1000", "\"ab\" * 2000 + \"a\"", "\"ab\" * 2000 + \"b\"", "\"x\" * 10000"]
+  ]
+}

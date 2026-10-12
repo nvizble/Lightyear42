@@ -1,0 +1,30 @@
+Assignment name  : py_graph_cycle_detector
+Expected files   : py_graph_cycle_detector.py
+Allowed functions: all builtins except graphlib
+--------------------------------------------------------------------------------
+
+Write a function that tells whether a directed graph has a cycle.
+
+def py_graph_cycle_detector(graph: dict[int, list[int]]) -> bool:
+
+The graph is an adjacency list: each key is a node and its value lists the
+nodes it has an edge to. A node may appear only as a neighbor, never as a
+key; such a node has no outgoing edges. An edge from a node to itself
+(a self-loop) is a cycle. The same edge may be listed more than once.
+
+Return True if following the edges can lead from some node back to itself,
+and False otherwise (including for an empty graph). The graph may be made
+of several disconnected parts; a cycle in any of them counts.
+
+Graphs can have many paths between the same nodes (hundreds of nodes and
+more paths than you could ever list), so visit each node a bounded number
+of times instead of exploring every path.
+
+Examples:
+
+py_graph_cycle_detector({0: [1], 1: [2], 2: [0]})        -> True
+py_graph_cycle_detector({0: [1], 1: [2], 2: []})         -> False
+py_graph_cycle_detector({})                              -> False
+py_graph_cycle_detector({0: [0]})                        -> True
+py_graph_cycle_detector({0: [1, 2], 1: [3], 2: [3]})     -> False
+py_graph_cycle_detector({0: [1], 1: [], 2: [3], 3: [2]}) -> True

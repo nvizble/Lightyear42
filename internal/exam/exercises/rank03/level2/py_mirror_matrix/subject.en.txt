@@ -1,0 +1,25 @@
+Assignment name  : py_mirror_matrix
+Expected files   : py_mirror_matrix.py
+Allowed functions: all builtins
+--------------------------------------------------------------------------------
+
+Write a function that mirrors a matrix horizontally.
+
+def mirror_matrix(matrix: list[list[int]]) -> list[list[int]]:
+
+The matrix is a list of rows, each row a list of integers. Return a new
+matrix with the same rows in the same order, each one reversed.
+
+Rows may have different lengths, and an empty row stays empty. An empty
+matrix gives an empty matrix. Do not modify the given matrix or its rows
+(the same row object may appear more than once in it).
+
+Examples:
+
+mirror_matrix([[1, 2, 3], [4, 5, 6]])    -> [[3, 2, 1], [6, 5, 4]]
+mirror_matrix([[1, 2], [3, 4], [5, 6]])  -> [[2, 1], [4, 3], [6, 5]]
+mirror_matrix([[7]])                     -> [[7]]
+mirror_matrix([[1, 2, 3, 4]])            -> [[4, 3, 2, 1]]
+mirror_matrix([[-1, -2], [-3, -4]])      -> [[-2, -1], [-4, -3]]
+mirror_matrix([[1, 2], [3, 4, 5], []])   -> [[2, 1], [5, 4, 3], []]
+mirror_matrix([])                        -> []

@@ -1,0 +1,24 @@
+Nome do exercício : py_anagram
+Arquivos esperados: py_anagram.py
+Funções permitidas: todas as builtins
+--------------------------------------------------------------------------------
+
+Escreva uma função que diz se duas strings são anagramas.
+
+def anagram(s1: str, s2: str) -> bool:
+
+Duas strings são anagramas quando, depois de tirar todos os espaços (' ')
+e sem diferenciar maiúsculas de minúsculas, elas têm exatamente os mesmos
+caracteres, cada um a mesma quantidade de vezes. Só os espaços são
+ignorados: dígitos, pontuação e letras acentuadas contam como qualquer
+outro caractere. Duas strings vazias são anagramas.
+
+Exemplos:
+
+anagram("listen", "silent")          -> True
+anagram("Triangle", "Integral")      -> True
+anagram("Dormitory", "Dirty Room")   -> True
+anagram("hello", "world")            -> False
+anagram("", "")                      -> True
+anagram("abc", "abcc")               -> False
+anagram("a!", "a")                   -> False

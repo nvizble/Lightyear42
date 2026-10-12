@@ -1,0 +1,40 @@
+Assignment name  : py_prism_detector
+Expected files   : py_prism_detector.py
+Allowed functions: all builtins
+--------------------------------------------------------------------------------
+
+Write a function that finds every occurrence of a word in a grid of letters,
+reading in any of the 8 straight directions, like a word search.
+
+def prism_detector(grid: list[str], pattern: str):
+
+grid is a list of rows (strings), all of the same length. A cell is located
+by (x, y): x is the column and y is the row, with (0, 0) at the top-left and
+y growing downwards. pattern matches at (x, y) in a direction when its
+letters appear one by one starting on that cell and moving one step (dx, dy)
+per letter, without leaving the grid. Letters are case sensitive.
+
+The directions, their steps (dx, dy) and their codes:
+
+  (1, 0)   "H"    right          (-1, 0)   "H-"   left
+  (0, 1)   "V"    down           (0, -1)   "V-"   up
+  (1, 1)   "D1"   down-right     (-1, -1)  "D1-"  up-left
+  (-1, 1)  "D2"   down-left      (1, -1)   "D2-"  up-right
+
+Return a list with a tuple (x, y, code) for every match, where (x, y) is the
+cell of the first letter. Order the list by y, then by x, then by direction
+in this order: H, H-, V, V-, D1, D1-, D2, D2-. Each direction is reported
+on its own, even when the same letters are read (a one-letter pattern
+matches in all 8 directions; "ABA" in "ABA" matches at (0, 0, "H") and
+(2, 0, "H-")). Return [] if grid or pattern is empty or nothing matches.
+
+Examples:
+
+prism_detector(["CAT", "A..", "T.."], "CAT") -> [(0, 0, 'H'), (0, 0, 'V')]
+prism_detector(["TAC"], "CAT")               -> [(2, 0, 'H-')]
+prism_detector(["..C", ".A.", "T.."], "CAT") -> [(2, 0, 'D2')]
+prism_detector(["..T", ".A.", "C.."], "CAT") -> [(0, 2, 'D2-')]
+prism_detector(["AAAA"], "AA")
+    -> [(0, 0, 'H'), (1, 0, 'H'), (1, 0, 'H-'), (2, 0, 'H'), (2, 0, 'H-'),
+        (3, 0, 'H-')]
+prism_detector([], "CAT")                    -> []

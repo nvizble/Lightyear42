@@ -1,0 +1,26 @@
+Nome do exercício : py_whisper_cipher
+Arquivos esperados: py_whisper_cipher.py
+Funções permitidas: todas as builtins
+--------------------------------------------------------------------------------
+
+Escreva uma função que criptografa uma string com a cifra de César.
+
+def whisper_cipher(text: str, shift: int) -> str:
+
+Cada letra de 'a' a 'z' e de 'A' a 'Z' é trocada pela letra que fica
+shift posições depois dela no alfabeto, voltando ao início depois do 'z'
+(e do 'Z'). As letras mantêm maiúscula ou minúscula. Um shift negativo
+anda para trás, e o shift pode ser qualquer inteiro, até maior que 26 em
+qualquer direção. Todo outro caractere (dígitos, espaços, pontuação,
+letras acentuadas como 'é') é copiado sem mudança.
+
+Exemplos:
+
+whisper_cipher("hello", 3)          -> "khoor"
+whisper_cipher("Hello World!", 1)   -> "Ifmmp Xpsme!"
+whisper_cipher("xyz", 3)            -> "abc"
+whisper_cipher("ABC123def", 5)      -> "FGH123ijk"
+whisper_cipher("abc", -3)           -> "xyz"
+whisper_cipher("abc", 52)           -> "abc"
+whisper_cipher("café", 1)           -> "dbgé"
+whisper_cipher("", 10)              -> ""

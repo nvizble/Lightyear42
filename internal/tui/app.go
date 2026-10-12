@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strings"
 	"time"
@@ -169,6 +170,7 @@ type AppModel struct {
 	grading       bool
 	spin          int
 	confirmFinish bool
+	examRank      string // the rank s starts ("" is appExamRank); p cycles it
 }
 
 // NewApp builds the app model.
@@ -374,7 +376,29 @@ func (m AppModel) key(k string) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-// examKey handles the Exam tab actions: s starts, e opens the editor (E
+// selectedRank is the rank s starts.
+func (m AppModel) selectedRank() string {
+	if m.examRank == "" {
+		return appExamRank
+	}
+	return m.examRank
+}
+
+// nextRank is the catalog's rank after the selected one (wrapping around).
+func (m AppModel) nextRank() string {
+	var ranks []string
+	for _, ex := range m.opts.Exam.Exercises() {
+		if !slices.Contains(ranks, ex.Rank) {
+			ranks = append(ranks, ex.Rank)
+		}
+	}
+	if len(ranks) == 0 {
+		return m.selectedRank()
+	}
+	return ranks[(slices.Index(ranks, m.selectedRank())+1)%len(ranks)]
+}
+
+// examKey handles the Exam tab actions: s starts (p picks the rank), e opens the editor (E
 // the external $EDITOR), g grades, f finishes (asking for confirmation
 // first).
 func (m AppModel) examKey(k string) (tea.Model, tea.Cmd) {
@@ -382,12 +406,17 @@ func (m AppModel) examKey(k string) (tea.Model, tea.Cmd) {
 		m.confirmFinish = false
 	}
 	switch k {
+	case "p":
+		if m.examSess == nil {
+			m.examRank = m.nextRank()
+			m.examNotice = ""
+		}
 	case "s":
 		if m.examSess != nil {
 			m.examNotice = styleLabel.Render("Já existe uma prova em andamento.")
 			return m, nil
 		}
-		if _, err := m.opts.Exam.Start(m.now, appExamRank, appExamDuration); err != nil {
+		if _, err := m.opts.Exam.Start(m.now, m.selectedRank(), appExamDuration); err != nil {
 			m.examNotice = styleFail.Render(err.Error())
 		} else {
 			m.examNotice = styleGood.Render("Prova começou. Boa sorte!")
@@ -864,7 +893,7 @@ func (m AppModel) examView() AppView {
 		return AppView{Content: strings.Join(parts, "\n\n")}
 	}
 	parts = append(parts, styleTitle.Render("Simulador de provas")+"\n"+
-		styleLabel.Render("Nenhuma prova em andamento. Aperte s para começar o Exam Rank 02 (3h),\nou clique num exercício para treinar só ele, sem tempo (/ busca)."))
+		styleLabel.Render("Nenhuma prova em andamento. Aperte s para começar o Exam Rank "+m.selectedRank()+" (3h)\n(p troca o rank), ou clique num exercício para treinar só ele, sem tempo (/ busca)."))
 	head := strings.Join(parts, "\n\n") + "\n\n"
 	catalog := ExamCatalogView(m.opts.Exam.Exercises(), m.width-appPadLeft)
 	for i := range catalog.Hotspots {
@@ -874,12 +903,15 @@ func (m AppModel) examView() AppView {
 }
 
 // gradingLine is the spinner shown while grading:
-// "⠋ Corrigindo…  cc -Wall -Wextra -Werror · 8 testes".
+// "⠋ Corrigindo…  cc -Wall -Wextra -Werror · 8 testes" (python3 for Python).
 func (m AppModel) gradingLine() string {
 	line := styleGood.Render(spinnerFrames[m.spin%len(spinnerFrames)]) + " " + styleValue.Render("Corrigindo…")
 	info := "cc -Wall -Wextra -Werror"
 	for _, ex := range m.opts.Exam.Exercises() {
 		if m.examSess != nil && ex.Rank == m.examSess.Rank && ex.Name == m.examSess.Exercise {
+			if ex.Lang == "python" {
+				info = "python3"
+			}
 			info += fmt.Sprintf(" · %d testes", len(ex.Tests))
 		}
 	}
@@ -973,7 +1005,7 @@ func (m AppModel) buttons() []appButton {
 	var defs [][2]string
 	if m.active == m.examTab() {
 		if m.examSess == nil {
-			defs = append(defs, [2]string{"s", "começar prova"})
+			defs = append(defs, [2]string{"s", "começar Rank " + m.selectedRank()}, [2]string{"p", "trocar rank"})
 		} else {
 			defs = append(defs, [2]string{"e", "editar"}, [2]string{"E", "$EDITOR"}, [2]string{"g", "grademe"}, [2]string{"f", "encerrar"})
 		}

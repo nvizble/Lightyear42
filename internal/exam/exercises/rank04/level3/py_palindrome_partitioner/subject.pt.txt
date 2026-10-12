@@ -1,0 +1,30 @@
+Nome do exercício : py_palindrome_partitioner
+Arquivos esperados: py_palindrome_partitioner.py
+Funções permitidas: todas as builtins
+--------------------------------------------------------------------------------
+
+Escreva uma função que retorna o número mínimo de cortes necessários para
+dividir uma string em palíndromos.
+
+def palindrome_partitioner(s: str) -> int:
+
+Um corte divide a string entre dois caracteres vizinhos, então c cortes
+geram c + 1 pedaços não vazios. Encontre o menor c tal que todo pedaço se
+leia igual de trás para frente.
+
+Uma string que já é palíndromo precisa de 0 cortes; isso inclui a string
+vazia e qualquer caractere sozinho. Como todo caractere sozinho é um
+palíndromo, a resposta nunca passa de len(s) - 1.
+
+Cortar primeiro o maior palíndromo possível nem sempre dá o mínimo. Os
+testes usam strings de algumas centenas de caracteres, então testar todas
+as divisões possíveis vai ser lento demais.
+
+Exemplos:
+
+palindrome_partitioner("aab")      -> 1
+palindrome_partitioner("aba")      -> 0
+palindrome_partitioner("abc")      -> 2
+palindrome_partitioner("abaab")    -> 1
+palindrome_partitioner("banana")   -> 1
+palindrome_partitioner("")         -> 0

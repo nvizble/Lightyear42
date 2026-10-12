@@ -52,6 +52,8 @@ type Grader struct {
 	CC string
 	// Timeout bounds each test run.
 	Timeout time.Duration
+	// Python runs the Python exercises ("python3" when empty).
+	Python string
 }
 
 // NewGrader returns a grader using "cc" and a 2s timeout per test.
@@ -64,7 +66,11 @@ func NewGrader() Grader {
 // A failing submission is reported in Result; the error is reserved for
 // problems unrelated to the student's code (no compiler, broken reference).
 func (g Grader) Grade(ctx context.Context, ex Exercise, submissionDir string) (Result, error) {
-	if _, err := exec.LookPath(g.CC); err != nil {
+	if ex.Lang == "python" {
+		if _, err := exec.LookPath(g.python()); err != nil {
+			return Result{}, fmt.Errorf("%s não encontrado: %w", g.python(), err)
+		}
+	} else if _, err := exec.LookPath(g.CC); err != nil {
 		return Result{}, fmt.Errorf("compilador %q não encontrado: %w", g.CC, err)
 	}
 
@@ -90,6 +96,15 @@ func (g Grader) Grade(ctx context.Context, ex Exercise, submissionDir string) (R
 		}
 		sources[name] = string(data)
 	}
+	if ex.Lang == "python" && len(ex.Forbidden) > 0 {
+		used, err := g.forbiddenUse(ctx, sources[ex.Files[0]], ex.Forbidden)
+		if err != nil {
+			return Result{}, err
+		}
+		if used != "" {
+			return Result{Trace: "usa o que o enunciado proíbe:\n" + used}, nil
+		}
+	}
 	userBin, out, err := g.build(ctx, filepath.Join(work, "user"), sources, ex)
 	if err != nil {
 		return Result{}, err
@@ -100,7 +115,7 @@ func (g Grader) Grade(ctx context.Context, ex Exercise, submissionDir string) (R
 
 	var outcomes []TestOutcome
 	for i, args := range ex.Tests {
-		want, err := run(ctx, refBin, args, refTimeout)
+		want, _, err := run(ctx, g.command(ex, refBin), args, refTimeout)
 		if err != nil {
 			return Result{}, fmt.Errorf("solução de referência de %s falhou com %q: %w", ex.Name, args, err)
 		}
@@ -108,14 +123,18 @@ func (g Grader) Grade(ctx context.Context, ex Exercise, submissionDir string) (R
 		if i == 0 {
 			timeout = max(timeout, refTimeout)
 		}
-		got, err := run(ctx, userBin, args, timeout)
+		got, errOut, err := run(ctx, g.command(ex, userBin), args, timeout)
 		if err != nil {
 			outcomes = append(outcomes, TestOutcome{Args: args})
 			return Result{Trace: fmt.Sprintf("%s %s\n%v", ex.Name, QuoteArgs(args), err), Tests: outcomes}, nil
 		}
 		if got != want {
 			outcomes = append(outcomes, TestOutcome{Args: args})
-			return Result{Trace: fmt.Sprintf("%s %s\nesperado: %q\nrecebido: %q", ex.Name, QuoteArgs(args), want, got), Tests: outcomes}, nil
+			trace := fmt.Sprintf("%s %s\nesperado: %q\nrecebido: %q", ex.Name, QuoteArgs(args), want, got)
+			if ex.Lang == "python" {
+				trace = pythonTrace(ex, args, want, got, errOut)
+			}
+			return Result{Trace: trace, Tests: outcomes}, nil
 		}
 		outcomes = append(outcomes, TestOutcome{Args: args, Passed: true})
 	}
@@ -129,6 +148,9 @@ func (g Grader) Grade(ctx context.Context, ex Exercise, submissionDir string) (R
 func (g Grader) build(ctx context.Context, dir string, sources map[string]string, ex Exercise) (bin, output string, err error) {
 	if err := os.MkdirAll(dir, 0o700); err != nil {
 		return "", "", fmt.Errorf("preparar compilação: %w", err)
+	}
+	if ex.Lang == "python" {
+		return g.buildPython(ctx, dir, sources, ex)
 	}
 
 	files := make(map[string]string, len(sources)+len(ex.Provided)+1)
@@ -161,31 +183,41 @@ func (g Grader) build(ctx context.Context, dir string, sources map[string]string
 	return filepath.Join(dir, "a.out"), "", nil
 }
 
-// run executes bin with args and returns its stdout. Timeouts and crashes
-// are errors; a non-zero exit status is not (the exam only compares output).
-func run(ctx context.Context, bin string, args []string, timeout time.Duration) (string, error) {
+// command is how to run a built exercise: the binary, or Python on the harness.
+func (g Grader) command(ex Exercise, bin string) []string {
+	if ex.Lang == "python" {
+		return []string{g.python(), bin}
+	}
+	return []string{bin}
+}
+
+// run executes argv with args (in the folder of argv's last element) and
+// returns its stdout and stderr. Timeouts and crashes are errors; a
+// non-zero exit status is not (the exam only compares output).
+func run(ctx context.Context, argv []string, args []string, timeout time.Duration) (string, string, error) {
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
-	var stdout cappedBuffer
-	cmd := exec.CommandContext(ctx, bin, args...)
-	cmd.Dir = filepath.Dir(bin)
+	var stdout, stderr cappedBuffer
+	cmd := exec.CommandContext(ctx, argv[0], append(argv[1:], args...)...)
+	cmd.Dir = filepath.Dir(argv[len(argv)-1])
 	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
 	// Children that keep stdout open must not hang the grader past the timeout.
 	cmd.WaitDelay = time.Second
 
 	err := cmd.Run()
 	if ctx.Err() == context.DeadlineExceeded {
-		return "", fmt.Errorf("timeout: passou de %s", timeout)
+		return "", "", fmt.Errorf("timeout: passou de %s", timeout)
 	}
 	var exitErr *exec.ExitError
 	if errors.As(err, &exitErr) {
 		if exitErr.ExitCode() == -1 {
-			return "", fmt.Errorf("crash: %s", exitErr.ProcessState)
+			return "", "", fmt.Errorf("crash: %s", exitErr.ProcessState)
 		}
 		err = nil
 	}
-	return stdout.String(), err
+	return stdout.String(), stderr.String(), err
 }
 
 // cappedBuffer keeps at most maxOutput bytes and silently drops the rest.

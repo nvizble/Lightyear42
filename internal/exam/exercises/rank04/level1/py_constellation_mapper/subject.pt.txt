@@ -1,0 +1,30 @@
+Nome do exercício : py_constellation_mapper
+Arquivos esperados: py_constellation_mapper.py
+Funções permitidas: todas as builtins
+--------------------------------------------------------------------------------
+
+Escreva uma função que desenha uma constelação de estrelas numa grade
+quadrada.
+
+def constellation_mapper(stars: list[tuple[int, int]], dim: int) -> list[str]:
+
+A grade tem dim linhas e dim colunas. Retorne-a como uma lista de dim
+strings, uma por linha de cima para baixo, cada uma com dim caracteres:
+'*' onde há uma estrela e '.' no resto.
+
+Cada estrela é um par (linha, coluna); (0, 0) é o canto superior esquerdo,
+as linhas crescem para baixo e as colunas para a direita. Estrelas fora da
+grade (alguma coordenada negativa ou maior ou igual a dim) são ignoradas.
+Uma estrela repetida é desenhada uma vez só. Se dim for 0 ou negativo,
+retorne uma lista vazia.
+
+Exemplos:
+
+constellation_mapper([(0, 0), (1, 1), (2, 2)], 3)  -> ['*..', '.*.', '..*']
+constellation_mapper([(1, 0), (1, 1), (1, 2)], 3)  -> ['...', '***', '...']
+constellation_mapper([(0, 2)], 3)                  -> ['..*', '...', '...']
+constellation_mapper([(0, 0), (0, 0), (1, 1)], 2)  -> ['*.', '.*']
+constellation_mapper([(0, 0), (5, 5)], 3)          -> ['*..', '...', '...']
+constellation_mapper([(-1, 0), (1, 1)], 2)         -> ['..', '.*']
+constellation_mapper([], 2)                        -> ['..', '..']
+constellation_mapper([(0, 0)], 0)                  -> []

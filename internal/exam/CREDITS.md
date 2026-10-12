@@ -26,5 +26,10 @@
   > OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
   > SOFTWARE.
 
+- **Lista de exercícios dos Exam Ranks 03, 04 e 05** (Python), com seus nomes,
+  níveis e exemplos: [42exam.net](https://42exam.net/). Os enunciados, os testes
+  e as soluções de referência de `exercises/rank03/`, `rank04/` e `rank05/`
+  foram escritos para o lightyear.
+
 Os enunciados (`subject.*.txt`) foram reescritos com texto próprio, em inglês e
 português; não são cópia dos subjects oficiais da 42.

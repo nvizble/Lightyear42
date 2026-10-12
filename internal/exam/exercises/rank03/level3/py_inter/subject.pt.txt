@@ -1,0 +1,27 @@
+Nome do exercício : py_inter
+Arquivos esperados: py_inter.py
+Funções permitidas: todas as builtins
+--------------------------------------------------------------------------------
+
+Escreva uma função que devolve os caracteres que duas strings têm em comum.
+
+def inter(s1: str, s2: str) -> str:
+
+Devolva uma string com cada caractere que aparece tanto em s1 quanto em
+s2, cada um uma vez só, na ordem da sua primeira aparição em s1.
+
+A comparação diferencia maiúsculas de minúsculas ('a' e 'A' são
+diferentes), e espaços, dígitos e pontuação são caracteres como quaisquer
+outros. Se as strings não têm nada em comum (ou uma delas é vazia),
+devolva "".
+
+Exemplos:
+
+inter("hello", "world")    -> 'lo'
+inter("banana", "band")    -> 'ban'
+inter("abcabc", "bc")      -> 'bc'
+inter("aabbcc", "cba")     -> 'abc'
+inter("abc", "xyz")        -> ''
+inter("ABC", "abc")        -> ''
+inter("a b c", " ")        -> ' '
+inter("", "abc")           -> ''

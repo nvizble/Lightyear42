@@ -62,11 +62,12 @@ Dentro da busca, `↑` `↓` escolhem, `Enter` seleciona e `esc` cancela.
 
 ## Aba Exam {#exam}
 
-A aba Exam é o [simulador de provas](simulador.html) dentro do app. Ela começa sempre uma prova do Exam Rank 02, com 3 horas.
+A aba Exam é o [simulador de provas](simulador.html) dentro do app. Ela começa uma prova de 3 horas do rank escolhido: o Exam Rank 02 por padrão, e `p` troca para o 03, 04 ou 05.
 
 | Tecla | Ação |
 |-------|------|
 | `s` | começa a prova |
+| `p` | troca o rank (02 → 03 → 04 → 05) |
 | `e` | abre o subject e a sua entrega no [editor embutido](editor.html) |
 | `E` | abre o subject e a sua entrega no seu `$EDITOR` |
 | `g` | corrige (grademe), com spinner, checklist dos testes e o banner SUCCESS/FAILURE |

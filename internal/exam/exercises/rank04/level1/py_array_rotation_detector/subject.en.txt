@@ -1,0 +1,25 @@
+Assignment name  : py_array_rotation_detector
+Expected files   : py_array_rotation_detector.py
+Allowed functions: all builtins except deque.rotate()
+--------------------------------------------------------------------------------
+
+Write a function that tells whether one list is a rotation of another.
+
+def array_rotation_detector(arr1: list, arr2: list) -> bool:
+
+Rotating a list shifts its elements circularly: moving [1, 2, 3] one step
+to the right gives [3, 1, 2], one step to the left gives [2, 3, 1].
+
+Return True if arr2 can be obtained by rotating arr1 any number of steps,
+left or right, and False otherwise. A list is a rotation of itself (zero
+steps). Lists of different lengths are never rotations of each other, and
+two empty lists are. Elements may repeat and are compared with ==.
+
+Examples:
+
+array_rotation_detector([1, 2, 3, 4, 5], [4, 5, 1, 2, 3])  -> True
+array_rotation_detector([1, 2, 3, 4, 5], [5, 1, 2, 3, 4])  -> True
+array_rotation_detector([1, 2, 3], [3, 2, 1])              -> False
+array_rotation_detector([1, 2], [1, 2, 3])                 -> False
+array_rotation_detector([1, 1, 2], [1, 2, 1])              -> True
+array_rotation_detector([], [])                            -> True
